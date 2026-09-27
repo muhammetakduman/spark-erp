@@ -1,0 +1,32 @@
+# Build output
+/target/
+/dist/
+*.class
+*.log
+
+# IDE
+/.idea/
+*.iml
+.vscode/
+
+# AI assistant instructions and internal docs (kept local)
+CLAUDE.md
+/.claude/
+/docs/*.md
+!/docs/KULLANIM_KILAVUZU.md
+
+# Local data and secrets
+*.db
+*.sqlite
+*.sqlite3
+.env
+*.env
+*.pem
+*.key
+*.p12
+*.jks
+application-local.yml
+
+# OS
+Thumbs.db
+.DS_Store

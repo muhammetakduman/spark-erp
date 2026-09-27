@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.SplitPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.electrician.tracker.ui.controller.ProductListController"
+            styleClass="screen-root">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+    <top>
+        <HBox spacing="10" styleClass="toolbar">
+            <Button text="%product.action.new" onAction="#onNew" styleClass="primary-button"/>
+            <Button text="%action.edit" onAction="#onEdit"/>
+            <Button text="%action.delete" onAction="#onDelete"/>
+            <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+        </HBox>
+    </top>
+    <center>
+        <SplitPane dividerPositions="0.28">
+            <VBox spacing="8">
+                <TextField fx:id="searchField" promptText="%product.search.prompt"/>
+                <TableView fx:id="table" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="nameColumn" text="%product.field.name" prefWidth="200"/>
+                        <TableColumn fx:id="unitColumn" text="%product.field.unit" prefWidth="80"/>
+                    </columns>
+                </TableView>
+            </VBox>
+            <VBox spacing="8">
+                <Label fx:id="usageTitleLabel" text="%productUsage.title" styleClass="section-title"/>
+                <HBox spacing="8" styleClass="toolbar">
+                    <Label text="%productUsage.filter.from" styleClass="form-label"/>
+                    <DatePicker fx:id="fromDatePicker" prefWidth="130"/>
+                    <Label text="%productUsage.filter.to" styleClass="form-label"/>
+                    <DatePicker fx:id="toDatePicker" prefWidth="130"/>
+                    <Button text="%productUsage.filter.clear" onAction="#onClearDates"/>
+                    <Button text="%productUsage.action.export" onAction="#onExport"/>
+                    <ProgressIndicator fx:id="usageLoadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+                </HBox>
+                <TableView fx:id="usageTable" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="usageDateColumn" text="%productUsage.field.date" prefWidth="90"/>
+                        <TableColumn fx:id="usageCustomerColumn" text="%productUsage.field.customer" prefWidth="140"/>
+                        <TableColumn fx:id="usageJobColumn" text="%productUsage.field.job" prefWidth="200"/>
+                        <TableColumn fx:id="usageQuantityColumn" text="%productUsage.field.quantity" prefWidth="80"/>
+                        <TableColumn fx:id="usagePurchaseColumn" text="%productUsage.field.purchasePrice" prefWidth="95"/>
+                        <TableColumn fx:id="usageSupplierColumn" text="%productUsage.field.supplier" prefWidth="120"/>
+                        <TableColumn fx:id="usageSaleColumn" text="%productUsage.field.salePrice" prefWidth="95"/>
+                        <TableColumn fx:id="usageVatColumn" text="%productUsage.field.vat" prefWidth="85"/>
+                        <TableColumn fx:id="usageTotalColumn" text="%productUsage.field.total" prefWidth="100"/>
+                    </columns>
+                </TableView>
+                <VBox fx:id="usageSummaryBox" spacing="2" styleClass="usage-summary"/>
+            </VBox>
+        </SplitPane>
+    </center>
+</BorderPane>

@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.electrician.tracker.ui.controller.SettingsController"
+      styleClass="screen-root" spacing="20">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+
+    <VBox spacing="10">
+        <Label text="%settings.section.backup" styleClass="section-title"/>
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="%settings.backup.folder"/>
+            <Label fx:id="backupFolderLabel" styleClass="form-label"/>
+            <Button text="%settings.action.chooseFolder" onAction="#onChooseFolder"/>
+        </HBox>
+        <HBox spacing="10">
+            <Button text="%settings.action.backupNow" onAction="#onBackupNow" styleClass="primary-button"/>
+            <Button text="%settings.action.restore" onAction="#onRestore"/>
+        </HBox>
+    </VBox>
+
+    <VBox spacing="10">
+        <Label text="%settings.section.export" styleClass="section-title"/>
+        <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="%settings.export.start"/>
+            <DatePicker fx:id="exportStartDatePicker"/>
+            <Label text="%settings.export.end"/>
+            <DatePicker fx:id="exportEndDatePicker"/>
+            <Button text="%settings.action.exportExcel" onAction="#onExportExcel" styleClass="primary-button"/>
+        </HBox>
+    </VBox>
+</VBox>

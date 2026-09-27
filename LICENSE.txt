@@ -1,0 +1,47 @@
+ŞANTİYE TAKİP – SON KULLANICI LİSANS SÖZLEŞMESİ
+
+(c) 2026 Muhammet Akduman – Tüm hakları saklıdır.
+
+
+1. GELİŞTİRİCİ VE HAK SAHİPLİĞİ
+
+Bu program Muhammet Akduman tarafından geliştirilmiştir. Programın, kaynak
+kodunun ve belgelerinin tüm hakları Muhammet Akduman'a aittir.
+
+
+2. KULLANIM HAKKI
+
+Bu program yalnızca kurulumu yapan kişiye, kurulumun yapıldığı bilgisayarda
+ve işletim sisteminde kullanılmak üzere verilmiştir. Kullanım hakkı kişiye
+özeldir; başkasına devredilemez.
+
+
+3. YASAKLAR
+
+Geliştiricinin yazılı izni olmadan program:
+
+  a) kopyalanamaz ve çoğaltılamaz,
+  b) dağıtılamaz, satılamaz ve kiraya verilemez,
+  c) üçüncü kişilerle paylaşılamaz,
+  d) değiştirilemez; kaynak koduna erişilemez, programın kaynak koduna
+     dönüştürülmesi (decompile) veya tersine mühendislik yapılması
+     yasaktır.
+
+
+4. VERİLER VE YEDEKLEME
+
+Programda saklanan tüm veriler kullanıcıya aittir. Verilerin düzenli olarak
+yedeklenmesinden ve yedeklerin güvenli bir yerde saklanmasından kullanıcı
+sorumludur. Veri kaybından doğabilecek zararlardan geliştirici sorumlu
+tutulamaz.
+
+
+5. KABUL
+
+Programı kuran ve kullanan kişi, bu sözleşmeyi okuduğunu, anladığını ve tüm
+şartlarını kabul ettiğini beyan eder. Program ilk açıldığında "Okudum, kabul
+ediyorum" seçeneğinin işaretlenmesi zorunludur. Şartları kabul etmeyen kişi
+programı kullanamaz.
+
+
+(c) 2026 Muhammet Akduman – Tüm hakları saklıdır.

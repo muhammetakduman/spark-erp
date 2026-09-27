@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.electrician.tracker.ui.controller.CustomerListController"
+            styleClass="screen-root">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+    <top>
+        <HBox spacing="10" styleClass="toolbar">
+            <Button text="%customer.action.new" onAction="#onNew" styleClass="primary-button"/>
+            <Button text="%action.edit" onAction="#onEdit"/>
+            <Button text="%action.delete" onAction="#onDelete"/>
+            <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+        </HBox>
+    </top>
+    <center>
+        <TableView fx:id="table">
+            <columns>
+                <TableColumn fx:id="nameColumn" text="%customer.field.name" prefWidth="200"/>
+                <TableColumn fx:id="phoneColumn" text="%customer.field.phone" prefWidth="140"/>
+                <TableColumn fx:id="addressColumn" text="%customer.field.address" prefWidth="260"/>
+                <TableColumn fx:id="taxNoColumn" text="%customer.field.taxNo" prefWidth="140"/>
+            </columns>
+        </TableView>
+    </center>
+</BorderPane>

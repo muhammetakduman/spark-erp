@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.BarChart?>
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.electrician.tracker.ui.controller.MonthlyReportController"
+      styleClass="screen-root" spacing="12">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <HBox spacing="10" styleClass="toolbar">
+        <Label text="%report.title" styleClass="section-title"/>
+        <HBox spacing="0" styleClass="segmented">
+            <ToggleButton text="%report.filter.all" selected="true" userData="ALL">
+                <toggleGroup>
+                    <ToggleGroup fx:id="filterGroup"/>
+                </toggleGroup>
+            </ToggleButton>
+            <ToggleButton text="%report.filter.sites" toggleGroup="$filterGroup" userData="SITES"/>
+            <ToggleButton text="%report.filter.services" toggleGroup="$filterGroup" userData="SERVICES"/>
+        </HBox>
+        <Region HBox.hgrow="ALWAYS"/>
+        <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+    </HBox>
+
+    <TabPane tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <Tab text="%report.tab.monthly">
+            <ScrollPane fitToWidth="true" styleClass="screen-root">
+                <VBox fx:id="monthlyContent" spacing="14">
+                    <padding>
+                        <Insets top="12" right="4" bottom="4" left="4"/>
+                    </padding>
+                    <HBox spacing="8" styleClass="toolbar">
+                        <Button text="%report.action.previous" onAction="#onPreviousMonth"/>
+                        <ComboBox fx:id="monthCombo" prefWidth="130"/>
+                        <Spinner fx:id="monthYearSpinner" prefWidth="100" editable="true"/>
+                        <Button text="%report.action.next" onAction="#onNextMonth"/>
+                        <Button text="%report.action.thisMonth" onAction="#onThisMonth"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Button text="%report.action.excel" onAction="#onExportExcel"/>
+                        <Button text="%report.action.pdf" onAction="#onExportPdf"/>
+                    </HBox>
+                    <HBox fx:id="monthlyCards" spacing="14"/>
+                    <TableView fx:id="jobTable" prefHeight="300">
+                        <placeholder>
+                            <Label text="%report.empty"/>
+                        </placeholder>
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
+                        </columnResizePolicy>
+                        <columns>
+                            <TableColumn fx:id="dateColumn" text="%report.column.date" prefWidth="90"/>
+                            <TableColumn fx:id="customerColumn" text="%report.column.customer" prefWidth="150"/>
+                            <TableColumn fx:id="jobColumn" text="%report.column.job" prefWidth="220"/>
+                            <TableColumn fx:id="materialColumn" text="%report.column.material" prefWidth="100" styleClass="money-cell"/>
+                            <TableColumn fx:id="wageColumn" text="%report.column.wage" prefWidth="100" styleClass="money-cell"/>
+                            <TableColumn fx:id="revenueColumn" text="%report.column.revenue" prefWidth="100" styleClass="money-cell"/>
+                            <TableColumn fx:id="costColumn" text="%report.column.cost" prefWidth="100" styleClass="money-cell"/>
+                            <TableColumn fx:id="profitColumn" text="%report.column.profit" prefWidth="100" styleClass="money-cell"/>
+                            <TableColumn fx:id="paymentColumn" text="%report.column.payment" prefWidth="130"/>
+                        </columns>
+                    </TableView>
+                    <Label text="%report.hint" styleClass="muted-text"/>
+                    <HBox spacing="14">
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="%report.materials.title" styleClass="subsection-title"/>
+                            <TableView fx:id="materialTable" prefHeight="200">
+                                <placeholder>
+                                    <Label text="%report.empty"/>
+                                </placeholder>
+                                <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
+                                </columnResizePolicy>
+                                <columns>
+                                    <TableColumn fx:id="productColumn" text="%report.materials.product" prefWidth="170"/>
+                                    <TableColumn fx:id="quantityColumn" text="%report.materials.quantity" prefWidth="90" styleClass="money-cell"/>
+                                    <TableColumn fx:id="purchaseColumn" text="%report.materials.purchase" prefWidth="100" styleClass="money-cell"/>
+                                    <TableColumn fx:id="saleColumn" text="%report.materials.sale" prefWidth="100" styleClass="money-cell"/>
+                                </columns>
+                            </TableView>
+                        </VBox>
+                        <VBox spacing="6" HBox.hgrow="ALWAYS">
+                            <Label text="%report.wages.title" styleClass="subsection-title"/>
+                            <TableView fx:id="wageTable" prefHeight="200">
+                                <placeholder>
+                                    <Label text="%report.empty"/>
+                                </placeholder>
+                                <columnResizePolicy>
+                                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
+                                </columnResizePolicy>
+                                <columns>
+                                    <TableColumn fx:id="employeeColumn" text="%report.wages.employee" prefWidth="170"/>
+                                    <TableColumn fx:id="dayCountColumn" text="%report.wages.days" prefWidth="80" styleClass="money-cell"/>
+                                    <TableColumn fx:id="wageTotalColumn" text="%report.wages.total" prefWidth="110" styleClass="money-cell"/>
+                                </columns>
+                            </TableView>
+                        </VBox>
+                    </HBox>
+                </VBox>
+            </ScrollPane>
+        </Tab>
+        <Tab text="%report.tab.yearly">
+            <ScrollPane fitToWidth="true" styleClass="screen-root">
+                <VBox spacing="14">
+                    <padding>
+                        <Insets top="12" right="4" bottom="4" left="4"/>
+                    </padding>
+                    <HBox spacing="8" styleClass="toolbar">
+                        <Button text="%report.action.previous" onAction="#onPreviousYear"/>
+                        <Spinner fx:id="yearSpinner" prefWidth="100" editable="true"/>
+                        <Button text="%report.action.next" onAction="#onNextYear"/>
+                    </HBox>
+                    <HBox fx:id="yearlyCards" spacing="14"/>
+                    <TableView fx:id="yearTable" prefHeight="420">
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
+                        </columnResizePolicy>
+                        <columns>
+                            <TableColumn fx:id="monthColumn" text="%report.column.month" prefWidth="140"/>
+                            <TableColumn fx:id="yearRevenueColumn" text="%report.column.revenue" prefWidth="130" styleClass="money-cell"/>
+                            <TableColumn fx:id="yearCostColumn" text="%report.column.cost" prefWidth="130" styleClass="money-cell"/>
+                            <TableColumn fx:id="yearProfitColumn" text="%report.column.profit" prefWidth="130" styleClass="money-cell"/>
+                            <TableColumn fx:id="yearUncollectedColumn" text="%report.column.uncollected" prefWidth="140" styleClass="money-cell"/>
+                        </columns>
+                    </TableView>
+                    <BarChart fx:id="profitChart" title="%report.chart.title" legendVisible="false"
+                              animated="false" prefHeight="300">
+                        <xAxis>
+                            <CategoryAxis/>
+                        </xAxis>
+                        <yAxis>
+                            <NumberAxis/>
+                        </yAxis>
+                    </BarChart>
+                </VBox>
+            </ScrollPane>
+        </Tab>
+    </TabPane>
+</VBox>

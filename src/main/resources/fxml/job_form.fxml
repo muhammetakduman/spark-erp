@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+<?import com.electrician.tracker.ui.util.VatSelector?>
+<?import com.electrician.tracker.ui.util.DecimalField?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.electrician.tracker.ui.controller.JobFormController"
+      styleClass="form-root" spacing="16">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+    <GridPane hgap="12" vgap="10" styleClass="form-grid">
+        <columnConstraints>
+            <ColumnConstraints minWidth="140"/>
+            <ColumnConstraints minWidth="220" hgrow="ALWAYS"/>
+            <ColumnConstraints minWidth="250"/>
+        </columnConstraints>
+
+        <Label text="%job.field.customer" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="customerComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1" maxWidth="Infinity"/>
+        <Button text="%job.action.newCustomer" onAction="#onNewCustomer" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+
+        <Label text="%job.field.name" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextField fx:id="nameField" promptText="%job.field.name.prompt" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="%job.field.address" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <TextField fx:id="addressField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+        <Label text="%job.field.startDate" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <DatePicker fx:id="startDatePicker" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+        <Label text="%job.field.endDate" styleClass="form-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <DatePicker fx:id="endDatePicker" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+        <Label text="%job.field.status" styleClass="form-label" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="statusComboBox" GridPane.rowIndex="5" GridPane.columnIndex="1" maxWidth="Infinity"/>
+
+        <Label text="%job.field.serviceFee" styleClass="form-label" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+        <DecimalField fx:id="serviceFeeField" GridPane.rowIndex="6" GridPane.columnIndex="1"/>
+        <VatSelector fx:id="serviceFeeVatSelector" GridPane.rowIndex="6" GridPane.columnIndex="2"/>
+
+        <Label text="%job.field.laborFee" styleClass="form-label" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+        <DecimalField fx:id="laborFeeField" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+        <VatSelector fx:id="laborFeeVatSelector" GridPane.rowIndex="7" GridPane.columnIndex="2"/>
+    </GridPane>
+    <HBox spacing="10" styleClass="dialog-buttons">
+        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button"/>
+        <Button text="%action.cancel" onAction="#onCancel" cancelButton="true"/>
+    </HBox>
+</VBox>

@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.electrician.tracker.ui.controller.EmployeeAttendanceController"
+            styleClass="screen-root">
+    <padding>
+        <Insets top="16" right="16" bottom="16" left="16"/>
+    </padding>
+    <top>
+        <VBox spacing="10">
+            <Label text="%employeeAttendance.title" styleClass="section-title"/>
+            <HBox spacing="10" styleClass="toolbar">
+                <Label text="%attendance.field.employee" styleClass="form-label"/>
+                <ComboBox fx:id="employeeComboBox" prefWidth="220"/>
+                <Label text="%attendance.field.startDate" styleClass="form-label"/>
+                <DatePicker fx:id="fromDatePicker" prefWidth="130"/>
+                <Label text="%attendance.field.endDate" styleClass="form-label"/>
+                <DatePicker fx:id="toDatePicker" prefWidth="130"/>
+                <Button text="%employeeAttendance.action.exportExcel" onAction="#onExportExcel"/>
+                <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+            </HBox>
+        </VBox>
+    </top>
+    <center>
+        <TabPane fx:id="tabPane" tabClosingPolicy="UNAVAILABLE">
+            <Tab text="%employeeAttendance.tab.byJob">
+                <ScrollPane fitToWidth="true">
+                    <VBox fx:id="jobListBox" spacing="10">
+                        <padding>
+                            <Insets top="10" right="10" bottom="10" left="10"/>
+                        </padding>
+                    </VBox>
+                </ScrollPane>
+            </Tab>
+            <Tab text="%employeeAttendance.tab.calendar">
+                <ScrollPane>
+                    <GridPane fx:id="matrixGrid" styleClass="attendance-matrix">
+                        <padding>
+                            <Insets top="10" right="10" bottom="10" left="10"/>
+                        </padding>
+                    </GridPane>
+                </ScrollPane>
+            </Tab>
+        </TabPane>
+    </center>
+</BorderPane>
