@@ -37,7 +37,7 @@
         <TextField fx:id="noteField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
     </GridPane>
     <HBox spacing="10" styleClass="dialog-buttons">
-        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button"/>
+        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>
         <Button text="%action.cancel" onAction="#onCancel" cancelButton="true"/>
     </HBox>
 </VBox>

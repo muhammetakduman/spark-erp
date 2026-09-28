@@ -5,19 +5,17 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.electrician.tracker.config.DatabasePathResolver;
-import com.electrician.tracker.config.FxmlViewLoader;
 import com.electrician.tracker.config.SpringConfig;
 import com.electrician.tracker.service.BackupService;
 import com.electrician.tracker.service.LicenseService;
 import com.electrician.tracker.ui.controller.LicenseDialogController;
-import com.electrician.tracker.ui.util.AppSignature;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.ModalStageOpener;
-import com.electrician.tracker.ui.util.Stylesheets;
+import com.electrician.tracker.ui.util.StageManager;
+import com.electrician.tracker.ui.util.ViewPaths;
+import com.electrician.tracker.ui.util.WindowDecorations;
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
@@ -25,9 +23,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 
 public class ElectricianTrackerApp extends Application {
 
-    private static final String LICENSE_DIALOG_FXML = "/fxml/license_dialog.fxml";
     private static final String LICENSE_TITLE_KEY = "license.title";
-    private static final String MAIN_VIEW_FXML = "/fxml/main.fxml";
 
     private ConfigurableApplicationContext springContext;
 
@@ -45,22 +41,20 @@ public class ElectricianTrackerApp extends Application {
                 .run();
     }
 
+    /**
+     * Licence first (once per version), then the single application window:
+     * login or first setup, then the main screen of the logged-in user.
+     */
     @Override
     public void start(Stage primaryStage) {
         installUncaughtExceptionAlert();
+        WindowDecorations.install();
+        WindowDecorations.applyIcons(primaryStage);
         if (!ensureLicenseAccepted()) {
             Platform.exit();
             return;
         }
-        FxmlViewLoader fxmlViewLoader = springContext.getBean(FxmlViewLoader.class);
-        Parent root = fxmlViewLoader.load(MAIN_VIEW_FXML);
-
-        Scene scene = new Scene(root, 1024, 720);
-        Stylesheets.apply(scene);
-
-        primaryStage.setTitle(springContext.getBean(AppSignature.class).windowTitle());
-        primaryStage.setScene(scene);
-        primaryStage.show();
+        springContext.getBean(StageManager.class).start(primaryStage);
     }
 
     /** The licence must be accepted once per version before the app can be used. */
@@ -69,7 +63,7 @@ public class ElectricianTrackerApp extends Application {
             return true;
         }
         LicenseDialogController dialog = springContext.getBean(ModalStageOpener.class)
-                .openAndWait(LICENSE_DIALOG_FXML, LICENSE_TITLE_KEY, null);
+                .openAndWait(ViewPaths.LICENSE_DIALOG, LICENSE_TITLE_KEY, null);
         return dialog.isAccepted();
     }
 

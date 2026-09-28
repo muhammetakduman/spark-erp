@@ -1,9 +1,10 @@
 package com.electrician.tracker.ui.util;
 
+import java.util.Comparator;
+
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.service.MaterialPriceCalculator;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -28,8 +29,7 @@ public final class MaterialColumns {
     }
 
     public static void bindVat(TableColumn<MaterialItem, String> column) {
-        column.setCellValueFactory(d -> new SimpleStringProperty(
-                VatLabels.describe(d.getValue().getVatRate(), d.getValue().getVatIncluded())));
+        TableSorting.text(column, item -> VatLabels.describe(item.getVatRate(), item.getVatIncluded()));
     }
 
     public static TableColumn<MaterialItem, MaterialItem> totalColumn() {
@@ -38,9 +38,17 @@ public final class MaterialColumns {
         return column;
     }
 
+    /** Sorted by the line total as a number. */
     public static void bindTotal(TableColumn<MaterialItem, MaterialItem> column) {
         column.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue()));
         column.setCellFactory(col -> new TotalCell());
+        column.setComparator(Comparator.comparing(MaterialPriceCalculator::saleTotal,
+                Comparator.nullsLast(Comparator.naturalOrder())));
+    }
+
+    /** A product column showing "Marka — Ürün", sorted in Turkish order. */
+    public static void bindProduct(TableColumn<MaterialItem, String> column) {
+        TableSorting.text(column, item -> item.getProduct().getDisplayName());
     }
 
     private static final class TotalCell extends TableCell<MaterialItem, MaterialItem> {

@@ -11,9 +11,11 @@ import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.Payment;
 import com.electrician.tracker.dto.JobDetail;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.CustomerService;
 import com.electrician.tracker.service.JobSummaryService;
 import com.electrician.tracker.service.PaymentService;
+import com.electrician.tracker.service.QuoteService;
 import com.electrician.tracker.service.ServiceJobService;
 import com.electrician.tracker.ui.util.Bicimlendirici;
 import com.electrician.tracker.ui.util.DecimalField;
@@ -25,6 +27,7 @@ import com.electrician.tracker.ui.util.ModalStageOpener;
 import com.electrician.tracker.ui.util.SelectionLists;
 import com.electrician.tracker.ui.util.VatSelector;
 import com.electrician.tracker.ui.util.VatSummaryView;
+import com.electrician.tracker.ui.util.ViewPaths;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -32,6 +35,7 @@ import javafx.fxml.FXML;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -44,8 +48,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
- * "Servis formu" — single-page create form for a SERVICE job, including its
- * changed materials, per SPEC item 4.
+ * "Servis formu" — single-page create/edit form for a SERVICE job, including
+ * its changed materials. The payments section exists only for an ADMIN; a
+ * MANAGER can remove only lines that are not saved yet (a saved line is a
+ * delete, which is ADMIN only).
  */
 @Component
 @Scope("prototype")
@@ -59,6 +65,8 @@ public class ServiceFormController {
     private final ServiceJobService serviceJobService;
     private final JobSummaryService jobSummaryService;
     private final ModalStageOpener modalStageOpener;
+    private final QuoteService quoteService;
+    private final AccessControl accessControl;
     private final JobPaymentPane paymentPane;
 
     @FXML
@@ -95,17 +103,22 @@ public class ServiceFormController {
     private VBox paymentPaneHolder;
     @FXML
     private Label paymentBalanceLabel;
+    @FXML
+    private Hyperlink quoteLink;
 
     private final ObservableList<MaterialItem> materialItems = FXCollections.observableArrayList();
     private boolean saved;
     private Long editingId;
 
     public ServiceFormController(CustomerService customerService, ServiceJobService serviceJobService,
-            JobSummaryService jobSummaryService, PaymentService paymentService, ModalStageOpener modalStageOpener) {
+            JobSummaryService jobSummaryService, PaymentService paymentService, ModalStageOpener modalStageOpener,
+            QuoteService quoteService, AccessControl accessControl) {
         this.customerService = customerService;
         this.serviceJobService = serviceJobService;
         this.jobSummaryService = jobSummaryService;
         this.modalStageOpener = modalStageOpener;
+        this.quoteService = quoteService;
+        this.accessControl = accessControl;
         this.paymentPane = new JobPaymentPane(paymentService, jobId -> refreshPayments(), this::openEditPayment);
     }
 
@@ -131,9 +144,23 @@ public class ServiceFormController {
         paymentReceivedCheckBox.setSelected(job.isPaymentReceived());
         materialItems.setAll(detail.materials());
         recomputeTotal();
-        paymentSection.setVisible(true);
-        paymentSection.setManaged(true);
-        showPayments(detail);
+        showQuoteLink(jobId);
+        if (accessControl.canViewFinancials()) {
+            paymentSection.setVisible(true);
+            paymentSection.setManaged(true);
+            showPayments(detail);
+        }
+    }
+
+    /** "Bu iş 2026/0001 numaralı tekliften oluşturuldu", opening the quote. */
+    private void showQuoteLink(Long jobId) {
+        quoteService.findLinkForJob(jobId).ifPresent(link -> {
+            quoteLink.setText(DialogUtil.message("job.fromQuote", link.quoteNo()));
+            quoteLink.setOnAction(e -> modalStageOpener.<QuoteFormController>openAndWait(ViewPaths.QUOTE_FORM,
+                    "quote.dialog.edit", quoteLink.getScene().getWindow(), form -> form.editExisting(link.quoteId())));
+            quoteLink.setVisible(true);
+            quoteLink.setManaged(true);
+        });
     }
 
     /** Payments are saved right away (independently of the form's Save), so the list reloads from the database. */
@@ -196,7 +223,7 @@ public class ServiceFormController {
 
     private void setUpMaterialTable() {
         materialTable.setItems(materialItems);
-        materialProductColumn.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getProduct().getName()));
+        MaterialColumns.bindProduct(materialProductColumn);
         materialQuantityColumn.setCellValueFactory(d -> new SimpleStringProperty(
                 Bicimlendirici.quantity(d.getValue().getQuantity()) + " " + EnumLabels.label(d.getValue().getProduct().getUnit())));
         MaterialColumns.bindVat(materialVatColumn);
@@ -225,10 +252,15 @@ public class ServiceFormController {
     @FXML
     private void onRemoveMaterial() {
         MaterialItem selected = materialTable.getSelectionModel().getSelectedItem();
-        if (selected != null) {
-            materialItems.remove(selected);
-            recomputeTotal();
+        if (selected == null) {
+            return;
         }
+        if (selected.getId() != null && !accessControl.isAdmin()) {
+            DialogUtil.showErrorMessage("error.access.adminOnly");
+            return;
+        }
+        materialItems.remove(selected);
+        recomputeTotal();
     }
 
     private void recomputeTotal() {

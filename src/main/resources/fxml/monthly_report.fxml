@@ -50,14 +50,14 @@
                         <Insets top="12" right="4" bottom="4" left="4"/>
                     </padding>
                     <HBox spacing="8" styleClass="toolbar">
-                        <Button text="%report.action.previous" onAction="#onPreviousMonth"/>
+                        <Button onAction="#onPreviousMonth" styleClass="icon-only-button,action-previous"/>
                         <ComboBox fx:id="monthCombo" prefWidth="130"/>
                         <Spinner fx:id="monthYearSpinner" prefWidth="100" editable="true"/>
-                        <Button text="%report.action.next" onAction="#onNextMonth"/>
-                        <Button text="%report.action.thisMonth" onAction="#onThisMonth"/>
+                        <Button onAction="#onNextMonth" styleClass="icon-only-button,action-next"/>
+                        <Button text="%report.action.thisMonth" onAction="#onThisMonth" styleClass="action-today"/>
                         <Region HBox.hgrow="ALWAYS"/>
-                        <Button text="%report.action.excel" onAction="#onExportExcel"/>
-                        <Button text="%report.action.pdf" onAction="#onExportPdf"/>
+                        <Button text="%report.action.excel" onAction="#onExportExcel" styleClass="action-excel"/>
+                        <Button text="%report.action.pdf" onAction="#onExportPdf" styleClass="action-pdf"/>
                     </HBox>
                     <HBox fx:id="monthlyCards" spacing="14"/>
                     <TableView fx:id="jobTable" prefHeight="300">
@@ -125,9 +125,9 @@
                         <Insets top="12" right="4" bottom="4" left="4"/>
                     </padding>
                     <HBox spacing="8" styleClass="toolbar">
-                        <Button text="%report.action.previous" onAction="#onPreviousYear"/>
+                        <Button onAction="#onPreviousYear" styleClass="icon-only-button,action-previous"/>
                         <Spinner fx:id="yearSpinner" prefWidth="100" editable="true"/>
-                        <Button text="%report.action.next" onAction="#onNextYear"/>
+                        <Button onAction="#onNextYear" styleClass="icon-only-button,action-next"/>
                     </HBox>
                     <HBox fx:id="yearlyCards" spacing="14"/>
                     <TableView fx:id="yearTable" prefHeight="420">

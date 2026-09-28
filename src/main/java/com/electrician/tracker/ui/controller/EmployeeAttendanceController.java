@@ -4,7 +4,6 @@ import java.io.File;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.format.DateTimeFormatter;
-import java.util.Comparator;
 import java.util.List;
 
 import com.electrician.tracker.domain.Employee;
@@ -17,6 +16,7 @@ import com.electrician.tracker.service.EmployeeService;
 import com.electrician.tracker.service.ReportService;
 import com.electrician.tracker.ui.util.Bicimlendirici;
 import com.electrician.tracker.ui.util.DialogUtil;
+import com.electrician.tracker.ui.util.TableSorting;
 import com.electrician.tracker.ui.util.TaskRunner;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
@@ -103,7 +103,7 @@ public class EmployeeAttendanceController {
 
     private void setUpEmployeeCombo() {
         List<Employee> employees = employeeService.findAll().stream()
-                .sorted(Comparator.comparing(Employee::getName))
+                .sorted(TableSorting.employees())
                 .toList();
         employeeComboBox.getItems().setAll(employees);
         employeeComboBox.setConverter(new StringConverter<>() {
@@ -153,8 +153,7 @@ public class EmployeeAttendanceController {
             jobListBox.getChildren().add(jobRow(job));
         }
         Label totalBadge = badge(DialogUtil.message("employeeAttendance.total"), "badge-total");
-        Label totalText = new Label(Bicimlendirici.daysWithUnit(report.dayCount()) + " · "
-                + Bicimlendirici.money(report.totalWage()));
+        Label totalText = new Label(withWage(Bicimlendirici.daysWithUnit(report.dayCount()), report.totalWage()));
         totalText.getStyleClass().add("attendance-total");
         HBox totalRow = new HBox(12, totalBadge, totalText);
         totalRow.setAlignment(Pos.CENTER_LEFT);
@@ -167,12 +166,17 @@ public class EmployeeAttendanceController {
                 site ? "badge-site" : "badge-service");
         Label title = new Label(job.jobLabel());
         title.getStyleClass().add("form-label");
-        Label detail = new Label(Bicimlendirici.daysWithUnit(job.dayCount()) + " · "
-                + Bicimlendirici.workedDays(job.days()) + " · " + Bicimlendirici.money(job.totalWage()));
+        Label detail = new Label(withWage(Bicimlendirici.daysWithUnit(job.dayCount()) + " · "
+                + Bicimlendirici.workedDays(job.days()), job.totalWage()));
         detail.setWrapText(true);
         HBox row = new HBox(12, typeBadge, new VBox(2, title, detail));
         row.getStyleClass().add("attendance-job-row");
         return row;
+    }
+
+    /** "3 gün · 4.500,00 ₺"; the wage part is left out when it was not sent (no rights to see it). */
+    private static String withWage(String text, java.math.BigDecimal wage) {
+        return wage == null ? text : text + " · " + Bicimlendirici.money(wage);
     }
 
     private static Label badge(String text, String styleClass) {

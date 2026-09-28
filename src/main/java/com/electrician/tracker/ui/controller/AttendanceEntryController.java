@@ -13,6 +13,7 @@ import com.electrician.tracker.dto.AttendanceEntry;
 import com.electrician.tracker.dto.AttendancePreview;
 import com.electrician.tracker.dto.AttendanceSaveResult;
 import com.electrician.tracker.service.AttendanceMath;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.AttendanceService;
 import com.electrician.tracker.service.EmployeeService;
 import com.electrician.tracker.service.JobLabels;
@@ -39,7 +40,8 @@ import org.springframework.stereotype.Component;
 /**
  * Attendance entry for any job (site or service, active or completed):
  * a single day or a date range × the checked employees, one row per
- * date × employee.
+ * date × employee. A MANAGER picks people and days only: the wage column
+ * does not exist and the service takes each employee's default wage.
  */
 @Component
 @Scope("prototype")
@@ -51,6 +53,7 @@ public class AttendanceEntryController {
     private final AttendanceService attendanceService;
     private final EmployeeService employeeService;
     private final ModalStageOpener modalStageOpener;
+    private final AccessControl accessControl;
 
     @FXML
     private Label jobTitleLabel;
@@ -84,10 +87,11 @@ public class AttendanceEntryController {
     private boolean saved;
 
     public AttendanceEntryController(AttendanceService attendanceService, EmployeeService employeeService,
-            ModalStageOpener modalStageOpener) {
+            ModalStageOpener modalStageOpener, AccessControl accessControl) {
         this.attendanceService = attendanceService;
         this.employeeService = employeeService;
         this.modalStageOpener = modalStageOpener;
+        this.accessControl = accessControl;
     }
 
     public void setJob(Job job) {
@@ -110,7 +114,7 @@ public class AttendanceEntryController {
         skipSundayCheckBox.selectedProperty().addListener((obs, o, n) -> refreshPreview());
         showInactiveCheckBox.selectedProperty().addListener((obs, o, n) -> layoutEmployeeRows());
         for (Employee employee : employeeService.findAll()) {
-            rows.add(new EmployeeRow(employee, this::refreshPreview));
+            rows.add(new EmployeeRow(employee, this::refreshPreview, accessControl.canViewFinancials()));
         }
         layoutEmployeeRows();
         applyDateMode();
@@ -141,7 +145,8 @@ public class AttendanceEntryController {
         EmployeeFormController controller = modalStageOpener.openAndWait(
                 EMPLOYEE_FORM_FXML, "employee.dialog.new", employeeGrid.getScene().getWindow());
         if (controller.isSaved() && controller.getResult() != null) {
-            EmployeeRow row = new EmployeeRow(controller.getResult(), this::refreshPreview);
+            EmployeeRow row = new EmployeeRow(controller.getResult(), this::refreshPreview,
+                    accessControl.canViewFinancials());
             row.select();
             rows.add(row);
             layoutEmployeeRows();
@@ -161,9 +166,13 @@ public class AttendanceEntryController {
     private void refreshPreview() {
         try {
             AttendancePreview preview = attendanceService.preview(selectedDates(), selectedEntries());
-            previewLabel.setText(DialogUtil.message("attendance.preview",
-                    String.valueOf(preview.dateCount()), String.valueOf(preview.personCount()),
-                    Bicimlendirici.days(preview.dayCount()), Bicimlendirici.money(preview.amount())));
+            String dates = String.valueOf(preview.dateCount());
+            String people = String.valueOf(preview.personCount());
+            String days = Bicimlendirici.days(preview.dayCount());
+            previewLabel.setText(preview.amount() == null
+                    ? DialogUtil.message("attendance.previewNoAmount", dates, people, days)
+                    : DialogUtil.message("attendance.preview", dates, people, days,
+                            Bicimlendirici.money(preview.amount())));
         } catch (RuntimeException e) {
             // Incomplete input (missing date, unparsable wage) simply hides the preview.
             previewLabel.setText("");
@@ -266,11 +275,13 @@ public class AttendanceEntryController {
         private final Employee employee;
         private final CheckBox checkBox = new CheckBox();
         private final DecimalField wageField = new DecimalField();
+        private final boolean showWage;
         private final ComboBox<BigDecimal> factorCombo = new ComboBox<>();
         private final Node nameCell;
 
-        private EmployeeRow(Employee employee, Runnable onChange) {
+        private EmployeeRow(Employee employee, Runnable onChange, boolean showWage) {
             this.employee = employee;
+            this.showWage = showWage;
             wageField.setValue(employee.getDefaultDailyWage());
             factorCombo.getItems().setAll(AttendanceMath.FULL_DAY, AttendanceMath.HALF_DAY);
             factorCombo.setValue(AttendanceMath.FULL_DAY);
@@ -299,7 +310,8 @@ public class AttendanceEntryController {
         }
 
         private Node[] cells() {
-            return new Node[] { checkBox, nameCell, wageField, factorCombo };
+            return showWage ? new Node[] { checkBox, nameCell, wageField, factorCombo }
+                    : new Node[] { checkBox, nameCell, factorCombo };
         }
 
         private boolean isSelected() {
@@ -318,8 +330,9 @@ public class AttendanceEntryController {
             return employee.getName();
         }
 
+        /** Without a visible wage field the wage is left to the service (the employee's default). */
         private AttendanceEntry toEntry() {
-            return new AttendanceEntry(employee.getId(), wageField.getValue(),
+            return new AttendanceEntry(employee.getId(), showWage ? wageField.getValue() : null,
                     factorCombo.getValue());
         }
     }

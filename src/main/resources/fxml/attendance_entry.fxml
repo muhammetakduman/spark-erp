@@ -44,7 +44,7 @@
     <HBox spacing="12" alignment="CENTER_LEFT">
         <Label text="%attendance.field.employees" styleClass="form-label"/>
         <CheckBox fx:id="showInactiveCheckBox" text="%attendance.showInactive"/>
-        <Button text="%employee.action.new" onAction="#onNewEmployee"/>
+        <Button text="%employee.action.new" onAction="#onNewEmployee" styleClass="action-add"/>
     </HBox>
     <Label fx:id="noEmployeeLabel" text="%attendance.noActiveEmployee" styleClass="warning-note" wrapText="true"
            visible="false" managed="false"/>
@@ -65,7 +65,7 @@
     <Label fx:id="previewLabel" styleClass="attendance-preview"/>
 
     <HBox spacing="10" styleClass="dialog-buttons">
-        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button"/>
+        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>
         <Button text="%action.cancel" onAction="#onCancel" cancelButton="true"/>
     </HBox>
 </VBox>

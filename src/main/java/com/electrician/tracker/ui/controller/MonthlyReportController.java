@@ -3,13 +3,14 @@ package com.electrician.tracker.ui.controller;
 import java.io.File;
 import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.time.LocalDate;
 import java.time.Month;
 import java.time.YearMonth;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 
 import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.dto.EmployeeWageSummary;
@@ -20,15 +21,15 @@ import com.electrician.tracker.dto.MonthlyReportRow;
 import com.electrician.tracker.dto.ReportJobFilter;
 import com.electrician.tracker.dto.ReportTotals;
 import com.electrician.tracker.dto.YearlyReport;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.AylikRaporService;
 import com.electrician.tracker.ui.util.Bicimlendirici;
-import com.electrician.tracker.ui.util.ContentNavigator;
 import com.electrician.tracker.ui.util.DialogUtil;
-import com.electrician.tracker.ui.util.EnumLabels;
+import com.electrician.tracker.ui.util.JobNavigator;
 import com.electrician.tracker.ui.util.StatBoxes;
+import com.electrician.tracker.ui.util.TableSorting;
 import com.electrician.tracker.ui.util.TaskRunner;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.chart.BarChart;
@@ -48,6 +49,7 @@ import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.util.StringConverter;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
@@ -57,9 +59,9 @@ import org.springframework.stereotype.Component;
  * year or filter recalculates from it without querying again.
  */
 @Component
+@Scope("prototype")
 public class MonthlyReportController {
 
-    private static final String HOME_FXML = "/fxml/home_screen.fxml";
     private static final int MIN_YEAR = 2000;
     private static final int MAX_YEAR = 2100;
     private static final int DOUBLE_CLICK = 2;
@@ -68,7 +70,8 @@ public class MonthlyReportController {
 
     private final AylikRaporService aylikRaporService;
     private final TaskRunner taskRunner;
-    private final ContentNavigator contentNavigator;
+    private final JobNavigator jobNavigator;
+    private final AccessControl accessControl;
 
     @FXML
     private ToggleGroup filterGroup;
@@ -85,41 +88,41 @@ public class MonthlyReportController {
     @FXML
     private TableView<MonthlyReportRow> jobTable;
     @FXML
-    private TableColumn<MonthlyReportRow, String> dateColumn;
+    private TableColumn<MonthlyReportRow, LocalDate> dateColumn;
     @FXML
     private TableColumn<MonthlyReportRow, String> customerColumn;
     @FXML
     private TableColumn<MonthlyReportRow, MonthlyReportRow> jobColumn;
     @FXML
-    private TableColumn<MonthlyReportRow, String> materialColumn;
+    private TableColumn<MonthlyReportRow, BigDecimal> materialColumn;
     @FXML
-    private TableColumn<MonthlyReportRow, String> wageColumn;
+    private TableColumn<MonthlyReportRow, BigDecimal> wageColumn;
     @FXML
-    private TableColumn<MonthlyReportRow, String> revenueColumn;
+    private TableColumn<MonthlyReportRow, BigDecimal> revenueColumn;
     @FXML
-    private TableColumn<MonthlyReportRow, String> costColumn;
+    private TableColumn<MonthlyReportRow, BigDecimal> costColumn;
     @FXML
-    private TableColumn<MonthlyReportRow, String> profitColumn;
+    private TableColumn<MonthlyReportRow, MonthlyReportRow> profitColumn;
     @FXML
-    private TableColumn<MonthlyReportRow, String> paymentColumn;
+    private TableColumn<MonthlyReportRow, MonthlyReportRow> paymentColumn;
     @FXML
     private TableView<MaterialSummaryLine> materialTable;
     @FXML
     private TableColumn<MaterialSummaryLine, String> productColumn;
     @FXML
-    private TableColumn<MaterialSummaryLine, String> quantityColumn;
+    private TableColumn<MaterialSummaryLine, BigDecimal> quantityColumn;
     @FXML
-    private TableColumn<MaterialSummaryLine, String> purchaseColumn;
+    private TableColumn<MaterialSummaryLine, BigDecimal> purchaseColumn;
     @FXML
-    private TableColumn<MaterialSummaryLine, String> saleColumn;
+    private TableColumn<MaterialSummaryLine, BigDecimal> saleColumn;
     @FXML
     private TableView<EmployeeWageSummary> wageTable;
     @FXML
     private TableColumn<EmployeeWageSummary, String> employeeColumn;
     @FXML
-    private TableColumn<EmployeeWageSummary, String> dayCountColumn;
+    private TableColumn<EmployeeWageSummary, BigDecimal> dayCountColumn;
     @FXML
-    private TableColumn<EmployeeWageSummary, String> wageTotalColumn;
+    private TableColumn<EmployeeWageSummary, BigDecimal> wageTotalColumn;
     @FXML
     private Spinner<Integer> yearSpinner;
     @FXML
@@ -127,15 +130,15 @@ public class MonthlyReportController {
     @FXML
     private TableView<YearlyReport.MonthTotals> yearTable;
     @FXML
-    private TableColumn<YearlyReport.MonthTotals, String> monthColumn;
+    private TableColumn<YearlyReport.MonthTotals, YearlyReport.MonthTotals> monthColumn;
     @FXML
-    private TableColumn<YearlyReport.MonthTotals, String> yearRevenueColumn;
+    private TableColumn<YearlyReport.MonthTotals, BigDecimal> yearRevenueColumn;
     @FXML
-    private TableColumn<YearlyReport.MonthTotals, String> yearCostColumn;
+    private TableColumn<YearlyReport.MonthTotals, BigDecimal> yearCostColumn;
     @FXML
-    private TableColumn<YearlyReport.MonthTotals, String> yearProfitColumn;
+    private TableColumn<YearlyReport.MonthTotals, BigDecimal> yearProfitColumn;
     @FXML
-    private TableColumn<YearlyReport.MonthTotals, String> yearUncollectedColumn;
+    private TableColumn<YearlyReport.MonthTotals, BigDecimal> yearUncollectedColumn;
     @FXML
     private BarChart<String, Number> profitChart;
 
@@ -145,14 +148,16 @@ public class MonthlyReportController {
     private boolean updatingSelectors;
 
     public MonthlyReportController(AylikRaporService aylikRaporService, TaskRunner taskRunner,
-            ContentNavigator contentNavigator) {
+            JobNavigator jobNavigator, AccessControl accessControl) {
         this.aylikRaporService = aylikRaporService;
         this.taskRunner = taskRunner;
-        this.contentNavigator = contentNavigator;
+        this.jobNavigator = jobNavigator;
+        this.accessControl = accessControl;
     }
 
     @FXML
     private void initialize() {
+        accessControl.requireAdmin();
         setUpSelectors();
         setUpJobTable();
         setUpSummaryTables();
@@ -254,7 +259,7 @@ public class MonthlyReportController {
         }
         jobTable.setItems(FXCollections.observableArrayList(rows));
         materialTable.setItems(FXCollections.observableArrayList(monthlyReport.materials()));
-        wageTable.setItems(FXCollections.observableArrayList(monthlyReport.wages()));
+        wageTable.setItems(TableSorting.sorted(monthlyReport.wages(), TableSorting.attendanceSummary()));
     }
 
     private void showCards(HBox cards, ReportTotals totals) {
@@ -277,18 +282,21 @@ public class MonthlyReportController {
     }
 
     private void setUpJobTable() {
-        bind(dateColumn, row -> Bicimlendirici.date(row.date()));
-        bind(customerColumn, MonthlyReportRow::customerName);
+        TableSorting.date(dateColumn, MonthlyReportRow::date);
+        TableSorting.text(customerColumn, MonthlyReportRow::customerName);
         jobColumn.setCellValueFactory(data -> new SimpleObjectProperty<>(data.getValue()));
         jobColumn.setCellFactory(column -> new JobCell());
-        bind(materialColumn, row -> Bicimlendirici.money(row.figures().materialCost()));
-        bind(wageColumn, row -> Bicimlendirici.money(row.figures().wageTotal()));
-        bind(revenueColumn, row -> Bicimlendirici.money(row.figures().revenue()));
-        bind(costColumn, row -> Bicimlendirici.money(row.figures().cost()));
-        bind(profitColumn, row -> Bicimlendirici.money(row.figures().profit())
-                + (row.figures().isProfitEstimated() ? " *" : ""));
-        bind(paymentColumn, row -> row.isFullyPaid() ? DialogUtil.message("report.payment.paid")
-                : DialogUtil.message("report.payment.remaining", Bicimlendirici.money(row.figures().uncollected())));
+        jobColumn.setComparator(Comparator.comparing(MonthlyReportRow::jobName, TableSorting.turkishText()));
+        TableSorting.money(materialColumn, row -> row.figures().materialCost());
+        TableSorting.money(wageColumn, row -> row.figures().wageTotal());
+        TableSorting.money(revenueColumn, row -> row.figures().revenue());
+        TableSorting.money(costColumn, row -> row.figures().cost());
+        TableSorting.rowText(profitColumn, row -> Bicimlendirici.money(row.figures().profit())
+                + (row.figures().isProfitEstimated() ? " *" : ""), Comparator.comparing(row -> row.figures().profit()));
+        TableSorting.rowText(paymentColumn, row -> row.isFullyPaid() ? DialogUtil.message("report.payment.paid")
+                : DialogUtil.message("report.payment.remaining", Bicimlendirici.money(row.figures().uncollected())),
+                Comparator.comparing(row -> row.figures().uncollected()));
+        TableSorting.pinLast(jobTable, row -> row.jobId() == null);
         jobTable.setRowFactory(table -> {
             TableRow<MonthlyReportRow> row = new TableRow<>() {
                 @Override
@@ -302,8 +310,7 @@ public class MonthlyReportController {
             };
             row.setOnMouseClicked(event -> {
                 if (event.getClickCount() == DOUBLE_CLICK && !row.isEmpty() && row.getItem().jobId() != null) {
-                    Long jobId = row.getItem().jobId();
-                    contentNavigator.<HomeController>show(HOME_FXML, home -> home.focusJob(jobId));
+                    jobNavigator.open(row.getItem().jobId(), row.getItem().jobType());
                 }
             });
             return row;
@@ -311,24 +318,26 @@ public class MonthlyReportController {
     }
 
     private void setUpSummaryTables() {
-        bind(productColumn, MaterialSummaryLine::productName);
-        bind(quantityColumn, line -> Bicimlendirici.quantity(line.quantity()) + " " + EnumLabels.label(line.unit()));
-        bind(purchaseColumn, line -> Bicimlendirici.money(line.purchaseTotal()));
-        bind(saleColumn, line -> Bicimlendirici.money(line.saleTotal()));
-        bind(employeeColumn, EmployeeWageSummary::employeeName);
-        bind(dayCountColumn, wage -> Bicimlendirici.daysWithUnit(wage.dayCount()));
-        bind(wageTotalColumn, wage -> Bicimlendirici.money(wage.totalWage()));
+        TableSorting.text(productColumn, MaterialSummaryLine::productName);
+        TableSorting.number(quantityColumn, MaterialSummaryLine::quantity, Bicimlendirici::quantity);
+        TableSorting.money(purchaseColumn, MaterialSummaryLine::purchaseTotal);
+        TableSorting.money(saleColumn, MaterialSummaryLine::saleTotal);
+        TableSorting.text(employeeColumn, EmployeeWageSummary::employeeName);
+        TableSorting.number(dayCountColumn, EmployeeWageSummary::dayCount, Bicimlendirici::daysWithUnit);
+        TableSorting.money(wageTotalColumn, EmployeeWageSummary::totalWage);
     }
 
     // ---- Yearly ---------------------------------------------------------------
 
     private void setUpYearTable() {
-        bind(monthColumn, line -> line.month() == null ? DialogUtil.message("report.total")
-                : monthName(line.month().getMonth()));
-        bind(yearRevenueColumn, line -> Bicimlendirici.money(line.totals().revenue()));
-        bind(yearCostColumn, line -> Bicimlendirici.money(line.totals().cost()));
-        bind(yearProfitColumn, line -> Bicimlendirici.money(line.totals().profit()));
-        bind(yearUncollectedColumn, line -> Bicimlendirici.money(line.totals().uncollected()));
+        TableSorting.rowText(monthColumn, line -> line.month() == null ? DialogUtil.message("report.total")
+                : monthName(line.month().getMonth()), Comparator.comparing(YearlyReport.MonthTotals::month,
+                        Comparator.nullsLast(Comparator.naturalOrder())));
+        TableSorting.money(yearRevenueColumn, line -> line.totals().revenue());
+        TableSorting.money(yearCostColumn, line -> line.totals().cost());
+        TableSorting.money(yearProfitColumn, line -> line.totals().profit());
+        TableSorting.money(yearUncollectedColumn, line -> line.totals().uncollected());
+        TableSorting.pinLast(yearTable, line -> line.month() == null);
         yearTable.setRowFactory(table -> new TableRow<>() {
             @Override
             protected void updateItem(YearlyReport.MonthTotals item, boolean empty) {
@@ -394,10 +403,6 @@ public class MonthlyReportController {
     }
 
     // ---- Helpers --------------------------------------------------------------
-
-    private static <T> void bind(TableColumn<T, String> column, Function<T, String> value) {
-        column.setCellValueFactory(data -> new SimpleStringProperty(value.apply(data.getValue())));
-    }
 
     private static String monthName(Month month) {
         return month.getDisplayName(TextStyle.FULL_STANDALONE, Bicimlendirici.TURKISH);

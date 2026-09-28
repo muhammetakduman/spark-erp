@@ -1,13 +1,14 @@
 package com.electrician.tracker.ui.util;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 import com.electrician.tracker.domain.MaterialItem;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.MaterialService;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -17,9 +18,10 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 /**
- * Content of a job's "Malzemeler" tab: the material lines (double click or
- * "Düzenle" to edit, "Sil" to delete). The job's totals and VAT split are
- * shown once above the tabs. Every change goes through
+ * Content of a job's "Malzemeler" tab: the material lines, category then
+ * product name (double click or "Düzenle" to edit, "Sil" to delete). Purchase
+ * price and supplier columns exist only for users who may see them; only an
+ * ADMIN gets the delete button. Every change goes through
  * {@link MaterialService}; the caller refreshes the job.
  */
 public final class JobMaterialPane {
@@ -31,12 +33,15 @@ public final class JobMaterialPane {
     private static final double SPACING = 10;
 
     private final MaterialService materialService;
+    private final AccessControl accessControl;
     private final Consumer<Long> onChanged;
     private final Consumer<MaterialItem> onEdit;
 
     /** {@code onChanged} receives the job id after a delete; {@code onEdit} opens the edit dialog. */
-    public JobMaterialPane(MaterialService materialService, Consumer<Long> onChanged, Consumer<MaterialItem> onEdit) {
+    public JobMaterialPane(MaterialService materialService, AccessControl accessControl, Consumer<Long> onChanged,
+            Consumer<MaterialItem> onEdit) {
         this.materialService = materialService;
+        this.accessControl = accessControl;
         this.onChanged = onChanged;
         this.onEdit = onEdit;
     }
@@ -45,25 +50,20 @@ public final class JobMaterialPane {
         TableView<MaterialItem> table = buildTable(materials);
         Button editButton = new Button(DialogUtil.message("jobDetail.action.editMaterial"));
         editButton.setOnAction(e -> editSelected(table));
-        Button deleteButton = new Button(DialogUtil.message("jobDetail.action.deleteMaterial"));
-        deleteButton.setOnAction(e -> deleteSelected(table, jobId));
-        HBox buttons = new HBox(SPACING, editButton, deleteButton);
+        HBox buttons = new HBox(SPACING, editButton);
+        if (accessControl.isAdmin()) {
+            Button deleteButton = new Button(DialogUtil.message("jobDetail.action.deleteMaterial"));
+            deleteButton.getStyleClass().add("danger-button");
+            deleteButton.setOnAction(e -> deleteSelected(table, jobId));
+            buttons.getChildren().add(deleteButton);
+        }
         buttons.getStyleClass().add("table-actions");
         return new VBox(SPACING, table, buttons);
     }
 
     private TableView<MaterialItem> buildTable(List<MaterialItem> materials) {
-        TableView<MaterialItem> table = new TableView<>(FXCollections.observableArrayList(materials));
-        table.getColumns().setAll(List.of(
-                column("material.field.date", m -> Bicimlendirici.date(m.getItemDate())),
-                column("material.field.product", m -> m.getProduct().getName()),
-                column("material.field.quantity", m -> Bicimlendirici.quantity(m.getQuantity()) + " "
-                        + EnumLabels.label(m.getProduct().getUnit())),
-                column("material.field.purchasePrice", JobMaterialPane::priceWithVat),
-                column("material.field.supplier", m -> m.getSupplierName() == null ? "" : m.getSupplierName()),
-                column("material.field.salePrice", m -> Bicimlendirici.money(m.getSaleUnitPrice())),
-                MaterialColumns.vatColumn(),
-                MaterialColumns.totalColumn()));
+        TableView<MaterialItem> table = new TableView<>(TableSorting.sorted(materials, TableSorting.materialLines()));
+        table.getColumns().setAll(columns());
         table.setPlaceholder(new Label(DialogUtil.message("material.empty")));
         table.setRowFactory(tv -> {
             TableRow<MaterialItem> row = new TableRow<>();
@@ -78,13 +78,41 @@ public final class JobMaterialPane {
         return table;
     }
 
-    /** Purchase price with its own VAT, e.g. "80,00 ₺ · %20 hariç". */
-    private static String priceWithVat(MaterialItem item) {
-        String price = Bicimlendirici.money(item.getPurchaseUnitPrice());
-        if (item.getPurchaseUnitPrice() == null || item.getPurchaseVatRate() == null) {
-            return price;
+    private List<TableColumn<MaterialItem, ?>> columns() {
+        List<TableColumn<MaterialItem, ?>> columns = new ArrayList<>();
+        TableColumn<MaterialItem, LocalDate> date = new TableColumn<>(DialogUtil.message("material.field.date"));
+        TableSorting.date(date, MaterialItem::getItemDate);
+        TableColumn<MaterialItem, String> category = new TableColumn<>(DialogUtil.message("product.field.category"));
+        TableSorting.text(category, m -> m.getProduct().getCategory());
+        TableColumn<MaterialItem, String> product = new TableColumn<>(DialogUtil.message("material.field.product"));
+        TableSorting.text(product, m -> m.getProduct().getDisplayName());
+        TableColumn<MaterialItem, BigDecimal> quantity = new TableColumn<>(DialogUtil.message("material.field.quantity"));
+        TableSorting.number(quantity, MaterialItem::getQuantity, value -> Bicimlendirici.quantity(value));
+        columns.addAll(List.of(date, category, product, quantity));
+        if (accessControl.canViewFinancials()) {
+            columns.addAll(purchaseColumns());
         }
-        return price + " · " + VatLabels.describe(item.getPurchaseVatRate(), item.getPurchaseVatIncluded());
+        TableColumn<MaterialItem, BigDecimal> sale = new TableColumn<>(DialogUtil.message("material.field.salePrice"));
+        TableSorting.money(sale, MaterialItem::getSaleUnitPrice);
+        columns.addAll(List.of(sale, MaterialColumns.vatColumn(), MaterialColumns.totalColumn()));
+        return columns;
+    }
+
+    private static List<TableColumn<MaterialItem, ?>> purchaseColumns() {
+        TableColumn<MaterialItem, BigDecimal> purchase =
+                new TableColumn<>(DialogUtil.message("material.field.purchasePrice"));
+        TableSorting.money(purchase, MaterialItem::getPurchaseUnitPriceTl);
+        purchase.setCellFactory(column -> new PurchasePriceCell<>(item -> item.isForeignCurrencyPurchase()
+                ? new PurchasePriceCell.ForeignAmount(item.getPurchaseUnitPrice(), item.getPurchaseCurrency(),
+                        item.getPurchaseExchangeRate())
+                : null));
+        TableColumn<MaterialItem, String> purchaseVat =
+                new TableColumn<>(DialogUtil.message("material.field.purchaseVat"));
+        TableSorting.text(purchaseVat, m -> m.getPurchaseUnitPrice() == null ? ""
+                : VatLabels.describe(m.getPurchaseVatRate(), m.getPurchaseVatIncluded()));
+        TableColumn<MaterialItem, String> supplier = new TableColumn<>(DialogUtil.message("material.field.supplier"));
+        TableSorting.text(supplier, MaterialItem::getSupplierName);
+        return List.of(purchase, purchaseVat, supplier);
     }
 
     private void editSelected(TableView<MaterialItem> table) {
@@ -102,7 +130,9 @@ public final class JobMaterialPane {
             DialogUtil.showErrorMessage("error.selection.required");
             return;
         }
-        if (!DialogUtil.confirm("material.confirm.delete")) {
+        String description = DialogUtil.message("delete.single.material", selected.getProduct().getDisplayName(),
+                Bicimlendirici.quantity(selected.getQuantity()), EnumLabels.label(selected.getProduct().getUnit()));
+        if (!DeleteConfirmation.confirmSingle(description)) {
             return;
         }
         try {
@@ -111,11 +141,5 @@ public final class JobMaterialPane {
             DialogUtil.showError(ex);
         }
         onChanged.accept(jobId);
-    }
-
-    private static TableColumn<MaterialItem, String> column(String titleKey, Function<MaterialItem, String> value) {
-        TableColumn<MaterialItem, String> column = new TableColumn<>(DialogUtil.message(titleKey));
-        column.setCellValueFactory(d -> new SimpleStringProperty(value.apply(d.getValue())));
-        return column;
     }
 }

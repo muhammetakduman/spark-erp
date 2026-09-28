@@ -30,7 +30,7 @@
                 <DatePicker fx:id="fromDatePicker" prefWidth="130"/>
                 <Label text="%attendance.field.endDate" styleClass="form-label"/>
                 <DatePicker fx:id="toDatePicker" prefWidth="130"/>
-                <Button text="%employeeAttendance.action.exportExcel" onAction="#onExportExcel"/>
+                <Button text="%employeeAttendance.action.exportExcel" onAction="#onExportExcel" styleClass="action-excel"/>
                 <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
             </HBox>
         </VBox>

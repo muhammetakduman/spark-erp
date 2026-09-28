@@ -1,19 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Accordion?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.ScrollPane?>
-<?import javafx.scene.control.TableColumn?>
-<?import javafx.scene.control.TableView?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.ToggleButton?>
-<?import javafx.scene.control.ToggleGroup?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
@@ -24,64 +16,21 @@
             <Insets top="20" right="20" bottom="20" left="20"/>
         </padding>
 
-        <HBox spacing="14">
-            <HBox fx:id="summaryCardsBox" spacing="14" HBox.hgrow="ALWAYS"/>
+        <HBox spacing="10" styleClass="toolbar">
+            <Label text="%home.title" styleClass="section-title"/>
             <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
         </HBox>
+
+        <FlowPane fx:id="summaryCardsBox" hgap="14" vgap="14"/>
 
         <VBox fx:id="completedBalanceBox" spacing="4" styleClass="warning-panel" visible="false" managed="false">
             <Label text="%home.completedBalance.title" styleClass="warning-panel-title"/>
             <VBox fx:id="completedBalanceList" spacing="2"/>
         </VBox>
 
-        <VBox spacing="10" styleClass="section">
-            <HBox spacing="10" styleClass="toolbar">
-                <Label text="%home.section.sites" styleClass="section-title"/>
-                <Region HBox.hgrow="ALWAYS"/>
-                <TextField fx:id="siteSearchField" promptText="%home.search.prompt" prefWidth="240"/>
-                <CheckBox fx:id="activeOnlyCheckBox" text="%home.filter.activeOnly" selected="true"/>
-                <Button text="%home.action.newSite" onAction="#onNewSite" styleClass="primary-button"/>
-            </HBox>
-            <Accordion fx:id="siteAccordion"/>
-        </VBox>
-
-        <VBox spacing="10" styleClass="section">
-            <HBox spacing="10" styleClass="toolbar">
-                <Label text="%home.section.services" styleClass="section-title"/>
-                <HBox spacing="0" styleClass="segmented">
-                    <ToggleButton fx:id="filterAllButton" text="%home.filter.all" selected="true" userData="all">
-                        <toggleGroup>
-                            <ToggleGroup fx:id="serviceFilterGroup"/>
-                        </toggleGroup>
-                    </ToggleButton>
-                    <ToggleButton fx:id="filterUnpaidButton" text="%home.filter.unpaid" toggleGroup="$serviceFilterGroup" userData="unpaid"/>
-                    <ToggleButton fx:id="filterPaidButton" text="%home.filter.paid" toggleGroup="$serviceFilterGroup" userData="paid"/>
-                </HBox>
-                <Region HBox.hgrow="ALWAYS"/>
-                <Button text="%action.edit" onAction="#onEditService"/>
-                <Button text="%jobDetail.action.addPayment" onAction="#onServicePayment"/>
-                <Button text="%home.action.exportPdf" onAction="#onServicePdf"/>
-                <Button text="%action.delete" onAction="#onDeleteService" styleClass="danger-button"/>
-                <Button text="%home.action.newService" onAction="#onNewService" styleClass="primary-button"/>
-            </HBox>
-            <TableView fx:id="serviceTable" prefHeight="320">
-                <placeholder>
-                    <Label text="%home.service.empty"/>
-                </placeholder>
-                <columnResizePolicy>
-                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
-                </columnResizePolicy>
-                <columns>
-                    <TableColumn fx:id="serviceDateColumn" text="%service.field.date" prefWidth="100"/>
-                    <TableColumn fx:id="serviceCustomerColumn" text="%job.field.customer" prefWidth="180"/>
-                    <TableColumn fx:id="servicePhoneColumn" text="%customer.field.phone" prefWidth="120"/>
-                    <TableColumn fx:id="serviceDescriptionColumn" text="%service.field.description" prefWidth="240"/>
-                    <TableColumn fx:id="serviceAmountColumn" text="%service.column.total" prefWidth="120" styleClass="money-cell"/>
-                    <TableColumn fx:id="serviceBalanceColumn" text="%home.service.balanceColumn" prefWidth="120" styleClass="money-cell"/>
-                    <TableColumn fx:id="servicePaidColumn" text="%home.service.paidInFull" prefWidth="110"/>
-                </columns>
-            </TableView>
-            <Label text="%home.service.hint" styleClass="muted-text"/>
+        <VBox spacing="8" styleClass="section">
+            <Label text="%home.recent.title" styleClass="subsection-title"/>
+            <VBox fx:id="recentList" spacing="4" styleClass="recent-list"/>
         </VBox>
     </VBox>
 </ScrollPane>

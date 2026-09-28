@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ResourceBundle;
 
+import com.electrician.tracker.ui.util.ButtonIcons;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import org.springframework.context.ApplicationContext;
@@ -11,7 +12,8 @@ import org.springframework.stereotype.Component;
 
 /**
  * Loads FXML views with the Spring context as the controller factory, so
- * every controller is a managed Spring bean.
+ * every controller is a managed Spring bean. Buttons get their icon from
+ * their {@code action-…} style class.
  */
 @Component
 public class FxmlViewLoader {
@@ -38,6 +40,7 @@ public class FxmlViewLoader {
         loader.setResources(ResourceBundle.getBundle(MESSAGES_BUNDLE));
         try {
             Parent root = loader.load();
+            ButtonIcons.decorate(root);
             return new LoadedView<>(root, loader.getController());
         } catch (IOException e) {
             throw new UncheckedIOException("Could not load FXML view: " + fxmlPath, e);

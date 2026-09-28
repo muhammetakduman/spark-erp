@@ -38,4 +38,13 @@ public class AppSignature {
     public String windowTitle() {
         return DialogUtil.message("app.title") + " " + appInfo.version();
     }
+
+    /** "Sürüm 2.4.2" for the login screen. */
+    public String versionOnly() {
+        return DialogUtil.message("signature.versionOnly", appInfo.version());
+    }
+
+    public String developer() {
+        return appInfo.developer();
+    }
 }

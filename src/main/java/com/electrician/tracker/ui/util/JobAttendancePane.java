@@ -1,6 +1,9 @@
 package com.electrician.tracker.ui.util;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -8,11 +11,11 @@ import com.electrician.tracker.domain.Attendance;
 import com.electrician.tracker.domain.Job;
 import com.electrician.tracker.dto.EmployeeWageSummary;
 import com.electrician.tracker.dto.JobSummary;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.AttendanceMath;
 import com.electrician.tracker.service.AttendanceService;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -25,10 +28,11 @@ import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
 /**
- * Content of a job's "Puantaj" tab: a per-employee summary and the raw
- * attendance rows (editable and deletable). Attendance is only recorded; it
- * never changes the job's profit. Every change goes through
- * {@link AttendanceService}; the caller refreshes.
+ * Content of a job's "Puantaj" tab: a per-employee summary (most days first)
+ * and the raw attendance rows (oldest first; editable). Wage columns exist
+ * only for users who may see wages; only an ADMIN gets the delete button.
+ * Attendance is only recorded; it never changes the job's profit. Every
+ * change goes through {@link AttendanceService}; the caller refreshes.
  */
 public final class JobAttendancePane {
 
@@ -36,13 +40,17 @@ public final class JobAttendancePane {
     private static final double HEADER_HEIGHT = 40;
     private static final double MAX_TABLE_HEIGHT = 240;
     private static final double SPACING = 10;
+    private static final double NOTE_WIDTH = 200;
 
     private final AttendanceService attendanceService;
+    private final AccessControl accessControl;
     private final Consumer<Long> onChanged;
 
     /** {@code onChanged} receives the id of the job whose attendance changed. */
-    public JobAttendancePane(AttendanceService attendanceService, Consumer<Long> onChanged) {
+    public JobAttendancePane(AttendanceService attendanceService, AccessControl accessControl,
+            Consumer<Long> onChanged) {
         this.attendanceService = attendanceService;
+        this.accessControl = accessControl;
         this.onChanged = onChanged;
     }
 
@@ -54,68 +62,104 @@ public final class JobAttendancePane {
     public VBox build(Job job, JobSummary summary, List<Attendance> attendances) {
         Runnable changed = () -> onChanged.accept(job.getId());
         TableView<Attendance> rawTable = buildRawTable(attendances, changed);
-        rawTable.setTooltip(new Tooltip(DialogUtil.message("attendance.rows.tooltip")));
-        Button deleteButton = new Button(DialogUtil.message("attendance.action.deleteSelected"));
-        deleteButton.setOnAction(e -> deleteSelected(rawTable, changed));
-        HBox buttons = new HBox(SPACING, deleteButton);
-        buttons.getStyleClass().add("table-actions");
-
+        rawTable.setTooltip(new Tooltip(DialogUtil.message(accessControl.canViewFinancials()
+                ? "attendance.rows.tooltip" : "attendance.rows.tooltipNoWage")));
         Label rawTitle = new Label(DialogUtil.message("attendance.section.rows"));
         rawTitle.getStyleClass().add("subsection-title");
-        return new VBox(SPACING,
-                buildSummaryTable(summary.employeeWageSummaries()),
-                rawTitle,
-                rawTable,
-                buttons);
+        VBox content = new VBox(SPACING, buildSummaryTable(summary.employeeWageSummaries()), rawTitle, rawTable);
+        if (accessControl.isAdmin()) {
+            Button deleteButton = new Button(DialogUtil.message("attendance.action.deleteSelected"));
+            deleteButton.getStyleClass().add("danger-button");
+            deleteButton.setOnAction(e -> deleteSelected(rawTable, changed));
+            HBox buttons = new HBox(SPACING, deleteButton);
+            buttons.getStyleClass().add("table-actions");
+            content.getChildren().add(buttons);
+        }
+        return content;
     }
 
     private TableView<EmployeeWageSummary> buildSummaryTable(List<EmployeeWageSummary> summaries) {
-        TableView<EmployeeWageSummary> table = new TableView<>(FXCollections.observableArrayList(summaries));
-        table.getColumns().setAll(List.of(
-                column("attendance.field.employee", s -> s.employeeName()
-                        + (s.master() ? " (" + DialogUtil.message("employee.field.master") + ")" : "")),
-                column("attendance.field.dayCount", s -> Bicimlendirici.days(s.dayCount())),
-                column("attendance.field.averageWage", s -> Bicimlendirici.money(s.averageWage())),
-                column("attendance.field.total", s -> Bicimlendirici.money(s.totalWage())),
-                column("attendance.field.workedDays", s -> Bicimlendirici.workedDays(s.days()))));
+        TableView<EmployeeWageSummary> table = new TableView<>(
+                TableSorting.sorted(summaries, TableSorting.attendanceSummary()));
+        List<TableColumn<EmployeeWageSummary, ?>> columns = new ArrayList<>();
+        TableColumn<EmployeeWageSummary, String> employee =
+                new TableColumn<>(DialogUtil.message("attendance.field.employee"));
+        TableSorting.text(employee, s -> s.employeeName()
+                + (s.master() ? " (" + DialogUtil.message("employee.field.master") + ")" : ""));
+        TableColumn<EmployeeWageSummary, BigDecimal> days =
+                new TableColumn<>(DialogUtil.message("attendance.field.dayCount"));
+        TableSorting.number(days, EmployeeWageSummary::dayCount, Bicimlendirici::days);
+        columns.addAll(List.of(employee, days));
+        if (accessControl.canViewFinancials()) {
+            TableColumn<EmployeeWageSummary, BigDecimal> average =
+                    new TableColumn<>(DialogUtil.message("attendance.field.averageWage"));
+            TableSorting.money(average, EmployeeWageSummary::averageWage);
+            TableColumn<EmployeeWageSummary, BigDecimal> total =
+                    new TableColumn<>(DialogUtil.message("attendance.field.total"));
+            TableSorting.money(total, EmployeeWageSummary::totalWage);
+            columns.addAll(List.of(average, total));
+        }
+        TableColumn<EmployeeWageSummary, String> worked =
+                new TableColumn<>(DialogUtil.message("attendance.field.workedDays"));
+        TableSorting.text(worked, s -> Bicimlendirici.workedDays(s.days()));
+        columns.add(worked);
+        table.getColumns().setAll(columns);
         table.setPlaceholder(new Label(DialogUtil.message("attendance.empty")));
         fitHeight(table, summaries.size());
         return table;
     }
 
     private TableView<Attendance> buildRawTable(List<Attendance> attendances, Runnable changed) {
-        TableView<Attendance> table = new TableView<>(FXCollections.observableArrayList(attendances));
+        TableView<Attendance> table = new TableView<>(TableSorting.sorted(attendances, TableSorting.attendanceRows()));
         table.setEditable(true);
-
-        TableColumn<Attendance, String> dateColumn = column("attendance.field.date",
-                a -> a.getAttendanceDate().format(Bicimlendirici.DATE));
-        TableColumn<Attendance, String> employeeColumn = column("attendance.field.employee",
-                a -> a.getEmployee().getName());
-
-        TableColumn<Attendance, BigDecimal> wageColumn = new TableColumn<>(DialogUtil.message("attendance.field.wage"));
-        wageColumn.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getDailyWage()));
-        wageColumn.setCellFactory(TextFieldTableCell.forTableColumn(new MoneyConverter()));
-        wageColumn.setOnEditCommit(e -> save(e.getRowValue(), e.getNewValue(), e.getRowValue().getDayFactor(),
-                e.getRowValue().getNote(), changed));
-
-        TableColumn<Attendance, BigDecimal> factorColumn = new TableColumn<>(DialogUtil.message("attendance.field.dayFactor"));
-        factorColumn.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getDayFactor()));
-        factorColumn.setCellFactory(ComboBoxTableCell.forTableColumn(new FactorConverter(),
-                AttendanceMath.FULL_DAY, AttendanceMath.HALF_DAY));
-        factorColumn.setOnEditCommit(e -> save(e.getRowValue(), e.getRowValue().getDailyWage(), e.getNewValue(),
-                e.getRowValue().getNote(), changed));
-
-        TableColumn<Attendance, String> noteColumn = new TableColumn<>(DialogUtil.message("attendance.field.note"));
-        noteColumn.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getNote()));
-        noteColumn.setCellFactory(TextFieldTableCell.forTableColumn());
-        noteColumn.setOnEditCommit(e -> save(e.getRowValue(), e.getRowValue().getDailyWage(),
-                e.getRowValue().getDayFactor(), e.getNewValue(), changed));
-        noteColumn.setPrefWidth(200);
-
-        table.getColumns().setAll(List.of(dateColumn, employeeColumn, wageColumn, factorColumn, noteColumn));
+        TableColumn<Attendance, LocalDate> dateColumn = new TableColumn<>(DialogUtil.message("attendance.field.date"));
+        TableSorting.date(dateColumn, Attendance::getAttendanceDate);
+        TableColumn<Attendance, String> employeeColumn =
+                new TableColumn<>(DialogUtil.message("attendance.field.employee"));
+        TableSorting.text(employeeColumn, a -> a.getEmployee().getName());
+        List<TableColumn<Attendance, ?>> columns = new ArrayList<>(List.of(dateColumn, employeeColumn));
+        if (accessControl.canViewFinancials()) {
+            columns.add(wageColumn(changed));
+        }
+        columns.add(factorColumn(changed));
+        columns.add(noteColumn(changed));
+        table.getColumns().setAll(columns);
         table.setPlaceholder(new Label(DialogUtil.message("attendance.empty")));
         fitHeight(table, attendances.size());
         return table;
+    }
+
+    private TableColumn<Attendance, BigDecimal> wageColumn(Runnable changed) {
+        TableColumn<Attendance, BigDecimal> column = new TableColumn<>(DialogUtil.message("attendance.field.wage"));
+        column.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getDailyWage()));
+        column.setCellFactory(TextFieldTableCell.forTableColumn(new MoneyConverter()));
+        column.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
+        column.setOnEditCommit(e -> save(e.getRowValue(), e.getNewValue(), e.getRowValue().getDayFactor(),
+                e.getRowValue().getNote(), changed));
+        return column;
+    }
+
+    private TableColumn<Attendance, BigDecimal> factorColumn(Runnable changed) {
+        TableColumn<Attendance, BigDecimal> column =
+                new TableColumn<>(DialogUtil.message("attendance.field.dayFactor"));
+        column.setCellValueFactory(d -> new SimpleObjectProperty<>(d.getValue().getDayFactor()));
+        column.setCellFactory(ComboBoxTableCell.forTableColumn(new FactorConverter(),
+                AttendanceMath.FULL_DAY, AttendanceMath.HALF_DAY));
+        column.setComparator(Comparator.nullsLast(Comparator.naturalOrder()));
+        column.setOnEditCommit(e -> save(e.getRowValue(), e.getRowValue().getDailyWage(), e.getNewValue(),
+                e.getRowValue().getNote(), changed));
+        return column;
+    }
+
+    private TableColumn<Attendance, String> noteColumn(Runnable changed) {
+        TableColumn<Attendance, String> column = new TableColumn<>(DialogUtil.message("attendance.field.note"));
+        column.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getNote()));
+        column.setCellFactory(TextFieldTableCell.forTableColumn());
+        column.setComparator(TableSorting.turkishText());
+        column.setOnEditCommit(e -> save(e.getRowValue(), e.getRowValue().getDailyWage(),
+                e.getRowValue().getDayFactor(), e.getNewValue(), changed));
+        column.setPrefWidth(NOTE_WIDTH);
+        return column;
     }
 
     private void save(Attendance row, BigDecimal wage, BigDecimal factor, String note, Runnable changed) {
@@ -145,7 +189,9 @@ public final class JobAttendancePane {
             DialogUtil.showErrorMessage("error.selection.required");
             return;
         }
-        if (!DialogUtil.confirm("attendance.confirm.delete")) {
+        String description = DialogUtil.message("delete.single.attendance", selected.getEmployee().getName(),
+                Bicimlendirici.date(selected.getAttendanceDate()), Bicimlendirici.factor(selected.getDayFactor()));
+        if (!DeleteConfirmation.confirmSingle(description)) {
             return;
         }
         try {
@@ -154,12 +200,6 @@ public final class JobAttendancePane {
             DialogUtil.showError(ex);
         }
         changed.run();
-    }
-
-    private static <T> TableColumn<T, String> column(String titleKey, java.util.function.Function<T, String> value) {
-        TableColumn<T, String> column = new TableColumn<>(DialogUtil.message(titleKey));
-        column.setCellValueFactory(d -> new SimpleStringProperty(value.apply(d.getValue())));
-        return column;
     }
 
     private static void fitHeight(TableView<?> table, int rowCount) {

@@ -2,26 +2,60 @@
 
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
-<?import javafx.scene.layout.Region?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.SeparatorMenuItem?>
 <?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.StackPane?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.electrician.tracker.ui.controller.MainController"
             styleClass="main-root">
+    <top>
+        <HBox styleClass="app-header">
+            <Label fx:id="appTitleLabel" text="%app.title" styleClass="app-header-title"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <MenuButton fx:id="userMenuButton" styleClass="user-menu">
+                <items>
+                    <MenuItem text="%user.menu.changePassword" onAction="#onChangePassword" styleClass="action-password"/>
+                    <MenuItem fx:id="switchUserItem" text="%user.menu.switchUser" onAction="#onSwitchUser"
+                              styleClass="action-switch-user"/>
+                    <SeparatorMenuItem/>
+                    <MenuItem text="%user.menu.exit" onAction="#onExit" styleClass="action-log-out"/>
+                </items>
+            </MenuButton>
+        </HBox>
+    </top>
     <left>
-        <VBox styleClass="side-menu" spacing="4">
-            <Button text="%menu.home" onAction="#showHome" styleClass="menu-button"/>
-            <Button text="%menu.monthlyReport" onAction="#showMonthlyReport" styleClass="menu-button"/>
-            <Button text="%menu.customers" onAction="#showCustomers" styleClass="menu-button"/>
-            <Button text="%menu.employees" onAction="#showEmployees" styleClass="menu-button"/>
-            <Button text="%menu.employeeAttendance" onAction="#showEmployeeAttendance" styleClass="menu-button"/>
-            <Button text="%menu.products" onAction="#showProducts" styleClass="menu-button"/>
-            <Button text="%menu.settings" onAction="#showSettings" styleClass="menu-button"/>
-            <Button text="%menu.about" onAction="#showAbout" styleClass="menu-button"/>
-            <Region VBox.vgrow="ALWAYS"/>
-            <VBox spacing="4" styleClass="signature-footer">
+        <VBox styleClass="side-menu">
+            <ScrollPane fitToWidth="true" styleClass="side-menu-scroll" VBox.vgrow="ALWAYS">
+                <VBox fx:id="menuBox" styleClass="side-menu-items">
+                    <Button fx:id="homeButton" text="%menu.home" onAction="#showHome" styleClass="menu-button"/>
+                    <Button fx:id="sitesButton" text="%menu.sites" onAction="#showSites" styleClass="menu-button"/>
+                    <Button fx:id="servicesButton" text="%menu.services" onAction="#showServices" styleClass="menu-button"/>
+                    <StackPane styleClass="menu-badge-holder">
+                        <Button fx:id="dailyPlanButton" text="%menu.dailyPlan" onAction="#showDailyPlan" styleClass="menu-button"/>
+                        <Label fx:id="pendingBadge" styleClass="menu-badge" mouseTransparent="true"
+                               StackPane.alignment="CENTER_RIGHT" visible="false"/>
+                    </StackPane>
+                    <Button fx:id="quotesButton" text="%menu.quotes" onAction="#showQuotes" styleClass="menu-button"/>
+                    <Button fx:id="customersButton" text="%menu.customers" onAction="#showCustomers" styleClass="menu-button"/>
+                    <Button fx:id="productsButton" text="%menu.products" onAction="#showProducts" styleClass="menu-button"/>
+                    <Button fx:id="employeesButton" text="%menu.employees" onAction="#showEmployees" styleClass="menu-button"/>
+                    <Button fx:id="attendanceButton" text="%menu.employeeAttendance" onAction="#showEmployeeAttendance"
+                            styleClass="menu-button"/>
+                    <Button fx:id="monthlyReportButton" text="%menu.monthlyReport" onAction="#showMonthlyReport"
+                            styleClass="menu-button"/>
+                    <Button fx:id="usersButton" text="%menu.users" onAction="#showUsers" styleClass="menu-button"/>
+                    <Button fx:id="settingsButton" text="%menu.settings" onAction="#showSettings" styleClass="menu-button"/>
+                    <Button fx:id="aboutButton" text="%menu.about" onAction="#showAbout" styleClass="menu-button"/>
+                </VBox>
+            </ScrollPane>
+            <VBox styleClass="signature-footer">
                 <Label fx:id="signatureVersionLabel" wrapText="true" styleClass="signature-text"/>
                 <Label fx:id="signatureNoticeLabel" wrapText="true" styleClass="signature-text"/>
                 <Label fx:id="signatureCopyrightLabel" wrapText="true" styleClass="signature-text"/>

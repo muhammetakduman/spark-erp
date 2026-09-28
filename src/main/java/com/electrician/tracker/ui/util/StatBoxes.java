@@ -40,13 +40,22 @@ public final class StatBoxes {
         return box;
     }
 
-    /** Grand total (with its VAT split), collected, remaining and profit of one job. */
+    /**
+     * Grand total (with its VAT split), collected, remaining and profit of one
+     * job; only the grand total when the summary carries no financial figures.
+     */
     public static HBox jobRow(JobSummary summary) {
+        VBox total = box(DialogUtil.message("home.stat.total"), Bicimlendirici.money(summary.saleIncludingVat()),
+                vatCaption(summary));
+        if (!summary.hasFinancials()) {
+            HBox row = new HBox(ROW_SPACING, total);
+            row.getStyleClass().add("stat-row");
+            return row;
+        }
         VBox remaining = box(DialogUtil.message("home.stat.remaining"), Bicimlendirici.money(summary.remaining()), null);
         remaining.getStyleClass().add(summary.isFullyPaid() ? "stat-box-ok" : "stat-box-due");
         HBox row = new HBox(ROW_SPACING,
-                box(DialogUtil.message("home.stat.total"), Bicimlendirici.money(summary.saleIncludingVat()),
-                        vatCaption(summary)),
+                total,
                 box(DialogUtil.message("home.stat.collected"), Bicimlendirici.money(summary.collectedTotal()), null),
                 remaining,
                 profitBox(summary));

@@ -12,6 +12,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.electrician.tracker.domain.CurrencyCode;
 import com.electrician.tracker.dto.WorkedDay;
 import com.electrician.tracker.service.AttendanceMath;
 
@@ -26,8 +27,15 @@ public final class Bicimlendirici {
     public static final Locale TURKISH = Locale.forLanguageTag("tr-TR");
     public static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     public static final DateTimeFormatter SHORT_DATE = DateTimeFormatter.ofPattern("dd.MM");
+    private static final DateTimeFormatter DATE_WITH_DAY = DateTimeFormatter.ofPattern("dd.MM.yyyy EEEE", TURKISH);
+    private static final DateTimeFormatter SHORT_DATE_WITH_DAY = DateTimeFormatter.ofPattern("EEE dd.MM", TURKISH);
 
     private static final String MONEY_PATTERN = "#,##0.00 ₺";
+    private static final String MONEY_NUMBER_PATTERN = "#,##0.00";
+    private static final String RATE_PATTERN = "#,##0.00##";
+    private static final String DOLLAR_SYMBOL = "$";
+    private static final String EURO_SYMBOL = "€";
+    private static final String MONEY_TL_PATTERN = "#,##0.00 TL";
     private static final String QUANTITY_PATTERN = "#,##0.###";
     private static final String DAY_COUNT_PATTERN = "#,##0.#";
     private static final String DAY_FACTOR_PATTERN = "0.0";
@@ -48,6 +56,11 @@ public final class Bicimlendirici {
     /** "12.450,50 ₺"; empty for {@code null}. */
     public static String money(BigDecimal value) {
         return value == null ? "" : pattern(MONEY_PATTERN).format(value);
+    }
+
+    /** "1.750,00 TL" as printed on quote forms; empty for {@code null}. */
+    public static String moneyTl(BigDecimal value) {
+        return value == null ? "" : pattern(MONEY_TL_PATTERN).format(value);
     }
 
     /**
@@ -106,6 +119,42 @@ public final class Bicimlendirici {
     /** "23.09"; empty for {@code null}. */
     public static String shortDate(LocalDate date) {
         return date == null ? "" : date.format(SHORT_DATE);
+    }
+
+    /** "29.09.2026 Salı"; empty for {@code null}. */
+    public static String dateWithDay(LocalDate date) {
+        return date == null ? "" : date.format(DATE_WITH_DAY);
+    }
+
+    /** "Pzt 29.09"; empty for {@code null}. */
+    public static String shortDateWithDay(LocalDate date) {
+        return date == null ? "" : date.format(SHORT_DATE_WITH_DAY);
+    }
+
+    // ---- Foreign currency ---------------------------------------------------
+
+    /** "120,00 $" / "85,50 €" / "4.110,00 ₺"; empty for {@code null}. */
+    public static String money(BigDecimal value, CurrencyCode currency) {
+        if (value == null) {
+            return "";
+        }
+        return pattern(MONEY_NUMBER_PATTERN).format(value) + " " + currencySymbol(currency);
+    }
+
+    /** "34,25" (up to 4 decimals). */
+    public static String exchangeRate(BigDecimal rate) {
+        return rate == null ? "" : pattern(RATE_PATTERN).format(rate);
+    }
+
+    public static String currencySymbol(CurrencyCode currency) {
+        if (currency == null) {
+            return CURRENCY_SYMBOL;
+        }
+        return switch (currency) {
+            case USD -> DOLLAR_SYMBOL;
+            case EUR -> EURO_SYMBOL;
+            case TRY -> CURRENCY_SYMBOL;
+        };
     }
 
     // ---- Quantities and days ------------------------------------------------

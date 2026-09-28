@@ -1,6 +1,7 @@
 package com.electrician.tracker.ui.controller;
 
 import com.electrician.tracker.domain.Employee;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.EmployeeService;
 import com.electrician.tracker.ui.util.DecimalField;
 import com.electrician.tracker.ui.util.DialogUtil;
@@ -8,6 +9,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
 import org.springframework.context.annotation.Scope;
@@ -18,9 +20,12 @@ import org.springframework.stereotype.Component;
 public class EmployeeFormController {
 
     private final EmployeeService employeeService;
+    private final AccessControl accessControl;
 
     @FXML
     private TextField nameField;
+    @FXML
+    private Label wageLabel;
     @FXML
     private DecimalField wageField;
     @FXML
@@ -32,8 +37,19 @@ public class EmployeeFormController {
     private boolean saved;
     private Employee result;
 
-    public EmployeeFormController(EmployeeService employeeService) {
+    public EmployeeFormController(EmployeeService employeeService, AccessControl accessControl) {
         this.employeeService = employeeService;
+        this.accessControl = accessControl;
+    }
+
+    /** The wage field does not exist for users who may not see wages (the service keeps the stored one). */
+    @FXML
+    private void initialize() {
+        boolean showWage = accessControl.canViewFinancials();
+        for (javafx.scene.Node node : java.util.List.of(wageLabel, wageField)) {
+            node.setVisible(showWage);
+            node.setManaged(showWage);
+        }
     }
 
     public void editExisting(Employee employee) {

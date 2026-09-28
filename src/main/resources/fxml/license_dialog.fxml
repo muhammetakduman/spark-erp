@@ -5,6 +5,7 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -14,8 +15,13 @@
     <padding>
         <Insets top="20" right="20" bottom="20" left="20"/>
     </padding>
-    <Label fx:id="versionLabel" styleClass="section-title"/>
-    <Label fx:id="noticeLabel" wrapText="true"/>
+    <HBox spacing="14" alignment="CENTER_LEFT">
+        <ImageView fx:id="appIconView" fitWidth="64" fitHeight="64" preserveRatio="true" smooth="true"/>
+        <VBox spacing="4" HBox.hgrow="ALWAYS">
+            <Label fx:id="versionLabel" styleClass="section-title"/>
+            <Label fx:id="noticeLabel" wrapText="true"/>
+        </VBox>
+    </HBox>
     <TextArea fx:id="licenseTextArea" editable="false" wrapText="true" VBox.vgrow="ALWAYS"/>
     <CheckBox fx:id="acceptCheckBox" text="%license.accept"/>
     <Label fx:id="copyrightLabel" styleClass="form-label"/>

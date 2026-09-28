@@ -5,6 +5,7 @@
 <?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Hyperlink?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
@@ -31,7 +32,7 @@
 
         <Label text="%job.field.customer" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
         <ComboBox fx:id="customerComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1" maxWidth="Infinity"/>
-        <Button text="%job.action.newCustomer" onAction="#onNewCustomer" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+        <Button text="%job.action.newCustomer" onAction="#onNewCustomer" styleClass="action-add" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
 
         <Label text="%service.field.date" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
         <DatePicker fx:id="datePicker" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
@@ -48,18 +49,19 @@
         <VatSelector fx:id="laborFeeVatSelector" GridPane.rowIndex="4" GridPane.columnIndex="2"/>
     </GridPane>
 
+    <Hyperlink fx:id="quoteLink" styleClass="quote-link" visible="false" managed="false"/>
     <Label text="%service.field.materials" styleClass="form-label"/>
     <TableView fx:id="materialTable" prefHeight="160">
         <columns>
-            <TableColumn fx:id="materialProductColumn" text="%material.field.product" prefWidth="240"/>
+            <TableColumn fx:id="materialProductColumn" text="%material.field.product" prefWidth="300"/>
             <TableColumn fx:id="materialQuantityColumn" text="%material.field.quantity" prefWidth="100"/>
             <TableColumn fx:id="materialVatColumn" text="%material.field.vatRate" prefWidth="90"/>
             <TableColumn fx:id="materialTotalColumn" text="%material.field.total" prefWidth="170"/>
         </columns>
     </TableView>
     <HBox spacing="10">
-        <Button text="%service.action.addMaterial" onAction="#onAddMaterial"/>
-        <Button text="%service.action.removeMaterial" onAction="#onRemoveMaterial"/>
+        <Button text="%service.action.addMaterial" onAction="#onAddMaterial" styleClass="action-add"/>
+        <Button text="%service.action.removeMaterial" onAction="#onRemoveMaterial" styleClass="danger-button,action-delete"/>
     </HBox>
 
     <GridPane fx:id="totalsGrid" hgap="16" styleClass="vat-summary"/>
@@ -69,13 +71,13 @@
         <Label text="%service.payments.title" styleClass="form-label"/>
         <VBox fx:id="paymentPaneHolder"/>
         <HBox spacing="10" alignment="CENTER_LEFT">
-            <Button text="%jobDetail.action.addPayment" onAction="#onAddPayment"/>
+            <Button text="%jobDetail.action.addPayment" onAction="#onAddPayment" styleClass="action-payment"/>
             <Label fx:id="paymentBalanceLabel" styleClass="attendance-total"/>
         </HBox>
     </VBox>
 
     <HBox spacing="10" styleClass="dialog-buttons">
-        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button"/>
+        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>
         <Button text="%action.cancel" onAction="#onCancel" cancelButton="true"/>
     </HBox>
 </VBox>

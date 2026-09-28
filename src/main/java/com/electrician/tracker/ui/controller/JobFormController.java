@@ -172,9 +172,12 @@ public class JobFormController {
         if (!completing) {
             return true;
         }
-        BigDecimal outstanding = jobSummaryService.outstandingBalance(editingId);
-        return outstanding.signum() == 0
-                || DialogUtil.confirm("job.confirm.completeWithBalance", Bicimlendirici.money(outstanding));
+        // Users who may not see receivables get no balance warning (it would reveal the amount).
+        return jobSummaryService.outstandingBalance(editingId)
+                .filter(outstanding -> outstanding.signum() > 0)
+                .map(outstanding -> DialogUtil.confirm("job.confirm.completeWithBalance",
+                        Bicimlendirici.money(outstanding)))
+                .orElse(true);
     }
 
     @FXML

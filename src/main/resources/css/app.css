@@ -573,3 +573,821 @@
     -fx-background-color: -color-highlight;
     -fx-background-radius: 6;
 }
+
+/* ---- Dashboard, pages, quotes ---------------------------------------------- */
+
+.clickable-card {
+    -fx-cursor: hand;
+}
+
+.clickable-card:hover {
+    -fx-border-color: -color-secondary;
+}
+
+.recent-list {
+    -fx-padding: 8 12 8 12;
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.recent-item {
+    -fx-text-fill: -color-text;
+    -fx-padding: 2 0 2 0;
+}
+
+.quote-link {
+    -fx-text-fill: -color-secondary;
+    -fx-padding: 0;
+}
+
+.current-user {
+    -fx-text-fill: -color-surface;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-max-width: 170;
+}
+
+.category-totals {
+    -fx-text-fill: -color-navy;
+    -fx-font-weight: bold;
+    -fx-padding: 4 8 4 8;
+    -fx-background-color: -color-highlight;
+    -fx-background-radius: 6;
+}
+
+.table-row-cell.cheapest-row {
+    -fx-background-color: derive(-color-success, 88%);
+}
+
+.table-row-cell.cheapest-row:selected {
+    -fx-background-color: -color-secondary;
+}
+
+.quote-totals {
+    -fx-padding: 8 12 8 12;
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+/* ==== Update tour 2 ======================================================== */
+
+/* ---- Icons (sizes and colours; see AppIcon / IconSize) -------------------- */
+
+.app-icon {
+    -fx-icon-color: -color-navy;
+}
+
+.icon-menu {
+    -fx-icon-size: 18px;
+}
+
+.icon-button {
+    -fx-icon-size: 16px;
+}
+
+.icon-title {
+    -fx-icon-size: 24px;
+}
+
+.icon-empty {
+    -fx-icon-size: 48px;
+    -fx-icon-color: -color-border;
+}
+
+.app-icon.icon-danger {
+    -fx-icon-color: -color-error;
+}
+
+.app-icon.icon-success {
+    -fx-icon-color: -color-success;
+}
+
+.app-icon.icon-warning {
+    -fx-icon-color: -color-accent;
+}
+
+.app-icon.icon-locked {
+    -fx-icon-color: -color-muted;
+}
+
+.icon-only-button {
+    -fx-padding: 6 9 6 9;
+}
+
+.button {
+    -fx-graphic-text-gap: 7;
+}
+
+/* ---- Application header and user menu ------------------------------------- */
+
+.app-header {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 0 0 1 0;
+    -fx-padding: 8 16 8 16;
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 10;
+}
+
+.app-header-title {
+    -fx-text-fill: -color-navy;
+    -fx-font-size: 17px;
+    -fx-font-weight: bold;
+    -fx-graphic-text-gap: 10;
+}
+
+.app-header-title .app-icon {
+    -fx-icon-color: -color-accent;
+}
+
+.user-menu {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 2 6 2 6;
+    -fx-cursor: hand;
+}
+
+.user-menu:hover,
+.user-menu:showing {
+    -fx-background-color: -color-highlight;
+    -fx-background-radius: 8;
+}
+
+.avatar {
+    -fx-min-width: 34;
+    -fx-min-height: 34;
+    -fx-max-width: 34;
+    -fx-max-height: 34;
+    -fx-alignment: CENTER;
+    -fx-background-color: -color-navy;
+    -fx-background-radius: 17;
+    -fx-text-fill: -color-surface;
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+.user-menu-name {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text;
+}
+
+.role-badge {
+    -fx-font-size: 10px;
+    -fx-padding: 0 7 0 7;
+    -fx-background-radius: 8;
+    -fx-background-color: -color-highlight;
+    -fx-text-fill: -color-secondary;
+    -fx-font-weight: bold;
+}
+
+.role-badge-admin {
+    -fx-background-color: -color-accent;
+    -fx-text-fill: -color-navy;
+}
+
+/* ---- Side menu: icons, active item, locked items, badge ------------------- */
+
+.side-menu {
+    -fx-padding: 12 10 12 10;
+    -fx-spacing: 8;
+}
+
+.side-menu-scroll,
+.side-menu-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.side-menu-items {
+    -fx-spacing: 3;
+    -fx-background-color: -color-navy;
+}
+
+.menu-button {
+    -fx-graphic-text-gap: 12;
+}
+
+.menu-button .app-icon {
+    -fx-icon-color: -color-highlight;
+}
+
+.menu-button-active {
+    -fx-background-color: -color-secondary;
+    -fx-font-weight: bold;
+}
+
+.menu-button-active .app-icon {
+    -fx-icon-color: -color-accent;
+}
+
+.menu-button-locked {
+    -fx-opacity: 0.55;
+}
+
+.menu-button-locked .app-icon {
+    -fx-icon-color: -color-muted;
+}
+
+.menu-badge {
+    -fx-background-color: -color-error;
+    -fx-text-fill: -color-surface;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 1 7 1 7;
+    -fx-background-radius: 9;
+    -fx-translate-x: -8;
+}
+
+/* ---- Login and first setup ------------------------------------------------ */
+
+.login-root {
+    -fx-background-color: -color-surface;
+}
+
+.login-brand {
+    -fx-background-color: -color-navy;
+    -fx-min-width: 280;
+    -fx-pref-width: 280;
+    -fx-alignment: CENTER;
+    -fx-spacing: 10;
+    -fx-padding: 28 20 20 20;
+}
+
+.login-app-name {
+    -fx-text-fill: -color-surface;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.login-version {
+    -fx-text-fill: -color-highlight;
+    -fx-font-size: 12px;
+}
+
+.login-developer {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 11px;
+}
+
+.login-form {
+    -fx-background-color: -color-surface;
+    -fx-padding: 24 48 24 48;
+    -fx-spacing: 12;
+}
+
+.login-heading {
+    -fx-text-fill: -color-navy;
+    -fx-font-size: 22px;
+    -fx-font-weight: bold;
+}
+
+.login-fields {
+    -fx-spacing: 6;
+    -fx-min-width: 300;
+}
+
+.login-field-label {
+    -fx-text-fill: -color-text;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.icon-field {
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 8;
+    -fx-padding: 2 4 2 12;
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-min-width: 300;
+}
+
+.icon-field:focus-within {
+    -fx-border-color: -color-navy;
+}
+
+.icon-field .app-icon {
+    -fx-icon-color: -color-muted;
+}
+
+.icon-field-error,
+.icon-field-error:focus-within {
+    -fx-border-color: -color-error;
+}
+
+.bare-field,
+.bare-field:focused {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 7 0 7 0;
+}
+
+.eye-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 4 8 4 8;
+}
+
+.login-input {
+    -fx-border-width: 1.5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-min-width: 280;
+}
+
+.login-input:focused {
+    -fx-border-color: -color-navy;
+}
+
+.setup-grid {
+    -fx-hgap: 10;
+    -fx-vgap: 8;
+}
+
+.field-error-text {
+    -fx-text-fill: -color-error;
+    -fx-font-size: 12px;
+}
+
+.login-button {
+    -fx-background-color: -color-navy;
+    -fx-border-color: -color-navy;
+    -fx-text-fill: -color-surface;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-padding: 10 14 10 14;
+    -fx-background-radius: 8;
+    -fx-border-radius: 8;
+}
+
+.login-button:hover {
+    -fx-background-color: derive(-color-navy, -20%);
+}
+
+.login-button:disabled {
+    -fx-opacity: 0.8;
+}
+
+.button-spinner {
+    -fx-progress-color: -color-surface;
+}
+
+.login-exit {
+    -fx-text-fill: -color-muted;
+    -fx-padding: 0;
+}
+
+/* ---- Dialog header, empty states, notices ---------------------------------- */
+
+.dialog-frame {
+    -fx-background-color: -color-background;
+}
+
+.dialog-header {
+    -fx-alignment: CENTER_LEFT;
+    -fx-graphic-text-gap: 10;
+    -fx-padding: 14 20 10 20;
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-navy;
+    -fx-border-color: -color-border;
+    -fx-border-width: 0 0 1 0;
+    -fx-background-color: -color-surface;
+}
+
+.empty-state {
+    -fx-padding: 36 16 36 16;
+}
+
+.empty-state-text {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 14px;
+    -fx-text-alignment: center;
+}
+
+.info-strip {
+    -fx-background-color: derive(-color-accent, 80%);
+    -fx-border-color: -color-accent;
+    -fx-border-width: 0 0 0 4;
+    -fx-padding: 6 10 6 10;
+    -fx-text-fill: -color-text;
+    -fx-graphic-text-gap: 8;
+}
+
+.more-button {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+/* ---- Character counters ---------------------------------------------------- */
+
+.limited-field {
+    -fx-spacing: 2;
+}
+
+.field-footer {
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 10;
+}
+
+.char-counter {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 11px;
+    -fx-alignment: CENTER_RIGHT;
+    -fx-max-width: Infinity;
+}
+
+.char-counter-near {
+    -fx-text-fill: -color-accent;
+    -fx-font-weight: bold;
+}
+
+.char-counter-full {
+    -fx-text-fill: -color-error;
+    -fx-font-weight: bold;
+}
+
+.move-buttons {
+    -fx-alignment: TOP_CENTER;
+    -fx-padding: 26 0 0 0;
+}
+
+/* ---- Currency ---------------------------------------------------------------- */
+
+.conversion-hint {
+    -fx-text-fill: -color-navy;
+    -fx-font-weight: bold;
+}
+
+.foreign-detail {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 11px;
+}
+
+/* ---- Settings: sections, logo drop zone, PDF preview -------------------------- */
+
+.settings-section {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 16;
+}
+
+.logo-drop-zone {
+    -fx-min-width: 240;
+    -fx-min-height: 120;
+    -fx-pref-width: 240;
+    -fx-pref-height: 120;
+    -fx-max-width: 240;
+    -fx-max-height: 120;
+    -fx-border-color: -color-border;
+    -fx-border-style: segments(6, 4);
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-background-color: -color-background;
+    -fx-cursor: hand;
+}
+
+.logo-drop-zone:hover {
+    -fx-border-color: -color-secondary;
+}
+
+.logo-drop-zone-active {
+    -fx-border-color: -color-navy;
+    -fx-border-width: 3;
+    -fx-background-color: -color-highlight;
+}
+
+.logo-placeholder {
+    -fx-alignment: CENTER;
+    -fx-spacing: 6;
+    -fx-padding: 8;
+}
+
+.logo-placeholder .label {
+    -fx-text-alignment: center;
+}
+
+.logo-remove-button {
+    -fx-background-radius: 12;
+    -fx-border-radius: 12;
+    -fx-padding: 3 6 3 6;
+    -fx-translate-x: -4;
+    -fx-translate-y: 4;
+}
+
+.logo-column {
+    -fx-max-width: 280;
+}
+
+.pdf-preview {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 0 0 2 0;
+    -fx-padding: 8;
+    -fx-spacing: 10;
+    -fx-alignment: CENTER_LEFT;
+    -fx-max-width: 280;
+    -fx-effect: dropshadow(gaussian, derive(-color-navy, 70%), 4, 0.1, 0, 1);
+}
+
+.pdf-preview-name {
+    -fx-font-weight: bold;
+    -fx-font-size: 13px;
+}
+
+.pdf-preview-text {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 10px;
+}
+
+/* ---- Daily plan: cards ----------------------------------------------------------- */
+
+.tab-content {
+    -fx-padding: 12 0 0 0;
+}
+
+.card-list {
+    -fx-spacing: 10;
+    -fx-padding: 2 4 8 2;
+}
+
+.job-card {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-width: 1 1 1 5;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-padding: 12 14 12 14;
+}
+
+.job-card-urgent {
+    -fx-border-color: -color-border -color-border -color-border -color-error;
+}
+
+.job-card-faded {
+    -fx-opacity: 0.6;
+}
+
+.job-card-time {
+    -fx-text-fill: -color-navy;
+    -fx-font-weight: bold;
+}
+
+.job-card-title {
+    -fx-text-fill: -color-text;
+    -fx-font-weight: bold;
+    -fx-font-size: 15px;
+}
+
+.job-card-place .app-icon {
+    -fx-icon-color: -color-muted;
+}
+
+.job-card-actions {
+    -fx-min-width: 170;
+}
+
+.person-badge {
+    -fx-background-color: -color-highlight;
+    -fx-text-fill: -color-navy;
+    -fx-font-size: 11px;
+    -fx-padding: 2 8 2 8;
+    -fx-background-radius: 10;
+}
+
+.urgent-badge {
+    -fx-background-color: -color-error;
+    -fx-text-fill: -color-surface;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+    -fx-padding: 1 7 1 7;
+    -fx-background-radius: 8;
+}
+
+.status-badge {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-padding: 2 9 2 9;
+    -fx-background-radius: 10;
+}
+
+.status-planned {
+    -fx-background-color: -color-highlight;
+    -fx-text-fill: -color-muted;
+}
+
+.status-badge.status-completed {
+    -fx-background-color: derive(-color-success, 80%);
+    -fx-text-fill: -color-success;
+}
+
+.status-not-visited {
+    -fx-background-color: derive(-color-error, 82%);
+    -fx-text-fill: -color-error;
+}
+
+.status-postponed {
+    -fx-background-color: derive(-color-accent, 75%);
+    -fx-text-fill: derive(-color-accent, -45%);
+}
+
+.status-cancelled {
+    -fx-background-color: -color-background;
+    -fx-text-fill: -color-muted;
+    -fx-opacity: 0.8;
+}
+
+.done-button {
+    -fx-background-color: -color-success;
+    -fx-border-color: -color-success;
+    -fx-text-fill: -color-surface;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-padding: 9 16 9 16;
+}
+
+.done-button:hover {
+    -fx-background-color: derive(-color-success, -15%);
+}
+
+.done-button .app-icon {
+    -fx-icon-color: -color-surface;
+}
+
+.not-done-button {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-error;
+    -fx-text-fill: -color-error;
+    -fx-font-weight: bold;
+    -fx-font-size: 14px;
+    -fx-padding: 9 16 9 16;
+}
+
+.not-done-button .app-icon {
+    -fx-icon-color: -color-error;
+}
+
+.completion-note-editor {
+    -fx-padding: 4 0 0 0;
+}
+
+.summary-card.stat-box-planned .stat-value {
+    -fx-text-fill: -color-muted;
+}
+
+.team-picker,
+.team-picker > .viewport {
+    -fx-background-color: -color-surface;
+}
+
+.team-picker {
+    -fx-border-color: -color-border;
+    -fx-border-radius: 6;
+    -fx-padding: 8;
+}
+
+/* ---- Daily plan: week grid ---------------------------------------------------------- */
+
+.week-grid {
+    -fx-background-color: -color-border;
+    -fx-hgap: 1;
+    -fx-vgap: 1;
+    -fx-padding: 1;
+}
+
+.week-corner,
+.week-row-title {
+    -fx-background-color: -color-highlight;
+    -fx-padding: 8;
+}
+
+.week-row-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-navy;
+}
+
+.week-day-header {
+    -fx-padding: 6 8 6 8;
+    -fx-cursor: hand;
+}
+
+.week-day-name {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-navy;
+}
+
+.week-day-count {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-muted;
+}
+
+.week-today {
+    -fx-border-color: -color-accent;
+    -fx-border-width: 0 0 3 0;
+}
+
+.week-cell {
+    -fx-padding: 6;
+    -fx-spacing: 4;
+    -fx-min-height: 44;
+    -fx-cursor: hand;
+}
+
+.week-cell-empty {
+    -fx-background-color: -color-background;
+}
+
+.week-cell-filled {
+    -fx-background-color: -color-surface;
+}
+
+.week-job {
+    -fx-font-size: 11px;
+    -fx-padding: 3 6 3 6;
+    -fx-background-radius: 5;
+    -fx-background-color: -color-highlight;
+    -fx-text-fill: -color-text;
+}
+
+.week-job-completed {
+    -fx-background-color: derive(-color-success, 82%);
+}
+
+.week-job-not-visited,
+.week-job-postponed {
+    -fx-background-color: derive(-color-error, 86%);
+}
+
+.week-job-urgent {
+    -fx-border-color: -color-error;
+    -fx-border-width: 0 0 0 3;
+}
+
+.week-person-job {
+    -fx-font-size: 11px;
+    -fx-text-fill: -color-text;
+}
+
+.empty-holder {
+    -fx-alignment: CENTER;
+}
+
+/* Side menu buttons keep their own look over the general .button rule. */
+.side-menu .menu-button {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-text-fill: -color-surface;
+    -fx-pref-width: 200;
+    -fx-max-width: Infinity;
+}
+
+.side-menu .menu-button:hover {
+    -fx-background-color: -color-secondary;
+}
+
+.side-menu .menu-button-active {
+    -fx-background-color: -color-secondary;
+    -fx-font-weight: bold;
+}
+
+.side-menu {
+    -fx-pref-width: 224;
+    -fx-min-width: 224;
+}
+
+.signature-text,
+.current-user {
+    -fx-max-width: 200;
+}
+
+/* MenuButtons ("Daha fazla", user menu) also carry the .menu-button class; undo the side-menu sizing. */
+.more-button,
+.user-menu {
+    -fx-pref-width: -1;
+    -fx-alignment: CENTER_LEFT;
+}
+
+.more-button {
+    -fx-padding: 4 10 4 10;
+    -fx-text-fill: -color-text;
+}
+
+.more-button > .label {
+    -fx-text-fill: -color-text;
+}
+
+.more-button:hover {
+    -fx-background-color: -color-highlight;
+}

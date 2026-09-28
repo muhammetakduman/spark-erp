@@ -3,26 +3,47 @@ package com.electrician.tracker.ui.controller;
 import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.List;
 
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.BackupService;
 import com.electrician.tracker.service.ReportService;
 import com.electrician.tracker.ui.util.DialogUtil;
+import com.electrician.tracker.ui.util.UnsavedChangesAware;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.Alert;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+/**
+ * "Ayarlar": company details, exchange rates, backup/restore and the
+ * jobs-by-date Excel export (ADMIN only), and templates (everybody). Company,
+ * rates and templates are their own included views; leaving the screen with
+ * unsaved company or rate changes asks first.
+ */
 @Component
-public class SettingsController {
+@Scope("prototype")
+public class SettingsController implements UnsavedChangesAware {
 
     private final BackupService backupService;
     private final ReportService reportService;
+    private final AccessControl accessControl;
 
+    @FXML
+    private Node backupSection;
+    @FXML
+    private Node exportSection;
+    @FXML
+    private CompanySettingsController companyController;
+    @FXML
+    private ExchangeRateSettingsController ratesController;
     @FXML
     private Label backupFolderLabel;
     @FXML
@@ -30,16 +51,28 @@ public class SettingsController {
     @FXML
     private DatePicker exportEndDatePicker;
 
-    public SettingsController(BackupService backupService, ReportService reportService) {
+    public SettingsController(BackupService backupService, ReportService reportService,
+            AccessControl accessControl) {
         this.backupService = backupService;
         this.reportService = reportService;
+        this.accessControl = accessControl;
     }
 
     @FXML
     private void initialize() {
+        boolean admin = accessControl.isAdmin();
+        for (Node section : List.of(backupSection, exportSection)) {
+            section.setVisible(admin);
+            section.setManaged(admin);
+        }
         backupFolderLabel.setText(backupService.getBackupFolder().toString());
         exportStartDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
         exportEndDatePicker.setValue(LocalDate.now());
+    }
+
+    @Override
+    public boolean hasUnsavedChanges() {
+        return companyController.hasUnsavedChanges() || ratesController.hasUnsavedChanges();
     }
 
     @FXML

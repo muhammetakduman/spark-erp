@@ -1,44 +1,50 @@
 package com.electrician.tracker.ui.controller;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 import com.electrician.tracker.domain.Employee;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.EmployeeService;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
-import com.electrician.tracker.ui.util.Bicimlendirici;
+import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.ContentNavigator;
 import com.electrician.tracker.ui.util.DialogUtil;
+import com.electrician.tracker.ui.util.EmptyState;
 import com.electrician.tracker.ui.util.ModalStageOpener;
+import com.electrician.tracker.ui.util.TableSorting;
 import com.electrician.tracker.ui.util.TaskRunner;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
+@Scope("prototype")
 public class EmployeeListController {
 
     private static final String FORM_FXML = "/fxml/employee_form.fxml";
     private static final String ATTENDANCE_FXML = "/fxml/employee_attendance.fxml";
     private static final int DOUBLE_CLICK = 2;
-    private static final String YES = "Evet";
-    private static final String NO = "Hayır";
 
     private final EmployeeService employeeService;
     private final ModalStageOpener modalStageOpener;
     private final TaskRunner taskRunner;
     private final ContentNavigator contentNavigator;
+    private final AccessControl accessControl;
 
     @FXML
     private TableView<Employee> table;
     @FXML
     private TableColumn<Employee, String> nameColumn;
     @FXML
-    private TableColumn<Employee, String> wageColumn;
+    private TableColumn<Employee, BigDecimal> wageColumn;
+    @FXML
+    private Button deleteButton;
     @FXML
     private TableColumn<Employee, String> masterColumn;
     @FXML
@@ -47,22 +53,28 @@ public class EmployeeListController {
     private ProgressIndicator loadingIndicator;
 
     public EmployeeListController(EmployeeService employeeService, ModalStageOpener modalStageOpener,
-            TaskRunner taskRunner, ContentNavigator contentNavigator) {
+            TaskRunner taskRunner, ContentNavigator contentNavigator, AccessControl accessControl) {
         this.employeeService = employeeService;
         this.modalStageOpener = modalStageOpener;
         this.taskRunner = taskRunner;
         this.contentNavigator = contentNavigator;
+        this.accessControl = accessControl;
     }
 
     @FXML
     private void initialize() {
-        nameColumn.setCellValueFactory(data -> new SimpleStringProperty(data.getValue().getName()));
-        wageColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(Bicimlendirici.money(data.getValue().getDefaultDailyWage())));
-        masterColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(data.getValue().isMaster() ? YES : NO));
-        activeColumn.setCellValueFactory(
-                data -> new SimpleStringProperty(data.getValue().isActive() ? YES : NO));
+        table.setPlaceholder(EmptyState.of(AppIcon.EMPLOYEES, "employees.emptyState",
+                "employee.action.new", this::onNew));
+        TableSorting.text(nameColumn, Employee::getName);
+        if (accessControl.canViewFinancials()) {
+            TableSorting.money(wageColumn, Employee::getDefaultDailyWage);
+        } else {
+            table.getColumns().remove(wageColumn);
+        }
+        TableSorting.text(masterColumn, employee -> yesNo(employee.isMaster()));
+        TableSorting.text(activeColumn, employee -> yesNo(employee.isActive()));
+        deleteButton.setVisible(accessControl.isAdmin());
+        deleteButton.setManaged(accessControl.isAdmin());
         table.setRowFactory(tv -> {
             TableRow<Employee> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -75,6 +87,10 @@ public class EmployeeListController {
         refresh();
     }
 
+    private static String yesNo(boolean value) {
+        return DialogUtil.message(value ? "common.yes" : "common.no");
+    }
+
     private void openAttendanceDetail(Employee employee) {
         contentNavigator.<EmployeeAttendanceController>show(ATTENDANCE_FXML,
                 controller -> controller.selectEmployee(employee.getId()));
@@ -85,7 +101,7 @@ public class EmployeeListController {
     }
 
     private void showEmployees(List<Employee> employees) {
-        table.setItems(FXCollections.observableArrayList(employees));
+        table.setItems(TableSorting.sorted(employees, TableSorting.employees()));
     }
 
     @FXML

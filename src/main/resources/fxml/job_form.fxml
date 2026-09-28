@@ -28,7 +28,7 @@
 
         <Label text="%job.field.customer" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
         <ComboBox fx:id="customerComboBox" GridPane.rowIndex="0" GridPane.columnIndex="1" maxWidth="Infinity"/>
-        <Button text="%job.action.newCustomer" onAction="#onNewCustomer" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
+        <Button text="%job.action.newCustomer" onAction="#onNewCustomer" styleClass="action-add" GridPane.rowIndex="0" GridPane.columnIndex="2"/>
 
         <Label text="%job.field.name" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
         <TextField fx:id="nameField" promptText="%job.field.name.prompt" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
@@ -54,7 +54,7 @@
         <VatSelector fx:id="laborFeeVatSelector" GridPane.rowIndex="7" GridPane.columnIndex="2"/>
     </GridPane>
     <HBox spacing="10" styleClass="dialog-buttons">
-        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button"/>
+        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>
         <Button text="%action.cancel" onAction="#onCancel" cancelButton="true"/>
     </HBox>
 </VBox>

@@ -4,13 +4,16 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.electrician.tracker.domain.CurrencyCode;
 import com.electrician.tracker.domain.Job;
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.PriceEntryType;
 import com.electrician.tracker.domain.Product;
-import com.electrician.tracker.domain.ProductUnit;
+import com.electrician.tracker.dto.ExchangeRate;
 import com.electrician.tracker.dto.PriceSuggestion;
-import com.electrician.tracker.dto.ProductCreationResult;
+import com.electrician.tracker.service.AccessControl;
+import com.electrician.tracker.service.CurrencyConverter;
+import com.electrician.tracker.service.ExchangeRateService;
 import com.electrician.tracker.service.MaterialPriceCalculator;
 import com.electrician.tracker.service.MaterialService;
 import com.electrician.tracker.service.PriceHistoryService;
@@ -20,8 +23,8 @@ import com.electrician.tracker.ui.util.DecimalField;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EnumLabels;
 import com.electrician.tracker.ui.util.MaterialColumns;
-import com.electrician.tracker.ui.util.ProductPicker;
-import com.electrician.tracker.ui.util.SupplierPicker;
+import com.electrician.tracker.ui.util.ProductSelector;
+import com.electrician.tracker.ui.util.SuggestionPicker;
 import com.electrician.tracker.ui.util.VatSelector;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
@@ -31,11 +34,11 @@ import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
-import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import javafx.util.StringConverter;
 import org.springframework.context.annotation.Scope;
@@ -44,7 +47,11 @@ import org.springframework.stereotype.Component;
 /**
  * The one material entry dialog used by both site and service jobs. With a
  * job set it saves each line immediately; in draft mode (service form, job
- * not created yet) it only validates the lines and hands them back.
+ * not created yet) it only validates the lines and hands them back. For a
+ * MANAGER the purchase price and supplier fields do not exist at all. A
+ * purchase price can be entered in dollars or euros: the rate field (with
+ * the last rate as suggestion) and the live lira value appear; the sale
+ * price is always in lira.
  */
 @Component
 @Scope("prototype")
@@ -53,6 +60,8 @@ public class MaterialDialogController {
     private final MaterialService materialService;
     private final ProductService productService;
     private final PriceHistoryService priceHistoryService;
+    private final AccessControl accessControl;
+    private final ExchangeRateService exchangeRateService;
 
     @FXML
     private Node dateRow;
@@ -65,17 +74,7 @@ public class MaterialDialogController {
     @FXML
     private Label addedInSessionLabel;
     @FXML
-    private ComboBox<Product> productComboBox;
-    @FXML
-    private Hyperlink addProductLink;
-    @FXML
-    private Node newProductForm;
-    @FXML
-    private TextField newProductNameField;
-    @FXML
-    private ComboBox<ProductUnit> newProductUnitComboBox;
-    @FXML
-    private Label productInfoLabel;
+    private VBox productHolder;
     @FXML
     private DecimalField quantityField;
     @FXML
@@ -83,7 +82,23 @@ public class MaterialDialogController {
     @FXML
     private DecimalField totalPriceField;
     @FXML
+    private Label purchaseLabel;
+    @FXML
+    private Node purchaseRow;
+    @FXML
     private DecimalField purchasePriceField;
+    @FXML
+    private ComboBox<CurrencyCode> currencyComboBox;
+    @FXML
+    private Label rateLabel;
+    @FXML
+    private Node rateRow;
+    @FXML
+    private DecimalField exchangeRateField;
+    @FXML
+    private Label conversionLabel;
+    @FXML
+    private Label supplierLabel;
     @FXML
     private ComboBox<String> supplierComboBox;
     @FXML
@@ -104,8 +119,8 @@ public class MaterialDialogController {
     private TableColumn<MaterialItem, MaterialItem> addedTotalColumn;
 
     private final ObservableList<MaterialItem> addedItems = FXCollections.observableArrayList();
-    private ProductPicker productPicker;
-    private SupplierPicker supplierPicker;
+    private ProductSelector productSelector;
+    private SuggestionPicker supplierPicker;
     private Job job;
     private LocalDate draftDate;
     private boolean anyAdded;
@@ -116,10 +131,13 @@ public class MaterialDialogController {
     private boolean loadingExisting;
 
     public MaterialDialogController(MaterialService materialService, ProductService productService,
-            PriceHistoryService priceHistoryService) {
+            PriceHistoryService priceHistoryService, AccessControl accessControl,
+            ExchangeRateService exchangeRateService) {
         this.materialService = materialService;
         this.productService = productService;
         this.priceHistoryService = priceHistoryService;
+        this.accessControl = accessControl;
+        this.exchangeRateService = exchangeRateService;
     }
 
     public void setJob(Job job) {
@@ -156,7 +174,7 @@ public class MaterialDialogController {
 
     private void fillFrom(MaterialItem item) {
         itemDatePicker.setValue(item.getItemDate());
-        productPicker.addAndSelect(item.getProduct());
+        productSelector.select(item.getProduct());
         quantityField.setValue(item.getQuantity());
         if (item.getPriceEntryType() == PriceEntryType.TOTAL) {
             totalPriceField.setValue(item.getSaleTotalAmount());
@@ -164,6 +182,8 @@ public class MaterialDialogController {
             unitPriceField.setValue(item.getSaleUnitPrice());
         }
         purchasePriceField.setValue(item.getPurchaseUnitPrice());
+        currencyComboBox.setValue(CurrencyConverter.orLira(item.getPurchaseCurrency()));
+        exchangeRateField.setValue(item.isForeignCurrencyPurchase() ? item.getPurchaseExchangeRate() : null);
         purchaseVatSelector.setValue(item.getPurchaseVatRate(), item.getPurchaseVatIncluded());
         supplierPicker.select(item.getSupplierName());
         vatSelector.setValue(item.getVatRate(), item.getVatIncluded());
@@ -181,32 +201,69 @@ public class MaterialDialogController {
     @FXML
     private void initialize() {
         itemDatePicker.setValue(LocalDate.now());
-        setUpProductPicker();
-        setUpNewProductForm();
-        setUpSupplierCombo();
+        productSelector = new ProductSelector(productService);
+        productSelector.setOnProductChanged(this::applySuggestion);
+        productHolder.getChildren().setAll(productSelector.view());
+        supplierPicker = new SuggestionPicker(supplierComboBox, materialService.findDistinctSupplierNames());
+        setUpCurrency();
+        showPurchaseFields(accessControl.canViewFinancials());
         setUpPriceSync();
         setUpAddedTable();
         vatSelector.bindAmount(totalPriceField);
         purchaseVatSelector.bindAmount(purchasePriceField);
     }
 
-    private void setUpProductPicker() {
-        productPicker = new ProductPicker(productComboBox, productService.findAll());
-        productComboBox.getEditor().textProperty().addListener((obs, oldText, newText) -> refreshAddProductLink());
-        productComboBox.valueProperty().addListener((obs, oldValue, newValue) -> {
-            refreshAddProductLink();
-            applySuggestion(newValue);
-        });
+    /** Purchase price and supplier only exist for users who may see them (not merely disabled). */
+    private void showPurchaseFields(boolean shown) {
+        for (Node node : List.of(purchaseLabel, purchaseRow, supplierLabel, supplierComboBox)) {
+            setShown(node, shown);
+        }
+        refreshRateRow();
     }
 
-    private void setUpNewProductForm() {
-        newProductUnitComboBox.getItems().setAll(ProductUnit.values());
-        newProductUnitComboBox.setConverter(new EnumLabelConverter<>());
-        newProductUnitComboBox.setValue(ProductUnit.PIECE);
+    /** ₺ / $ / € next to the purchase price; lira by default. */
+    private void setUpCurrency() {
+        currencyComboBox.getItems().setAll(CurrencyCode.values());
+        currencyComboBox.setConverter(new CurrencyConverterLabel());
+        currencyComboBox.setValue(CurrencyCode.TRY);
+        currencyComboBox.valueProperty().addListener((obs, old, currency) -> onCurrencyChanged(currency));
+        purchasePriceField.textProperty().addListener((obs, o, n) -> refreshConversion());
+        exchangeRateField.textProperty().addListener((obs, o, n) -> refreshConversion());
     }
 
-    private void setUpSupplierCombo() {
-        supplierPicker = new SupplierPicker(supplierComboBox, materialService.findDistinctSupplierNames());
+    /** A foreign currency opens the rate field, pre-filled with the last known rate. */
+    private void onCurrencyChanged(CurrencyCode currency) {
+        if (currency != null && currency.isForeign() && !loadingExisting) {
+            exchangeRateField.setValue(exchangeRateService.find(currency)
+                    .map(ExchangeRate::rate).orElse(null));
+        }
+        refreshRateRow();
+        refreshConversion();
+    }
+
+    private void refreshRateRow() {
+        boolean shown = accessControl.canViewFinancials() && currencyComboBox.getValue() != null
+                && currencyComboBox.getValue().isForeign();
+        setShown(rateLabel, shown);
+        setShown(rateRow, shown);
+    }
+
+    /** "120,00 $ × 34,25 = 4.110,00 ₺" while typing. */
+    private void refreshConversion() {
+        CurrencyCode currency = currencyComboBox.getValue();
+        try {
+            BigDecimal price = purchasePriceField.getValue();
+            BigDecimal rate = exchangeRateField.getValue();
+            if (currency == null || !currency.isForeign() || price == null || rate == null || rate.signum() <= 0) {
+                conversionLabel.setText("");
+                return;
+            }
+            conversionLabel.setText(DialogUtil.message("material.conversion", Bicimlendirici.money(price, currency),
+                    Bicimlendirici.exchangeRate(rate), Bicimlendirici.money(CurrencyConverter.toLira(price, currency,
+                            rate))));
+        } catch (NumberFormatException e) {
+            conversionLabel.setText("");
+        }
     }
 
     private void setUpPriceSync() {
@@ -217,9 +274,10 @@ public class MaterialDialogController {
 
     private void setUpAddedTable() {
         addedTable.setItems(addedItems);
-        addedProductColumn.setCellValueFactory(d -> new SimpleStringProperty(d.getValue().getProduct().getName()));
+        MaterialColumns.bindProduct(addedProductColumn);
         addedQuantityColumn.setCellValueFactory(d -> new SimpleStringProperty(
-                Bicimlendirici.quantity(d.getValue().getQuantity()) + " " + EnumLabels.label(d.getValue().getProduct().getUnit())));
+                Bicimlendirici.quantity(d.getValue().getQuantity()) + " "
+                        + EnumLabels.label(d.getValue().getProduct().getUnit())));
         MaterialColumns.bindVat(addedVatColumn);
         MaterialColumns.bindTotal(addedTotalColumn);
     }
@@ -250,15 +308,6 @@ public class MaterialDialogController {
         }
     }
 
-    private void refreshAddProductLink() {
-        String typed = productPicker.typedText();
-        boolean unknown = productComboBox.getValue() == null && productPicker.isUnknownName(typed);
-        setShown(addProductLink, unknown && !newProductForm.isVisible());
-        if (unknown) {
-            addProductLink.setText(DialogUtil.message("material.action.addNewProduct", typed));
-        }
-    }
-
     /**
      * Fills the chosen product's last prices, supplier and VAT. A value that
      * was only suggested for the previously chosen product (and not changed by
@@ -272,6 +321,9 @@ public class MaterialDialogController {
         PriceSuggestion previous = appliedSuggestion;
         PriceSuggestion next = product == null ? PriceSuggestion.empty() : priceHistoryService.suggestFor(product.getId());
         replaceSuggestedPrice(purchasePriceField, previous.lastPurchaseUnitPrice(), next.lastPurchaseUnitPrice());
+        if (next.lastPurchaseUnitPrice() != null) {
+            currencyComboBox.setValue(CurrencyConverter.orLira(next.lastPurchaseCurrency()));
+        }
         replaceSuggestedPrice(unitPriceField, previous.lastSaleUnitPrice(), next.lastSaleUnitPrice());
         replaceSuggestedSupplier(previous.lastSupplierName(), next.lastSupplierName());
         replaceSuggestedVat(vatSelector, previous.lastVatRate(), previous.lastVatIncluded(),
@@ -308,45 +360,10 @@ public class MaterialDialogController {
     }
 
     @FXML
-    private void onShowNewProductForm() {
-        newProductNameField.setText(productPicker.typedText());
-        setShown(newProductForm, true);
-        setShown(addProductLink, false);
-        setShown(productInfoLabel, false);
-        newProductNameField.requestFocus();
-    }
-
-    @FXML
-    private void onSaveNewProduct() {
-        try {
-            ProductCreationResult result = productService.createOrReuse(
-                    newProductNameField.getText(), newProductUnitComboBox.getValue());
-            productPicker.addAndSelect(result.product());
-            showProductInfo(result);
-            setShown(newProductForm, false);
-            quantityField.requestFocus();
-        } catch (RuntimeException ex) {
-            DialogUtil.showError(ex);
-        }
-    }
-
-    @FXML
-    private void onCancelNewProduct() {
-        setShown(newProductForm, false);
-        refreshAddProductLink();
-    }
-
-    private void showProductInfo(ProductCreationResult result) {
-        String key = result.existing() ? "material.info.productReused" : "material.info.productCreated";
-        productInfoLabel.setText(DialogUtil.message(key, result.product().getName()));
-        setShown(productInfoLabel, true);
-    }
-
-    @FXML
     private void onSaveAndNew() {
         if (saveCurrentItem()) {
             clearItemFields();
-            productComboBox.requestFocus();
+            productSelector.requestFocus();
         }
     }
 
@@ -388,7 +405,7 @@ public class MaterialDialogController {
         boolean totalLeads = leadingPriceField == PriceEntryType.TOTAL;
         MaterialItem item = new MaterialItem(
                 job,
-                productPicker.resolveSelection().orElse(null),
+                productSelector.resolveSelection().orElse(null),
                 isDraftMode() ? draftDate : itemDatePicker.getValue(),
                 quantityField.getValue(),
                 purchasePriceField.getValue(),
@@ -400,6 +417,8 @@ public class MaterialDialogController {
                 noteField.getText());
         item.setVatIncluded(vatSelector.getIncluded());
         item.setPurchaseVat(purchaseVatSelector.getRate(), purchaseVatSelector.getIncluded());
+        CurrencyCode currency = CurrencyConverter.orLira(currencyComboBox.getValue());
+        item.setPurchaseCurrency(currency, currency.isForeign() ? exchangeRateField.getValue() : null, null);
         return item;
     }
 
@@ -408,13 +427,14 @@ public class MaterialDialogController {
     }
 
     private void clearItemFields() {
-        productPicker.clear();
-        setShown(productInfoLabel, false);
+        productSelector.clear();
         quantityField.clear();
         leadingPriceField = PriceEntryType.UNIT;
         unitPriceField.clear();
         totalPriceField.clear();
         purchasePriceField.clear();
+        currencyComboBox.setValue(CurrencyCode.TRY);
+        exchangeRateField.clear();
         supplierPicker.clear();
         vatSelector.clear();
         purchaseVatSelector.clear();
@@ -431,14 +451,15 @@ public class MaterialDialogController {
         node.setManaged(shown);
     }
 
-    private static final class EnumLabelConverter<E extends Enum<E>> extends StringConverter<E> {
+    /** "₺ TL", "$ USD", "€ EUR". */
+    private static final class CurrencyConverterLabel extends StringConverter<CurrencyCode> {
         @Override
-        public String toString(E value) {
-            return EnumLabels.label(value);
+        public String toString(CurrencyCode currency) {
+            return currency == null ? "" : Bicimlendirici.currencySymbol(currency) + " " + currency.name();
         }
 
         @Override
-        public E fromString(String string) {
+        public CurrencyCode fromString(String text) {
             return null;
         }
     }

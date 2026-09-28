@@ -4,6 +4,7 @@ import java.text.MessageFormat;
 import java.util.MissingResourceException;
 import java.util.ResourceBundle;
 
+import com.electrician.tracker.service.exception.LoginBlockedException;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonType;
@@ -34,6 +35,9 @@ public final class DialogUtil {
         if (ex instanceof ReferencedEntityException referenced) {
             return message(referenced.getMessage(), referenced.getReferenceCount());
         }
+        if (ex instanceof LoginBlockedException blocked) {
+            return message(blocked.getMessage(), String.valueOf(blocked.getRemainingSeconds()));
+        }
         return resolveMessage(ex.getMessage());
     }
 
@@ -59,7 +63,12 @@ public final class DialogUtil {
     }
 
     public static void showInfo(String messageKey) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, resolveMessage(messageKey));
+        showInfoText(resolveMessage(messageKey));
+    }
+
+    /** Information with already-resolved text (e.g. a message with arguments). */
+    public static void showInfoText(String text) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION, text);
         alert.setHeaderText(null);
         alert.showAndWait();
     }

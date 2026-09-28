@@ -16,10 +16,10 @@
     </padding>
     <top>
         <HBox spacing="10" styleClass="toolbar">
-            <Button text="%employee.action.new" onAction="#onNew" styleClass="primary-button"/>
-            <Button text="%action.edit" onAction="#onEdit"/>
+            <Button text="%employee.action.new" onAction="#onNew" styleClass="primary-button,action-add"/>
+            <Button text="%action.edit" onAction="#onEdit" styleClass="action-edit"/>
             <Button text="%employee.action.toggleActive" onAction="#onToggleActive"/>
-            <Button text="%action.delete" onAction="#onDelete"/>
+            <Button fx:id="deleteButton" text="%action.delete" onAction="#onDelete" styleClass="danger-button,action-delete"/>
             <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
         </HBox>
     </top>

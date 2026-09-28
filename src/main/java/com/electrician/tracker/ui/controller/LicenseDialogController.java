@@ -3,11 +3,13 @@ package com.electrician.tracker.ui.controller;
 import com.electrician.tracker.service.LicenseService;
 import com.electrician.tracker.ui.util.AppSignature;
 import com.electrician.tracker.ui.util.DialogUtil;
+import com.electrician.tracker.ui.util.WindowDecorations;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -24,6 +26,8 @@ public class LicenseDialogController {
     private final LicenseService licenseService;
     private final AppSignature appSignature;
 
+    @FXML
+    private ImageView appIconView;
     @FXML
     private Label versionLabel;
     @FXML
@@ -48,6 +52,7 @@ public class LicenseDialogController {
 
     @FXML
     private void initialize() {
+        appIconView.setImage(WindowDecorations.largeIcon());
         versionLabel.setText(appSignature.versionLine());
         noticeLabel.setText(appSignature.noticeLine());
         copyrightLabel.setText(appSignature.copyrightLine());
