@@ -2,15 +2,16 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
-<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ListView?>
 <?import javafx.scene.control.ProgressIndicator?>
 <?import javafx.scene.control.SplitPane?>
-<?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
@@ -20,50 +21,38 @@
         <Insets top="16" right="16" bottom="16" left="16"/>
     </padding>
     <top>
-        <HBox spacing="10" styleClass="toolbar">
-            <Button text="%product.action.new" onAction="#onNew" styleClass="primary-button"/>
-            <Button text="%action.edit" onAction="#onEdit"/>
-            <Button text="%action.delete" onAction="#onDelete"/>
-            <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
-        </HBox>
+        <VBox spacing="8">
+            <HBox spacing="10" styleClass="toolbar">
+                <Label text="%menu.products" styleClass="section-title"/>
+                <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button text="%product.action.new" onAction="#onNew" styleClass="primary-button,action-add"/>
+                <Button text="%action.edit" onAction="#onEdit" styleClass="action-edit"/>
+                <Button text="%action.delete" onAction="#onDelete" styleClass="danger-button,action-delete"/>
+            </HBox>
+            <HBox spacing="8" styleClass="toolbar">
+                <TextField fx:id="searchField" promptText="%product.search.prompt" prefWidth="260"/>
+                <ComboBox fx:id="categoryFilter" promptText="%product.field.category" prefWidth="160"/>
+                <ComboBox fx:id="brandFilter" promptText="%product.field.brand" prefWidth="160"/>
+                <ComboBox fx:id="supplierFilter" promptText="%material.field.supplier" prefWidth="180"/>
+                <Button text="%product.filter.clear" onAction="#onClearFilters"/>
+            </HBox>
+            <Label fx:id="resultLabel" styleClass="muted-text"/>
+        </VBox>
     </top>
     <center>
-        <SplitPane dividerPositions="0.28">
-            <VBox spacing="8">
-                <TextField fx:id="searchField" promptText="%product.search.prompt"/>
-                <TableView fx:id="table" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="nameColumn" text="%product.field.name" prefWidth="200"/>
-                        <TableColumn fx:id="unitColumn" text="%product.field.unit" prefWidth="80"/>
-                    </columns>
-                </TableView>
+        <SplitPane dividerPositions="0.16">
+            <VBox spacing="6">
+                <Label text="%product.categories.title" styleClass="subsection-title"/>
+                <ListView fx:id="categoryList" VBox.vgrow="ALWAYS"/>
             </VBox>
-            <VBox spacing="8">
-                <Label fx:id="usageTitleLabel" text="%productUsage.title" styleClass="section-title"/>
-                <HBox spacing="8" styleClass="toolbar">
-                    <Label text="%productUsage.filter.from" styleClass="form-label"/>
-                    <DatePicker fx:id="fromDatePicker" prefWidth="130"/>
-                    <Label text="%productUsage.filter.to" styleClass="form-label"/>
-                    <DatePicker fx:id="toDatePicker" prefWidth="130"/>
-                    <Button text="%productUsage.filter.clear" onAction="#onClearDates"/>
-                    <Button text="%productUsage.action.export" onAction="#onExport"/>
-                    <ProgressIndicator fx:id="usageLoadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
-                </HBox>
-                <TableView fx:id="usageTable" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="usageDateColumn" text="%productUsage.field.date" prefWidth="90"/>
-                        <TableColumn fx:id="usageCustomerColumn" text="%productUsage.field.customer" prefWidth="140"/>
-                        <TableColumn fx:id="usageJobColumn" text="%productUsage.field.job" prefWidth="200"/>
-                        <TableColumn fx:id="usageQuantityColumn" text="%productUsage.field.quantity" prefWidth="80"/>
-                        <TableColumn fx:id="usagePurchaseColumn" text="%productUsage.field.purchasePrice" prefWidth="95"/>
-                        <TableColumn fx:id="usageSupplierColumn" text="%productUsage.field.supplier" prefWidth="120"/>
-                        <TableColumn fx:id="usageSaleColumn" text="%productUsage.field.salePrice" prefWidth="95"/>
-                        <TableColumn fx:id="usageVatColumn" text="%productUsage.field.vat" prefWidth="85"/>
-                        <TableColumn fx:id="usageTotalColumn" text="%productUsage.field.total" prefWidth="100"/>
-                    </columns>
-                </TableView>
-                <VBox fx:id="usageSummaryBox" spacing="2" styleClass="usage-summary"/>
-            </VBox>
+            <SplitPane orientation="VERTICAL" dividerPositions="0.45">
+                <VBox spacing="6">
+                    <Label fx:id="categoryTotalsLabel" styleClass="category-totals" visible="false" managed="false"/>
+                    <TableView fx:id="productTable" VBox.vgrow="ALWAYS"/>
+                </VBox>
+                <fx:include fx:id="usagePanel" source="product_usage_panel.fxml"/>
+            </SplitPane>
         </SplitPane>
     </center>
 </BorderPane>

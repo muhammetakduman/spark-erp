@@ -1,19 +1,14 @@
 package com.electrician.tracker.service;
 
-import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.dto.PriceSuggestion;
 import com.electrician.tracker.dto.ProductUsageReport;
 import com.electrician.tracker.dto.ProductUsageRow;
-import com.electrician.tracker.dto.ProductUsageSummary;
 import com.electrician.tracker.report.ProductUsageExcelExportGenerator;
 import com.electrician.tracker.repository.MaterialItemRepository;
 import com.electrician.tracker.service.exception.ValidationException;
@@ -22,24 +17,28 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Product price history and usage ("Ürün Kullanım Geçmişi"): to whom, when
- * and at what price a product was given. A product's history is small, so it
- * is loaded in one query and filtered by date in memory.
+ * and at what price a product was given, and which supplier sold it cheapest.
+ * A product's history is small, so it is loaded in one query and filtered by
+ * date in memory. A MANAGER receives no purchase prices or suppliers.
  */
 @Service
 public class PriceHistoryService {
 
     private final MaterialItemRepository materialItemRepository;
     private final ProductUsageExcelExportGenerator usageExcelExportGenerator;
+    private final AccessControl accessControl;
 
     public PriceHistoryService(MaterialItemRepository materialItemRepository,
-            ProductUsageExcelExportGenerator usageExcelExportGenerator) {
+            ProductUsageExcelExportGenerator usageExcelExportGenerator, AccessControl accessControl) {
         this.materialItemRepository = materialItemRepository;
         this.usageExcelExportGenerator = usageExcelExportGenerator;
+        this.accessControl = accessControl;
     }
 
     /**
      * Usage rows newest first, limited to {@code from}–{@code to} (inclusive;
-     * either may be {@code null} for an open end), plus their summary.
+     * either may be {@code null} for an open end), their summary and the
+     * supplier comparison.
      */
     @Transactional(readOnly = true)
     public ProductUsageReport usageReport(Long productId, LocalDate from, LocalDate to) {
@@ -50,13 +49,16 @@ public class PriceHistoryService {
                 .filter(item -> isWithin(item.getItemDate(), from, to))
                 .map(PriceHistoryService::toRow)
                 .toList();
-        return new ProductUsageReport(rows, summarize(rows));
+        ProductUsageReport report = new ProductUsageReport(rows, PurchaseStatistics.summarize(rows),
+                PurchaseStatistics.compareSuppliers(rows));
+        return accessControl.canViewFinancials() ? report : report.withoutPurchaseInfo();
     }
 
-    /** Writes the same rows {@link #usageReport} shows to an Excel file. */
+    /** Writes the same rows {@link #usageReport} shows to an Excel file (without purchase columns for a MANAGER). */
     @Transactional(readOnly = true)
     public void exportUsage(Product product, LocalDate from, LocalDate to, Path outputFile) {
-        usageExcelExportGenerator.export(product, usageReport(product.getId(), from, to), outputFile);
+        usageExcelExportGenerator.export(product, usageReport(product.getId(), from, to), outputFile,
+                accessControl.canViewFinancials());
     }
 
     @Transactional(readOnly = true)
@@ -66,37 +68,16 @@ public class PriceHistoryService {
             return PriceSuggestion.empty();
         }
         MaterialItem mostRecent = history.get(0);
-        return new PriceSuggestion(
+        PriceSuggestion suggestion = new PriceSuggestion(
                 mostRecent.getPurchaseUnitPrice(),
                 mostRecent.getPurchaseVatRate(),
                 mostRecent.getPurchaseVatIncluded(),
                 mostRecent.getSupplierName(),
                 mostRecent.getSaleUnitPrice(),
                 mostRecent.getVatRate(),
-                mostRecent.getVatIncluded());
-    }
-
-    /** Rows must be newest first. */
-    static ProductUsageSummary summarize(List<ProductUsageRow> rows) {
-        if (rows.isEmpty()) {
-            return ProductUsageSummary.empty();
-        }
-        ProductUsageRow last = rows.get(0);
-        List<BigDecimal> salePrices = rows.stream().map(ProductUsageRow::saleUnitPrice)
-                .filter(Objects::nonNull).toList();
-        Optional<ProductUsageRow> cheapest = rows.stream()
-                .filter(row -> row.supplierName() != null && row.purchaseUnitPrice() != null)
-                .min(Comparator.comparing(ProductUsageRow::purchaseUnitPriceExcludingVat));
-        return new ProductUsageSummary(
-                rows.size(),
-                rows.stream().map(ProductUsageRow::quantity).reduce(BigDecimal.ZERO, BigDecimal::add),
-                last.customerName(),
-                last.date(),
-                salePrices.stream().min(Comparator.naturalOrder()).orElse(null),
-                salePrices.stream().max(Comparator.naturalOrder()).orElse(null),
-                salePrices.isEmpty() ? null : salePrices.get(0),
-                cheapest.map(ProductUsageRow::supplierName).orElse(null),
-                cheapest.map(ProductUsageRow::purchaseUnitPriceExcludingVat).orElse(null));
+                mostRecent.getVatIncluded(),
+                mostRecent.getPurchaseCurrency());
+        return accessControl.canViewFinancials() ? suggestion : suggestion.withoutPurchaseInfo();
     }
 
     private static boolean isWithin(LocalDate date, LocalDate from, LocalDate to) {
@@ -104,14 +85,6 @@ public class PriceHistoryService {
             return from == null && to == null;
         }
         return (from == null || !date.isBefore(from)) && (to == null || !date.isAfter(to));
-    }
-
-    private static BigDecimal purchaseExcludingVat(MaterialItem item) {
-        if (item.getPurchaseUnitPrice() == null) {
-            return null;
-        }
-        return KdvHesaplayici.calculate(List.of(new KdvHesaplayici.Line(item.getPurchaseUnitPrice(),
-                item.getPurchaseVatRate(), item.getPurchaseVatIncluded()))).excludingVat();
     }
 
     private static ProductUsageRow toRow(MaterialItem item) {
@@ -122,14 +95,17 @@ public class PriceHistoryService {
                 item.getJob().getCustomer().getName(),
                 item.getJob().getName(),
                 item.getQuantity(),
-                item.getPurchaseUnitPrice(),
+                item.getPurchaseUnitPriceTl(),
                 item.getPurchaseVatRate(),
                 item.getPurchaseVatIncluded(),
-                purchaseExcludingVat(item),
+                PurchaseStatistics.unitPriceExcludingVat(item),
                 item.getSupplierName(),
                 item.getSaleUnitPrice(),
                 item.getVatRate(),
                 item.getVatIncluded(),
-                MaterialPriceCalculator.saleTotal(item));
+                MaterialPriceCalculator.saleTotal(item),
+                item.getPurchaseCurrency(),
+                item.getPurchaseUnitPrice(),
+                item.getPurchaseExchangeRate());
     }
 }

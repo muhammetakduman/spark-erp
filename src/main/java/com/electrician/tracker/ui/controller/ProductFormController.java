@@ -5,6 +5,7 @@ import com.electrician.tracker.domain.ProductUnit;
 import com.electrician.tracker.service.ProductService;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EnumLabels;
+import com.electrician.tracker.ui.util.SuggestionPicker;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -15,6 +16,10 @@ import javafx.util.StringConverter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+/**
+ * Adds or edits a catalog product: name, optional brand and category (both
+ * suggest what was entered before, and accept anything new) and unit.
+ */
 @Component
 @Scope("prototype")
 public class ProductFormController {
@@ -24,8 +29,14 @@ public class ProductFormController {
     @FXML
     private TextField nameField;
     @FXML
+    private ComboBox<String> brandComboBox;
+    @FXML
+    private ComboBox<String> categoryComboBox;
+    @FXML
     private ComboBox<ProductUnit> unitComboBox;
 
+    private SuggestionPicker brandPicker;
+    private SuggestionPicker categoryPicker;
     private Long editingId;
     private boolean saved;
 
@@ -35,6 +46,8 @@ public class ProductFormController {
 
     @FXML
     private void initialize() {
+        brandPicker = new SuggestionPicker(brandComboBox, productService.findDistinctBrands());
+        categoryPicker = new SuggestionPicker(categoryComboBox, productService.findDistinctCategories());
         unitComboBox.getItems().setAll(ProductUnit.values());
         unitComboBox.setConverter(new StringConverter<>() {
             @Override
@@ -52,6 +65,8 @@ public class ProductFormController {
     public void editExisting(Product product) {
         this.editingId = product.getId();
         nameField.setText(product.getName());
+        brandPicker.select(product.getBrand());
+        categoryPicker.select(product.getCategory());
         unitComboBox.setValue(product.getUnit());
     }
 
@@ -61,7 +76,8 @@ public class ProductFormController {
 
     @FXML
     private void onSave(ActionEvent event) {
-        Product product = new Product(nameField.getText(), unitComboBox.getValue());
+        Product product = new Product(nameField.getText(), unitComboBox.getValue(), brandPicker.typedText(),
+                categoryPicker.typedText());
         try {
             if (editingId == null) {
                 productService.create(product);

@@ -9,19 +9,20 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Supplier names are free text on material lines. Names that differ only in
- * case, Turkish letters or spacing ("Elektrik Market" / "elektrik  market")
- * are the same supplier: the suggestion list shows each once, and a newly
- * typed variant is stored with the spelling already in use.
+ * Free-text names typed again and again (suppliers on material lines, product
+ * brands and categories). Names that differ only in case, Turkish letters or
+ * spacing ("Elektrik Market" / "elektrik  market") are the same name: the
+ * suggestion list shows each once, and a newly typed variant is stored with
+ * the spelling already in use.
  */
-public final class SupplierNames {
+public final class CanonicalNames {
 
     private static final Locale TURKISH = Locale.forLanguageTag("tr-TR");
 
-    private SupplierNames() {
+    private CanonicalNames() {
     }
 
-    /** One entry per supplier (first spelling wins), sorted alphabetically in Turkish. */
+    /** One entry per name (first spelling wins), sorted alphabetically in Turkish. */
     public static List<String> distinct(List<String> names) {
         Map<String, String> byKey = new LinkedHashMap<>();
         for (String name : names) {

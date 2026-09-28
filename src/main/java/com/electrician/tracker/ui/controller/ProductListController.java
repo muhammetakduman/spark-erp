@@ -1,270 +1,257 @@
 package com.electrician.tracker.ui.controller;
 
-import java.io.File;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
-import java.util.function.Function;
+import java.util.Objects;
 
-import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.domain.Product;
-import com.electrician.tracker.dto.ProductUsageReport;
-import com.electrician.tracker.dto.ProductUsageRow;
-import com.electrician.tracker.dto.ProductUsageSummary;
-import com.electrician.tracker.service.MetinKarsilastirici;
-import com.electrician.tracker.service.PriceHistoryService;
+import com.electrician.tracker.dto.CategoryTotals;
+import com.electrician.tracker.dto.ProductCatalog;
+import com.electrician.tracker.dto.ProductOverview;
+import com.electrician.tracker.dto.SupplierPrice;
+import com.electrician.tracker.service.AccessControl;
+import com.electrician.tracker.service.ProductCatalogService;
+import com.electrician.tracker.service.ProductFilter;
 import com.electrician.tracker.service.ProductService;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
+import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.Bicimlendirici;
-import com.electrician.tracker.ui.util.ContentNavigator;
+import com.electrician.tracker.ui.util.Debouncer;
 import com.electrician.tracker.ui.util.DialogUtil;
+import com.electrician.tracker.ui.util.EmptyState;
 import com.electrician.tracker.ui.util.EnumLabels;
+import com.electrician.tracker.ui.util.FilterChoices;
 import com.electrician.tracker.ui.util.ModalStageOpener;
+import com.electrician.tracker.ui.util.TableSorting;
 import com.electrician.tracker.ui.util.TaskRunner;
-import com.electrician.tracker.ui.util.VatLabels;
+import com.electrician.tracker.ui.util.ViewPaths;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
-import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.fxml.FXML;
-import javafx.scene.control.DatePicker;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableColumn.CellDataFeatures;
-import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
-import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
-import javafx.util.Callback;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
- * Product catalog plus "Ürün Kullanım Geçmişi": for the selected product,
- * to whom, when and at what price it was given, with a summary. Double
- * clicking a usage row opens that job on the main screen.
+ * "Ürünler": the catalog with purchase statistics. One search box (name and
+ * brand, filtered while typing) plus category, brand and supplier filters
+ * that work together; a category list on the left; below, the selected
+ * product's detail. Inside a category the cheapest product comes first and
+ * the category's total expense is shown. Purchase columns and the supplier
+ * filter exist only for users who may see purchase prices.
  */
 @Component
+@Scope("prototype")
 public class ProductListController {
 
-    private static final String FORM_FXML = "/fxml/product_form.fxml";
-    private static final String HOME_FXML = "/fxml/home_screen.fxml";
-    private static final int DOUBLE_CLICK = 2;
-    private static final double BADGE_SPACING = 6;
-
     private final ProductService productService;
-    private final PriceHistoryService priceHistoryService;
+    private final ProductCatalogService productCatalogService;
+    private final AccessControl accessControl;
     private final ModalStageOpener modalStageOpener;
     private final TaskRunner taskRunner;
-    private final ContentNavigator contentNavigator;
 
+    @FXML
+    private ProgressIndicator loadingIndicator;
     @FXML
     private TextField searchField;
     @FXML
-    private TableView<Product> table;
+    private ComboBox<String> categoryFilter;
     @FXML
-    private TableColumn<Product, String> nameColumn;
+    private ComboBox<String> brandFilter;
     @FXML
-    private TableColumn<Product, String> unitColumn;
+    private ComboBox<String> supplierFilter;
     @FXML
-    private ProgressIndicator loadingIndicator;
+    private Label resultLabel;
+    @FXML
+    private ListView<String> categoryList;
+    @FXML
+    private Label categoryTotalsLabel;
+    @FXML
+    private TableView<ProductOverview> productTable;
+    @FXML
+    private ProductUsagePanelController usagePanelController;
 
-    @FXML
-    private Label usageTitleLabel;
-    @FXML
-    private DatePicker fromDatePicker;
-    @FXML
-    private DatePicker toDatePicker;
-    @FXML
-    private ProgressIndicator usageLoadingIndicator;
-    @FXML
-    private TableView<ProductUsageRow> usageTable;
-    @FXML
-    private TableColumn<ProductUsageRow, String> usageDateColumn;
-    @FXML
-    private TableColumn<ProductUsageRow, String> usageCustomerColumn;
-    @FXML
-    private TableColumn<ProductUsageRow, ProductUsageRow> usageJobColumn;
-    @FXML
-    private TableColumn<ProductUsageRow, String> usageQuantityColumn;
-    @FXML
-    private TableColumn<ProductUsageRow, String> usagePurchaseColumn;
-    @FXML
-    private TableColumn<ProductUsageRow, String> usageSupplierColumn;
-    @FXML
-    private TableColumn<ProductUsageRow, String> usageSaleColumn;
-    @FXML
-    private TableColumn<ProductUsageRow, String> usageVatColumn;
-    @FXML
-    private TableColumn<ProductUsageRow, String> usageTotalColumn;
-    @FXML
-    private VBox usageSummaryBox;
+    private final ObservableList<ProductOverview> products = FXCollections.observableArrayList();
+    private FilteredList<ProductOverview> filteredProducts;
+    private boolean syncingCategory;
 
-    private final ObservableList<Product> products = FXCollections.observableArrayList();
-    private final FilteredList<Product> filteredProducts = new FilteredList<>(products);
-
-    public ProductListController(ProductService productService, PriceHistoryService priceHistoryService,
-            ModalStageOpener modalStageOpener, TaskRunner taskRunner, ContentNavigator contentNavigator) {
+    public ProductListController(ProductService productService, ProductCatalogService productCatalogService,
+            AccessControl accessControl, ModalStageOpener modalStageOpener, TaskRunner taskRunner) {
         this.productService = productService;
-        this.priceHistoryService = priceHistoryService;
+        this.productCatalogService = productCatalogService;
+        this.accessControl = accessControl;
         this.modalStageOpener = modalStageOpener;
         this.taskRunner = taskRunner;
-        this.contentNavigator = contentNavigator;
     }
 
     @FXML
     private void initialize() {
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-        unitColumn.setCellValueFactory(data -> new SimpleStringProperty(EnumLabels.label(data.getValue().getUnit())));
-        table.setItems(filteredProducts);
-        searchField.textProperty().addListener((obs, oldValue, newValue) -> applySearch(newValue));
+        products.clear();
+        filteredProducts = new FilteredList<>(products);
+        TableSorting.bindSorted(productTable, filteredProducts);
+        productTable.getColumns().setAll(columns());
+        productTable.setPlaceholder(EmptyState.of(AppIcon.PRODUCTS, "product.empty",
+                "product.action.new", this::onNew));
+        boolean purchaseVisible = accessControl.canViewFinancials();
+        supplierFilter.setVisible(purchaseVisible);
+        supplierFilter.setManaged(purchaseVisible);
 
-        setUpUsageColumns();
-        usageTable.setPlaceholder(new Label(DialogUtil.message("productUsage.empty")));
-        usageTable.setRowFactory(tv -> {
-            TableRow<ProductUsageRow> row = new TableRow<>();
-            row.setOnMouseClicked(event -> {
-                if (event.getClickCount() == DOUBLE_CLICK && !row.isEmpty()) {
-                    openJob(row.getItem());
-                }
-            });
-            return row;
-        });
-
-        table.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> loadUsage());
-        fromDatePicker.valueProperty().addListener((obs, oldValue, newValue) -> loadUsage());
-        toDatePicker.valueProperty().addListener((obs, oldValue, newValue) -> loadUsage());
-
-        showSummary(ProductUsageSummary.empty(), null);
+        Debouncer searchDebouncer = new Debouncer(Debouncer.TYPING_PAUSE, this::applyFilters);
+        searchField.textProperty().addListener((obs, o, n) -> searchDebouncer.trigger());
+        categoryFilter.valueProperty().addListener((obs, o, n) -> onCategoryChanged());
+        brandFilter.valueProperty().addListener((obs, o, n) -> applyFilters());
+        supplierFilter.valueProperty().addListener((obs, o, n) -> applyFilters());
+        categoryList.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> onCategoryListClicked(n));
+        productTable.getSelectionModel().selectedItemProperty().addListener((obs, o, selected) ->
+                usagePanelController.showProduct(selected == null ? null : selected.product()));
         refresh();
     }
 
-    private void setUpUsageColumns() {
-        usageDateColumn.setCellValueFactory(text(row -> Bicimlendirici.date(row.date())));
-        usageCustomerColumn.setCellValueFactory(text(ProductUsageRow::customerName));
-        usageJobColumn.setCellValueFactory(data -> new SimpleObjectProperty<>(data.getValue()));
-        usageJobColumn.setCellFactory(column -> new JobCell());
-        usageQuantityColumn.setCellValueFactory(text(row -> Bicimlendirici.quantity(row.quantity())));
-        usagePurchaseColumn.setCellValueFactory(text(row -> priceWithVat(row.purchaseUnitPrice(),
-                row.purchaseVatRate(), row.purchaseVatIncluded())));
-        usageSupplierColumn.setCellValueFactory(text(ProductUsageRow::supplierName));
-        usageSaleColumn.setCellValueFactory(text(row -> Bicimlendirici.money(row.saleUnitPrice())));
-        usageVatColumn.setCellValueFactory(text(row -> VatLabels.describe(row.vatRate(), row.vatIncluded())));
-        usageTotalColumn.setCellValueFactory(text(row -> Bicimlendirici.money(row.saleTotal())));
-    }
-
-    private static <T> Callback<CellDataFeatures<T, String>, ObservableValue<String>> text(Function<T, String> value) {
-        return data -> new SimpleStringProperty(value.apply(data.getValue()));
-    }
-
-    /** "10,00 ₺ · %20 hariç"; the VAT part is left out when the price has none. */
-    private static String priceWithVat(BigDecimal price, Integer vatRate, Boolean vatIncluded) {
-        if (price == null || vatRate == null) {
-            return Bicimlendirici.money(price);
+    private List<TableColumn<ProductOverview, ?>> columns() {
+        List<TableColumn<ProductOverview, ?>> columns = new ArrayList<>();
+        columns.add(textColumn("product.field.name", overview -> overview.product().getName()));
+        columns.add(textColumn("product.field.brand", overview -> overview.product().getBrand()));
+        columns.add(textColumn("product.field.category", overview -> overview.product().getCategory()));
+        columns.add(textColumn("product.field.unit", overview -> EnumLabels.label(overview.product().getUnit())));
+        TableColumn<ProductOverview, Integer> count = new TableColumn<>(DialogUtil.message("product.stats.count"));
+        TableSorting.integer(count, ProductOverview::purchaseCount);
+        TableColumn<ProductOverview, BigDecimal> quantity =
+                new TableColumn<>(DialogUtil.message("product.stats.quantity"));
+        TableSorting.number(quantity, ProductOverview::totalQuantity, Bicimlendirici::quantity);
+        columns.addAll(List.of(count, quantity));
+        if (accessControl.canViewFinancials()) {
+            columns.add(supplierPriceColumn("product.stats.lowest", ProductOverview::lowestPurchase));
+            columns.add(supplierPriceColumn("product.stats.highest", ProductOverview::highestPurchase));
+            TableColumn<ProductOverview, BigDecimal> last = new TableColumn<>(DialogUtil.message("product.stats.last"));
+            TableSorting.money(last, ProductOverview::lastPurchasePrice);
+            TableColumn<ProductOverview, BigDecimal> expense =
+                    new TableColumn<>(DialogUtil.message("product.stats.expense"));
+            TableSorting.money(expense, ProductOverview::totalExpense);
+            columns.addAll(List.of(last, expense));
         }
-        return Bicimlendirici.money(price) + " · " + VatLabels.describe(vatRate, vatIncluded);
+        return columns;
     }
 
-    private void applySearch(String query) {
-        String normalizedQuery = MetinKarsilastirici.normalize(query);
-        filteredProducts.setPredicate(product -> normalizedQuery.isEmpty()
-                || MetinKarsilastirici.normalize(product.getName()).contains(normalizedQuery));
+    private static TableColumn<ProductOverview, String> textColumn(String titleKey,
+            java.util.function.Function<ProductOverview, String> value) {
+        TableColumn<ProductOverview, String> column = new TableColumn<>(DialogUtil.message(titleKey));
+        TableSorting.text(column, value);
+        return column;
+    }
+
+    /** "12,50 ₺ (Elektrik Market)", sorted by the price. */
+    private static TableColumn<ProductOverview, SupplierPrice> supplierPriceColumn(String titleKey,
+            java.util.function.Function<ProductOverview, SupplierPrice> value) {
+        TableColumn<ProductOverview, SupplierPrice> column = new TableColumn<>(DialogUtil.message(titleKey));
+        column.setCellValueFactory(data -> new SimpleObjectProperty<>(value.apply(data.getValue())));
+        column.setCellFactory(col -> new SupplierPriceCell());
+        column.setComparator(Comparator.nullsLast(Comparator.comparing(SupplierPrice::unitPrice)));
+        column.getStyleClass().add("money-cell");
+        return column;
     }
 
     private void refresh() {
-        taskRunner.run(productService::findAll, this::showProducts, loadingIndicator, table);
+        taskRunner.run(productCatalogService::loadCatalog, this::showCatalog, loadingIndicator, productTable);
     }
 
-    private void showProducts(List<Product> loaded) {
-        products.setAll(loaded);
-        applySearch(searchField.getText());
+    private void showCatalog(ProductCatalog catalog) {
+        FilterChoices.setUp(categoryFilter, catalog.categories());
+        FilterChoices.setUp(brandFilter, catalog.brands());
+        FilterChoices.setUp(supplierFilter, catalog.suppliers());
+        List<String> categories = new ArrayList<>(categoryFilter.getItems());
+        syncingCategory = true;
+        categoryList.getItems().setAll(categories);
+        categoryList.getSelectionModel().select(categoryFilter.getValue());
+        syncingCategory = false;
+        products.setAll(catalog.products());
+        applyFilters();
     }
 
-    private void loadUsage() {
-        Product product = table.getSelectionModel().getSelectedItem();
-        if (product == null) {
-            usageTitleLabel.setText(DialogUtil.message("productUsage.title"));
-            usageTable.getItems().clear();
-            showSummary(ProductUsageSummary.empty(), null);
+    /** The category list and the category drop-down always show the same choice. */
+    private void onCategoryListClicked(String category) {
+        if (syncingCategory || category == null || Objects.equals(category, categoryFilter.getValue())) {
             return;
         }
-        usageTitleLabel.setText(DialogUtil.message("productUsage.titleFor", product.getName()));
-        LocalDate from = fromDatePicker.getValue();
-        LocalDate to = toDatePicker.getValue();
-        taskRunner.run(() -> priceHistoryService.usageReport(product.getId(), from, to),
-                report -> showUsage(report, product), usageLoadingIndicator, usageTable);
+        categoryFilter.setValue(category);
     }
 
-    private void showUsage(ProductUsageReport report, Product product) {
-        usageTable.setItems(FXCollections.observableArrayList(report.rows()));
-        showSummary(report.summary(), product);
+    private void onCategoryChanged() {
+        syncingCategory = true;
+        categoryList.getSelectionModel().select(categoryFilter.getValue());
+        syncingCategory = false;
+        applyFilters();
     }
 
-    private void showSummary(ProductUsageSummary summary, Product product) {
-        if (summary.usageCount() == 0) {
-            usageSummaryBox.getChildren().setAll(new Label(DialogUtil.message("productUsage.summary.none")));
+    private void applyFilters() {
+        if (filteredProducts == null) {
             return;
         }
-        usageSummaryBox.getChildren().setAll(
-                new Label(DialogUtil.message("productUsage.summary.count", String.valueOf(summary.usageCount()),
-                        Bicimlendirici.quantity(summary.totalQuantity()), EnumLabels.label(product.getUnit()))),
-                new Label(DialogUtil.message("productUsage.summary.last", summary.lastCustomerName(),
-                        Bicimlendirici.date(summary.lastDate()))),
-                new Label(DialogUtil.message("productUsage.summary.salePrices", moneyOrDash(summary.minSaleUnitPrice()),
-                        moneyOrDash(summary.maxSaleUnitPrice()), moneyOrDash(summary.lastSaleUnitPrice()))),
-                new Label(summary.cheapestSupplierName() == null
-                        ? DialogUtil.message("productUsage.summary.noSupplier")
-                        : DialogUtil.message("productUsage.summary.cheapestSupplier", summary.cheapestSupplierName(),
-                                Bicimlendirici.money(summary.cheapestPurchaseUnitPrice()))));
+        String category = FilterChoices.selected(categoryFilter);
+        // Inside one category the cheapest product comes first; otherwise category, brand, name.
+        FXCollections.sort(products, category == null ? TableSorting.productOverviews() : TableSorting.cheapestFirst());
+        ProductFilter filter = new ProductFilter(searchField.getText(), category, FilterChoices.selected(brandFilter),
+                FilterChoices.selected(supplierFilter));
+        filteredProducts.setPredicate(filter::matches);
+        showResultLine(filter);
+        showCategoryTotals(category);
     }
 
-    private static String moneyOrDash(BigDecimal value) {
-        return value == null ? "—" : Bicimlendirici.money(value);
+    /** "24 ürün · Kategori: Kablo · Tedarikçi: Elektrik Market". */
+    private void showResultLine(ProductFilter filter) {
+        List<String> parts = new ArrayList<>();
+        parts.add(DialogUtil.message("product.result.count", String.valueOf(filteredProducts.size())));
+        addPart(parts, "product.result.search", filter.text());
+        addPart(parts, "product.result.category", filter.category());
+        addPart(parts, "product.result.brand", filter.brand());
+        addPart(parts, "product.result.supplier", filter.supplier());
+        resultLabel.setText(String.join(" · ", parts));
     }
 
-    private void openJob(ProductUsageRow row) {
-        contentNavigator.<HomeController>show(HOME_FXML, home -> home.focusJob(row.jobId()));
+    private static void addPart(List<String> parts, String key, String value) {
+        if (value != null && !value.isBlank()) {
+            parts.add(DialogUtil.message(key, value.trim()));
+        }
+    }
+
+    /** "Pano kategorisi — toplam gider: 48.350,00 ₺ (12 alış)". */
+    private void showCategoryTotals(String category) {
+        boolean shown = category != null;
+        categoryTotalsLabel.setVisible(shown);
+        categoryTotalsLabel.setManaged(shown);
+        if (!shown) {
+            return;
+        }
+        CategoryTotals totals = productCatalogService.categoryTotals(category, products);
+        categoryTotalsLabel.setText(totals.totalExpense() == null
+                ? DialogUtil.message("product.category.countOnly", category, String.valueOf(totals.purchaseCount()))
+                : DialogUtil.message("product.category.totals", category, Bicimlendirici.money(totals.totalExpense()),
+                        String.valueOf(totals.purchaseCount())));
     }
 
     @FXML
-    private void onClearDates() {
-        fromDatePicker.setValue(null);
-        toDatePicker.setValue(null);
-    }
-
-    @FXML
-    private void onExport() {
-        Product product = table.getSelectionModel().getSelectedItem();
-        if (product == null) {
-            DialogUtil.showErrorMessage("error.selection.required");
-            return;
-        }
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle(DialogUtil.message("productUsage.export.title"));
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel (*.xlsx)", "*.xlsx"));
-        chooser.setInitialFileName(product.getName() + ".xlsx");
-        File selected = chooser.showSaveDialog(table.getScene().getWindow());
-        if (selected == null) {
-            return;
-        }
-        LocalDate from = fromDatePicker.getValue();
-        LocalDate to = toDatePicker.getValue();
-        taskRunner.run(() -> {
-            priceHistoryService.exportUsage(product, from, to, selected.toPath());
-            return selected;
-        }, file -> DialogUtil.showInfo("productUsage.export.success"), usageLoadingIndicator, usageTable);
+    private void onClearFilters() {
+        searchField.clear();
+        FilterChoices.reset(categoryFilter);
+        FilterChoices.reset(brandFilter);
+        FilterChoices.reset(supplierFilter);
+        applyFilters();
     }
 
     @FXML
     private void onNew() {
-        ProductFormController controller = modalStageOpener.openAndWait(
-                FORM_FXML, "product.dialog.new", table.getScene().getWindow());
+        ProductFormController controller = modalStageOpener.openAndWait(ViewPaths.PRODUCT_FORM, "product.dialog.new",
+                productTable.getScene().getWindow());
         if (controller.isSaved()) {
             refresh();
         }
@@ -272,14 +259,12 @@ public class ProductListController {
 
     @FXML
     private void onEdit() {
-        Product selected = table.getSelectionModel().getSelectedItem();
+        Product selected = selectedProduct();
         if (selected == null) {
-            DialogUtil.showErrorMessage("error.selection.required");
             return;
         }
-        ProductFormController controller = modalStageOpener.openAndWait(
-                FORM_FXML, "product.dialog.edit", table.getScene().getWindow(),
-                c -> c.editExisting(selected));
+        ProductFormController controller = modalStageOpener.openAndWait(ViewPaths.PRODUCT_FORM, "product.dialog.edit",
+                productTable.getScene().getWindow(), c -> c.editExisting(selected));
         if (controller.isSaved()) {
             refresh();
         }
@@ -287,12 +272,8 @@ public class ProductListController {
 
     @FXML
     private void onDelete() {
-        Product selected = table.getSelectionModel().getSelectedItem();
-        if (selected == null) {
-            DialogUtil.showErrorMessage("error.selection.required");
-            return;
-        }
-        if (!DialogUtil.confirm("product.confirm.delete")) {
+        Product selected = selectedProduct();
+        if (selected == null || !DialogUtil.confirm("product.confirm.delete")) {
             return;
         }
         try {
@@ -303,21 +284,26 @@ public class ProductListController {
         }
     }
 
-    /** "ŞANTİYE" / "SERVİS" badge followed by the job name. */
-    private static final class JobCell extends TableCell<ProductUsageRow, ProductUsageRow> {
+    private Product selectedProduct() {
+        ProductOverview selected = productTable.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            DialogUtil.showErrorMessage("error.selection.required");
+            return null;
+        }
+        return selected.product();
+    }
+
+    private static final class SupplierPriceCell extends TableCell<ProductOverview, SupplierPrice> {
         @Override
-        protected void updateItem(ProductUsageRow row, boolean empty) {
-            super.updateItem(row, empty);
-            if (empty || row == null) {
-                setGraphic(null);
+        protected void updateItem(SupplierPrice price, boolean empty) {
+            super.updateItem(price, empty);
+            if (empty || price == null) {
+                setText(null);
                 return;
             }
-            boolean site = row.jobType() == JobType.SITE;
-            Label badge = new Label(DialogUtil.message(
-                    site ? "employeeAttendance.badge.site" : "employeeAttendance.badge.service"));
-            badge.getStyleClass().addAll("badge", site ? "badge-site" : "badge-service");
-            Label name = new Label(row.jobName() == null ? "" : row.jobName());
-            setGraphic(new HBox(BADGE_SPACING, badge, name));
+            String money = Bicimlendirici.money(price.unitPrice());
+            setText(price.supplierName() == null ? money
+                    : DialogUtil.message("productUsage.supplierPrice", price.supplierName(), money));
         }
     }
 }

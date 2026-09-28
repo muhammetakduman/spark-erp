@@ -45,7 +45,8 @@ class PriceHistoryServiceTest {
                 item(service, LocalDate.of(2026, 9, 20), "5", "12", "Pazar A", "20"),
                 item(site, LocalDate.of(2026, 9, 10), "10", "10", "Pazar B", "18"),
                 item(site, LocalDate.of(2026, 8, 1), "3", "9", null, "25")));
-        this.service = new PriceHistoryService(repository, mock(ProductUsageExcelExportGenerator.class));
+        this.service = new PriceHistoryService(repository, mock(ProductUsageExcelExportGenerator.class),
+                TestAccess.admin());
     }
 
     @Test
@@ -72,8 +73,8 @@ class PriceHistoryServiceTest {
         assertThat(summary.maxSaleUnitPrice()).isEqualByComparingTo("25");
         assertThat(summary.lastSaleUnitPrice()).isEqualByComparingTo("20");
         // The 9 ₺ purchase has no supplier, so it cannot name the cheapest one.
-        assertThat(summary.cheapestSupplierName()).isEqualTo("Pazar B");
-        assertThat(summary.cheapestPurchaseUnitPrice()).isEqualByComparingTo("10");
+        assertThat(summary.cheapestSupplier().supplierName()).isEqualTo("Pazar B");
+        assertThat(summary.cheapestSupplier().unitPrice()).isEqualByComparingTo("10");
     }
 
     @Test
@@ -85,13 +86,13 @@ class PriceHistoryServiceTest {
         MaterialItemRepository repository = mock(MaterialItemRepository.class);
         when(repository.findHistoryByProductId(PRODUCT_ID)).thenReturn(List.of(includedVat, noVat));
         PriceHistoryService vatService = new PriceHistoryService(repository,
-                mock(ProductUsageExcelExportGenerator.class));
+                mock(ProductUsageExcelExportGenerator.class), TestAccess.admin());
 
         ProductUsageSummary summary = vatService.usageReport(PRODUCT_ID, null, null).summary();
 
         // 11,80 incl. 20% = 9,83 excl., cheaper than 10,50 without VAT.
-        assertThat(summary.cheapestSupplierName()).isEqualTo("Pazar C");
-        assertThat(summary.cheapestPurchaseUnitPrice()).isEqualByComparingTo("9.83");
+        assertThat(summary.cheapestSupplier().supplierName()).isEqualTo("Pazar C");
+        assertThat(summary.cheapestSupplier().unitPrice()).isEqualByComparingTo("9.83");
     }
 
     @Test
