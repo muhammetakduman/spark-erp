@@ -71,6 +71,11 @@ public class Employee {
         return active;
     }
 
+    /** Drops the default wage from this (detached) instance, for users who must not see wages. */
+    public void hideWage() {
+        this.defaultDailyWage = null;
+    }
+
     public void setActive(boolean active) {
         this.active = active;
     }

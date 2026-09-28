@@ -10,28 +10,34 @@ import com.electrician.tracker.service.exception.ValidationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/** Payments ("Tahsilat") are receivable data: only an ADMIN sees or changes them. */
 @Service
 public class PaymentService {
 
     private final PaymentRepository paymentRepository;
+    private final AccessControl accessControl;
 
-    public PaymentService(PaymentRepository paymentRepository) {
+    public PaymentService(PaymentRepository paymentRepository, AccessControl accessControl) {
         this.paymentRepository = paymentRepository;
+        this.accessControl = accessControl;
     }
 
     @Transactional(readOnly = true)
     public List<Payment> findByJob(Long jobId) {
+        accessControl.requireAdmin();
         return paymentRepository.findByJobIdOrderByPaymentDateAsc(jobId);
     }
 
     @Transactional
     public Payment addPayment(Payment payment) {
+        accessControl.requireAdmin();
         validate(payment);
         return paymentRepository.save(payment);
     }
 
     @Transactional
     public Payment update(Long id, Payment changes) {
+        accessControl.requireAdmin();
         validate(changes);
         Payment existing = paymentRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("error.payment.notFound"));
@@ -44,6 +50,7 @@ public class PaymentService {
 
     @Transactional
     public void delete(Long id) {
+        accessControl.requireAdmin();
         paymentRepository.deleteById(id);
     }
 

@@ -31,11 +31,14 @@ public class ReportService {
     private final JobRangeExcelExportGenerator jobRangeExcelExportGenerator;
     private final AttendanceService attendanceService;
     private final AttendanceMatrixExcelExportGenerator attendanceMatrixExcelExportGenerator;
+    private final CompanyService companyService;
+    private final AccessControl accessControl;
 
     public ReportService(JobService jobService, MaterialService materialService, PaymentService paymentService,
             JobSummaryService jobSummaryService, JobPdfReportGenerator jobPdfReportGenerator,
             JobRangeExcelExportGenerator jobRangeExcelExportGenerator, AttendanceService attendanceService,
-            AttendanceMatrixExcelExportGenerator attendanceMatrixExcelExportGenerator) {
+            AttendanceMatrixExcelExportGenerator attendanceMatrixExcelExportGenerator, CompanyService companyService,
+            AccessControl accessControl) {
         this.jobService = jobService;
         this.materialService = materialService;
         this.paymentService = paymentService;
@@ -44,15 +47,20 @@ public class ReportService {
         this.jobRangeExcelExportGenerator = jobRangeExcelExportGenerator;
         this.attendanceService = attendanceService;
         this.attendanceMatrixExcelExportGenerator = attendanceMatrixExcelExportGenerator;
+        this.companyService = companyService;
+        this.accessControl = accessControl;
     }
 
+    /** The customer's job handout; payments and the remaining balance only when the user may see them. */
     @Transactional(readOnly = true)
     public void generateJobPdf(Long jobId, Path outputFile) {
         Job job = jobService.findById(jobId);
         JobSummary summary = jobSummaryService.summarize(jobId);
         List<MaterialItem> materials = materialService.findByJob(jobId);
-        List<Payment> payments = paymentService.findByJob(jobId);
-        jobPdfReportGenerator.generate(job, summary, materials, payments, outputFile);
+        boolean includePayments = accessControl.canViewFinancials();
+        List<Payment> payments = includePayments ? paymentService.findByJob(jobId) : List.of();
+        jobPdfReportGenerator.generate(job, summary, materials, payments, companyService.get(), includePayments,
+                outputFile);
     }
 
     @Transactional(readOnly = true)
@@ -69,6 +77,7 @@ public class ReportService {
                         && !job.getStartDate().isAfter(end))
                 .sorted(Comparator.comparing(Job::getStartDate))
                 .toList();
-        jobRangeExcelExportGenerator.export(jobsInRange, board.summaries(), outputFile);
+        jobRangeExcelExportGenerator.export(jobsInRange, board.summaries(), board.materialsByJob(), outputFile,
+                accessControl.canViewFinancials());
     }
 }

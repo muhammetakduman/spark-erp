@@ -5,6 +5,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Attendance ("puantaj"): every worked day is its own row, for any job type
- * and status. Batches expand to one row per date × employee.
+ * and status. Batches expand to one row per date × employee. A MANAGER never
+ * sees or sets wages: their rows take each employee's default wage and their
+ * edits keep the stored wage. Only an ADMIN deletes rows.
  */
 @Service
 public class AttendanceService {
@@ -42,17 +45,21 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final JobRepository jobRepository;
     private final EmployeeRepository employeeRepository;
+    private final AccessControl accessControl;
+    private final FinancialDataMasker masker;
 
     public AttendanceService(AttendanceRepository attendanceRepository, JobRepository jobRepository,
-            EmployeeRepository employeeRepository) {
+            EmployeeRepository employeeRepository, AccessControl accessControl, FinancialDataMasker masker) {
         this.attendanceRepository = attendanceRepository;
         this.jobRepository = jobRepository;
         this.employeeRepository = employeeRepository;
+        this.accessControl = accessControl;
+        this.masker = masker;
     }
 
     @Transactional(readOnly = true)
     public List<Attendance> findByJob(Long jobId) {
-        return attendanceRepository.findByJobIdOrderByAttendanceDateAsc(jobId);
+        return masker.maskAttendances(attendanceRepository.findByJobIdOrderByAttendanceDateAsc(jobId));
     }
 
     /** Dates from {@code from} to {@code to} inclusive, optionally skipping weekend days. */
@@ -83,8 +90,8 @@ public class AttendanceService {
                 amountPerDate = amountPerDate.add(entry.dailyWage().multiply(factor));
             }
         }
-        return new AttendancePreview(dates.size(), entries.size(), factorPerDate.multiply(dateCount),
-                amountPerDate.multiply(dateCount));
+        BigDecimal amount = accessControl.canViewFinancials() ? amountPerDate.multiply(dateCount) : null;
+        return new AttendancePreview(dates.size(), entries.size(), factorPerDate.multiply(dateCount), amount);
     }
 
     /**
@@ -139,11 +146,13 @@ public class AttendanceService {
      * job, employee and date are skipped silently and counted.
      */
     @Transactional
-    public AttendanceSaveResult saveBatch(Long jobId, List<LocalDate> dates, List<AttendanceEntry> entries) {
-        validateBatch(dates, entries);
+    public AttendanceSaveResult saveBatch(Long jobId, List<LocalDate> dates, List<AttendanceEntry> requested) {
+        validateSelection(dates, requested);
         Job job = jobRepository.findById(jobId)
                 .orElseThrow(() -> new NotFoundException("error.job.notFound"));
-        Map<Long, Employee> employees = loadEmployees(entries);
+        Map<Long, Employee> employees = loadEmployees(requested);
+        List<AttendanceEntry> entries = withAllowedWages(requested, employees);
+        validateEntries(entries);
         Set<String> existingKeys = attendanceRepository.findByJobAndDates(jobId, dates).stream()
                 .map(a -> key(a.getEmployee().getId(), a.getAttendanceDate()))
                 .collect(Collectors.toSet());
@@ -164,13 +173,31 @@ public class AttendanceService {
         return new AttendanceSaveResult(toCreate.size(), skipped);
     }
 
+    /**
+     * One full day on {@code date} for each employee, at their default wage
+     * (e.g. a completed daily job written to the attendance). Days already
+     * recorded on this job are skipped silently.
+     */
+    @Transactional
+    public AttendanceSaveResult saveFullDays(Long jobId, LocalDate date, Collection<Long> employeeIds) {
+        List<AttendanceEntry> entries = employeeRepository.findAllById(employeeIds).stream()
+                .map(employee -> new AttendanceEntry(employee.getId(), employee.getDefaultDailyWage(),
+                        AttendanceMath.FULL_DAY))
+                .toList();
+        if (entries.isEmpty()) {
+            return new AttendanceSaveResult(0, 0);
+        }
+        return saveBatch(jobId, List.of(date), entries);
+    }
+
     @Transactional
     public Attendance update(Long id, BigDecimal dailyWage, BigDecimal dayFactor, String note) {
-        validateWage(dailyWage);
-        validateFactor(dayFactor);
         Attendance attendance = attendanceRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("error.attendance.notFound"));
-        attendance.setDailyWage(dailyWage);
+        BigDecimal wage = accessControl.canViewFinancials() ? dailyWage : attendance.getDailyWage();
+        validateWage(wage);
+        validateFactor(dayFactor);
+        attendance.setDailyWage(wage);
         attendance.setDayFactor(dayFactor);
         attendance.setNote(note == null || note.isBlank() ? null : note.trim());
         return attendance;
@@ -178,6 +205,7 @@ public class AttendanceService {
 
     @Transactional
     public void delete(Long id) {
+        accessControl.requireAdmin();
         attendanceRepository.deleteById(id);
     }
 
@@ -189,7 +217,9 @@ public class AttendanceService {
                 .map(entry -> toJobAttendance(entry.getKey(), entry.getValue()))
                 .sorted(Comparator.comparing(group -> group.days().get(0).date()))
                 .toList();
-        return new EmployeeAttendanceReport(jobs, AttendanceMath.dayCount(rows), AttendanceMath.totalWage(rows));
+        EmployeeAttendanceReport report = new EmployeeAttendanceReport(jobs, AttendanceMath.dayCount(rows),
+                AttendanceMath.totalWage(rows));
+        return accessControl.canViewFinancials() ? report : report.withoutWages();
     }
 
     @Transactional(readOnly = true)
@@ -225,13 +255,27 @@ public class AttendanceService {
         return employees;
     }
 
-    private void validateBatch(List<LocalDate> dates, List<AttendanceEntry> entries) {
+    /** A MANAGER's rows always take the employee's default wage, whatever was sent. */
+    private List<AttendanceEntry> withAllowedWages(List<AttendanceEntry> entries, Map<Long, Employee> employees) {
+        if (accessControl.canViewFinancials()) {
+            return entries;
+        }
+        return entries.stream()
+                .map(entry -> new AttendanceEntry(entry.employeeId(),
+                        employees.get(entry.employeeId()).getDefaultDailyWage(), entry.dayFactor()))
+                .toList();
+    }
+
+    private void validateSelection(List<LocalDate> dates, List<AttendanceEntry> entries) {
         if (dates == null || dates.isEmpty()) {
             throw new ValidationException("error.attendance.date.required");
         }
         if (entries == null || entries.isEmpty()) {
             throw new ValidationException("error.attendance.employee.required");
         }
+    }
+
+    private void validateEntries(List<AttendanceEntry> entries) {
         for (AttendanceEntry entry : entries) {
             validateWage(entry.dailyWage());
             validateFactor(entry.dayFactor());

@@ -16,4 +16,9 @@ public record EmployeeWageSummary(
         BigDecimal averageWage,
         BigDecimal totalWage,
         List<WorkedDay> days) {
+
+    /** Day counts only; the average and total wage are removed. */
+    public EmployeeWageSummary withoutWages() {
+        return new EmployeeWageSummary(employeeId, employeeName, master, dayCount, null, null, days);
+    }
 }

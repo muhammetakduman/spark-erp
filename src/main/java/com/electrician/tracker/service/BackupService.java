@@ -33,10 +33,12 @@ public class BackupService {
 
     private final SettingService settingService;
     private final DataSource dataSource;
+    private final AccessControl accessControl;
 
-    public BackupService(SettingService settingService, DataSource dataSource) {
+    public BackupService(SettingService settingService, DataSource dataSource, AccessControl accessControl) {
         this.settingService = settingService;
         this.dataSource = dataSource;
+        this.accessControl = accessControl;
     }
 
     public Path getBackupFolder() {
@@ -46,6 +48,7 @@ public class BackupService {
     }
 
     public void setBackupFolder(Path folder) {
+        accessControl.requireAdmin();
         settingService.setValue(BACKUP_FOLDER_SETTING_KEY, folder.toString());
     }
 
@@ -103,6 +106,7 @@ public class BackupService {
      * application afterward, since this JVM's connection pool is now dead.
      */
     public void restoreFromBackup(Path backupFile) {
+        accessControl.requireAdmin();
         Path databaseFile = DatabasePathResolver.resolveDatabaseFile();
         if (dataSource instanceof Closeable closeable) {
             try {

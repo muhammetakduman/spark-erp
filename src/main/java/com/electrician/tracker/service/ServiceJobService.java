@@ -13,7 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Saves a service job together with its material lines in one transaction,
  * for both a new service and one reopened for editing. Material lines of a
- * service always carry the service date.
+ * service always carry the service date. Removing a saved line is a delete,
+ * so only an ADMIN may do it (the whole save is rolled back otherwise).
  */
 @Service
 public class ServiceJobService {
@@ -54,8 +55,7 @@ public class ServiceJobService {
                 .map(MaterialItem::getId)
                 .filter(Objects::nonNull)
                 .collect(Collectors.toSet());
-        materialService.findByJob(jobId).stream()
-                .map(MaterialItem::getId)
+        materialService.findLineIds(jobId).stream()
                 .filter(lineId -> !keptIds.contains(lineId))
                 .forEach(materialService::delete);
     }

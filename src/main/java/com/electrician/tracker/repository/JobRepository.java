@@ -24,5 +24,8 @@ public interface JobRepository extends JpaRepository<Job, Long> {
     @EntityGraph(attributePaths = "customer")
     List<Job> findByTypeAndStatus(JobType type, JobStatus status);
 
+    @EntityGraph(attributePaths = "customer")
+    List<Job> findByStatus(JobStatus status);
+
     long countByCustomerId(Long customerId);
 }

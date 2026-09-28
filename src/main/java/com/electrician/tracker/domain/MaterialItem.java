@@ -37,8 +37,21 @@ public class MaterialItem {
     @Column(nullable = false)
     private BigDecimal quantity;
 
+    /** The purchase unit price as entered, in {@link #purchaseCurrency}. */
     @Column(name = "purchase_unit_price")
     private BigDecimal purchaseUnitPrice;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "purchase_currency", nullable = false)
+    private CurrencyCode purchaseCurrency = CurrencyCode.TRY;
+
+    /** Lira value of one unit of the purchase currency on the purchase day (1 for lira). */
+    @Column(name = "purchase_exchange_rate")
+    private BigDecimal purchaseExchangeRate;
+
+    /** Purchase unit price in lira, frozen when the line is saved; every cost uses this value. */
+    @Column(name = "purchase_unit_price_tl")
+    private BigDecimal purchaseUnitPriceTl;
 
     @Column(name = "supplier_name")
     private String supplierName;
@@ -131,6 +144,35 @@ public class MaterialItem {
         this.purchaseUnitPrice = purchaseUnitPrice;
     }
 
+    public CurrencyCode getPurchaseCurrency() {
+        return purchaseCurrency;
+    }
+
+    public BigDecimal getPurchaseExchangeRate() {
+        return purchaseExchangeRate;
+    }
+
+    /** The lira purchase unit price; a lira price not yet normalized by the service is its own lira value. */
+    public BigDecimal getPurchaseUnitPriceTl() {
+        if (purchaseUnitPriceTl == null && purchaseUnitPrice != null
+                && (purchaseCurrency == null || !purchaseCurrency.isForeign())) {
+            return purchaseUnitPrice;
+        }
+        return purchaseUnitPriceTl;
+    }
+
+    /** Currency and exchange rate of the entered purchase price, and the lira value derived from them. */
+    public void setPurchaseCurrency(CurrencyCode currency, BigDecimal exchangeRate, BigDecimal unitPriceTl) {
+        this.purchaseCurrency = currency;
+        this.purchaseExchangeRate = exchangeRate;
+        this.purchaseUnitPriceTl = unitPriceTl;
+    }
+
+    /** Bought in dollars or euros (with a purchase price). */
+    public boolean isForeignCurrencyPurchase() {
+        return purchaseUnitPrice != null && purchaseCurrency != null && purchaseCurrency.isForeign();
+    }
+
     public String getSupplierName() {
         return supplierName;
     }
@@ -194,6 +236,20 @@ public class MaterialItem {
 
     public String getNote() {
         return note;
+    }
+
+    /**
+     * Drops the purchase price, its VAT and the supplier from this (detached)
+     * instance, for users who must not see purchase information.
+     */
+    public void hidePurchaseInfo() {
+        this.purchaseUnitPrice = null;
+        this.purchaseCurrency = null;
+        this.purchaseExchangeRate = null;
+        this.purchaseUnitPriceTl = null;
+        this.supplierName = null;
+        this.purchaseVatRate = null;
+        this.purchaseVatIncluded = null;
     }
 
     public void setNote(String note) {

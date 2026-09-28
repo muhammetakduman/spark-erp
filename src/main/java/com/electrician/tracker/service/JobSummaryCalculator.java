@@ -63,7 +63,8 @@ public class JobSummaryCalculator {
                 scale(profit),
                 scale(collectedTotal),
                 scale(remaining),
-                paymentReceived);
+                paymentReceived,
+                countForeignCurrencyLines(materialItems));
     }
 
     /** Everything the customer is charged: material lines plus service and labor fees. */
@@ -88,17 +89,21 @@ public class JobSummaryCalculator {
                 .toList();
     }
 
-    /** Purchase cost lines with their own purchase VAT; lines without a purchase price are skipped. */
+    /** Purchase cost lines (lira value frozen at purchase) with their own purchase VAT; lines without a purchase price are skipped. */
     static List<KdvHesaplayici.Line> purchaseLines(List<MaterialItem> items) {
         return items.stream()
-                .filter(item -> item.getPurchaseUnitPrice() != null)
-                .map(item -> new KdvHesaplayici.Line(item.getQuantity().multiply(item.getPurchaseUnitPrice()),
+                .filter(item -> item.getPurchaseUnitPriceTl() != null)
+                .map(item -> new KdvHesaplayici.Line(item.getQuantity().multiply(item.getPurchaseUnitPriceTl()),
                         item.getPurchaseVatRate(), item.getPurchaseVatIncluded()))
                 .toList();
     }
 
+    static int countForeignCurrencyLines(List<MaterialItem> items) {
+        return (int) items.stream().filter(MaterialItem::isForeignCurrencyPurchase).count();
+    }
+
     static int countMissingPurchasePrice(List<MaterialItem> items) {
-        return (int) items.stream().filter(item -> item.getPurchaseUnitPrice() == null).count();
+        return (int) items.stream().filter(item -> item.getPurchaseUnitPriceTl() == null).count();
     }
 
     private BigDecimal sumPayments(List<Payment> payments) {

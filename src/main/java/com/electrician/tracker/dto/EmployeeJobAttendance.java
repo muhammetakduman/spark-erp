@@ -13,4 +13,8 @@ public record EmployeeJobAttendance(
         BigDecimal dayCount,
         BigDecimal totalWage,
         List<WorkedDay> days) {
+
+    public EmployeeJobAttendance withoutWages() {
+        return new EmployeeJobAttendance(jobId, jobType, jobLabel, dayCount, null, days);
+    }
 }

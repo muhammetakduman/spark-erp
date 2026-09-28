@@ -29,4 +29,10 @@ public interface MaterialItemRepository extends JpaRepository<MaterialItem, Long
     List<String> findDistinctSupplierNames();
 
     long countByProductId(Long productId);
+
+    long countByJobId(Long jobId);
+
+    /** Every line with its product (no job), for the per-product purchase statistics. */
+    @Query("select m from MaterialItem m join fetch m.product")
+    List<MaterialItem> findAllWithProduct();
 }

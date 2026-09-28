@@ -107,6 +107,11 @@ public class Attendance {
         return note;
     }
 
+    /** Drops the wage from this (detached) instance, for users who must not see wages. */
+    public void hideWage() {
+        this.dailyWage = null;
+    }
+
     public void setNote(String note) {
         this.note = note;
     }

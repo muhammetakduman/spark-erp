@@ -7,6 +7,7 @@ import java.time.YearMonth;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.function.Function;
 
 import com.electrician.tracker.domain.Job;
@@ -16,21 +17,30 @@ import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.dto.DashboardFigures;
 import com.electrician.tracker.dto.JobBoard;
 import com.electrician.tracker.dto.JobSummary;
+import com.electrician.tracker.dto.RecentActivity;
 
 /**
  * Pure calculation of the main-screen figures from an already-loaded
  * {@link JobBoard}; no queries, so refreshing one job never reloads the rest.
  * <p>
- * Monthly profit: VAT-exclusive sales minus VAT-exclusive purchase cost of the
- * material lines dated in the month, plus a job's service/labor fees when the
- * job started in that month. Attendance wages are only recorded, never
- * deducted from profit.
+ * Monthly revenue: VAT-exclusive sales of the material lines dated in the
+ * month, plus a job's service/labor fees when the job started in that month.
+ * Monthly profit: that revenue minus the VAT-exclusive purchase cost of the
+ * same material lines. Attendance wages are only recorded, never deducted.
  */
 public class DashboardCalculator {
 
+    static final int RECENT_ACTIVITY_LIMIT = 5;
     private static final int MONEY_SCALE = 2;
 
+    private final RecentActivities recentActivities = new RecentActivities();
+
     public DashboardFigures calculate(JobBoard board, YearMonth month) {
+        return calculate(board, month, Set.of(RecentActivity.Kind.values()));
+    }
+
+    /** {@code activityKinds}: which kinds of activity the "son hareketler" list may show. */
+    public DashboardFigures calculate(JobBoard board, YearMonth month, Set<RecentActivity.Kind> activityKinds) {
         List<Job> sites = jobsOfType(board, JobType.SITE);
         long activeSiteCount = sites.stream().filter(job -> job.getStatus() == JobStatus.ACTIVE).count();
         List<Job> completedWithBalance = sites.stream()
@@ -38,38 +48,44 @@ public class DashboardCalculator {
                 .filter(job -> hasBalance(board.summaries().get(job.getId())))
                 .sorted(Comparator.comparing(Job::getStartDate, Comparator.nullsLast(Comparator.naturalOrder())))
                 .toList();
-        BigDecimal pendingSiteReceivable = sites.stream()
-                .map(job -> board.summaries().get(job.getId()))
-                .filter(DashboardCalculator::hasBalance)
-                .map(JobSummary::remaining)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal pendingServicePayment = jobsOfType(board, JobType.SERVICE).stream()
-                .map(job -> board.summaries().get(job.getId()))
-                .filter(DashboardCalculator::hasBalance)
-                .map(JobSummary::remaining)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         List<MaterialItem> monthMaterials = new ArrayList<>();
-        BigDecimal monthlyProfit = BigDecimal.ZERO;
+        BigDecimal monthlyRevenue = BigDecimal.ZERO;
+        BigDecimal monthlyCost = BigDecimal.ZERO;
         for (Job job : board.jobs()) {
             List<MaterialItem> materials = inMonth(board.materialsFor(job.getId()), MaterialItem::getItemDate, month);
             monthMaterials.addAll(materials);
-            monthlyProfit = monthlyProfit.add(monthlyProfit(job, materials, month));
+            monthlyRevenue = monthlyRevenue.add(monthlyRevenue(job, materials, month));
+            monthlyCost = monthlyCost.add(
+                    KdvHesaplayici.calculate(JobSummaryCalculator.purchaseLines(materials)).excludingVat());
         }
 
-        return new DashboardFigures(activeSiteCount, scale(monthlyProfit),
+        return new DashboardFigures(activeSiteCount, scale(monthlyRevenue), scale(monthlyRevenue.subtract(monthlyCost)),
                 JobSummaryCalculator.countMissingPurchasePrice(monthMaterials) > 0,
-                scale(pendingSiteReceivable), scale(pendingServicePayment), completedWithBalance);
+                pendingBalance(board, sites), pendingBalance(board, jobsOfType(board, JobType.SERVICE)),
+                completedWithBalance,
+                recentActivities.latest(board, activityKinds, RECENT_ACTIVITY_LIMIT));
     }
 
-    private BigDecimal monthlyProfit(Job job, List<MaterialItem> materials, YearMonth month) {
+    /** What customers still owe on the services of an already-loaded board. */
+    public BigDecimal pendingServicePayment(JobBoard board) {
+        return pendingBalance(board, jobsOfType(board, JobType.SERVICE));
+    }
+
+    private BigDecimal monthlyRevenue(Job job, List<MaterialItem> materials, YearMonth month) {
         List<KdvHesaplayici.Line> saleLines = new ArrayList<>(JobSummaryCalculator.materialSaleLines(materials));
         if (isInMonth(job.getStartDate(), month)) {
             saleLines.addAll(JobSummaryCalculator.feeLines(job));
         }
-        BigDecimal revenue = KdvHesaplayici.calculate(saleLines).excludingVat();
-        BigDecimal cost = KdvHesaplayici.calculate(JobSummaryCalculator.purchaseLines(materials)).excludingVat();
-        return revenue.subtract(cost);
+        return KdvHesaplayici.calculate(saleLines).excludingVat();
+    }
+
+    private static BigDecimal pendingBalance(JobBoard board, List<Job> jobs) {
+        return scale(jobs.stream()
+                .map(job -> board.summaries().get(job.getId()))
+                .filter(DashboardCalculator::hasBalance)
+                .map(JobSummary::remaining)
+                .reduce(BigDecimal.ZERO, BigDecimal::add));
     }
 
     private static List<Job> jobsOfType(JobBoard board, JobType type) {

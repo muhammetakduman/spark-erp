@@ -8,4 +8,10 @@ public record EmployeeAttendanceReport(
         List<EmployeeJobAttendance> jobs,
         BigDecimal dayCount,
         BigDecimal totalWage) {
+
+    /** Day counts only; every wage total is removed. */
+    public EmployeeAttendanceReport withoutWages() {
+        return new EmployeeAttendanceReport(jobs.stream().map(EmployeeJobAttendance::withoutWages).toList(),
+                dayCount, null);
+    }
 }
