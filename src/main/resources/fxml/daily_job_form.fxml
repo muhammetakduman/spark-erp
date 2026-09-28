@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.electrician.tracker.ui.controller.DailyJobFormController"
+      styleClass="form-root" spacing="12" prefWidth="640">
+    <padding>
+        <Insets top="16" right="20" bottom="20" left="20"/>
+    </padding>
+    <GridPane hgap="12" vgap="10" styleClass="form-grid">
+        <columnConstraints>
+            <ColumnConstraints minWidth="120"/>
+            <ColumnConstraints minWidth="300" hgrow="ALWAYS"/>
+        </columnConstraints>
+
+        <Label text="%dailyJob.field.date" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <HBox spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="0" GridPane.columnIndex="1">
+            <DatePicker fx:id="datePicker"/>
+            <Label text="%dailyJob.field.time" styleClass="form-label"/>
+            <TextField fx:id="timeField" promptText="%dailyJob.field.time.prompt" prefColumnCount="5"/>
+            <CheckBox fx:id="urgentCheckBox" text="%dailyJob.field.urgent"/>
+        </HBox>
+
+        <Label text="%dailyJob.field.linkJob" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <HBox spacing="8" GridPane.rowIndex="1" GridPane.columnIndex="1">
+            <ComboBox fx:id="jobComboBox" promptText="%dailyJob.field.linkJob.prompt" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+            <Button text="%dailyJob.field.linkJob.clear" onAction="#onClearJob"/>
+        </HBox>
+
+        <Label text="%dailyJob.field.title" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="titleComboBox" editable="true" promptText="%dailyJob.field.title.prompt" maxWidth="Infinity"
+                  GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+        <Label text="%dailyJob.field.customer" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="customerComboBox" editable="true" promptText="%material.field.optional" maxWidth="Infinity"
+                  GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+
+        <Label text="%dailyJob.field.address" styleClass="form-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <TextField fx:id="addressField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+        <Label text="%dailyJob.field.phone" styleClass="form-label" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <TextField fx:id="phoneField" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+
+        <Label text="%dailyJob.field.team" styleClass="form-label" GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+        <ScrollPane fitToWidth="true" prefHeight="110" styleClass="team-picker" GridPane.rowIndex="6" GridPane.columnIndex="1">
+            <FlowPane fx:id="teamPane" hgap="14" vgap="8"/>
+        </ScrollPane>
+
+        <Label text="%dailyJob.field.note" styleClass="form-label" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
+        <TextArea fx:id="noteArea" prefRowCount="3" wrapText="true" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+    </GridPane>
+    <HBox spacing="10" styleClass="dialog-buttons">
+        <Button fx:id="saveButton" text="%action.save" onAction="#onSave" defaultButton="true"
+                styleClass="primary-button,action-save"/>
+        <Button text="%action.cancel" onAction="#onCancel" cancelButton="true"/>
+    </HBox>
+</VBox>

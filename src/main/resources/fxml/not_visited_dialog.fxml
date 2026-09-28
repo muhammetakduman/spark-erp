@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.electrician.tracker.ui.controller.NotVisitedDialogController"
+      styleClass="form-root" spacing="12" prefWidth="460">
+    <padding>
+        <Insets top="16" right="20" bottom="20" left="20"/>
+    </padding>
+    <Label fx:id="jobLabel" styleClass="subsection-title" wrapText="true"/>
+    <Label text="%dailyJob.notVisited.reason" styleClass="form-label"/>
+    <TextField fx:id="reasonField" promptText="%material.field.optional"/>
+    <CheckBox fx:id="moveCheckBox" text="%dailyJob.notVisited.moveToNextDay" selected="true"/>
+    <HBox spacing="10" styleClass="dialog-buttons">
+        <Button fx:id="saveButton" text="%action.save" onAction="#onSave" defaultButton="true"
+                styleClass="primary-button,action-save"/>
+        <Button text="%action.cancel" onAction="#onCancel" cancelButton="true"/>
+    </HBox>
+</VBox>
