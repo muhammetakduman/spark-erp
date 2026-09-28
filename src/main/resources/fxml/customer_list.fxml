@@ -16,18 +16,22 @@
     </padding>
     <top>
         <HBox spacing="10" styleClass="toolbar">
-            <Button text="%customer.action.new" onAction="#onNew" styleClass="primary-button"/>
-            <Button text="%action.edit" onAction="#onEdit"/>
-            <Button text="%action.delete" onAction="#onDelete"/>
+            <Button text="%customer.action.new" onAction="#onNew" styleClass="primary-button,action-add"/>
+            <Button text="%action.edit" onAction="#onEdit" styleClass="action-edit"/>
+            <Button text="%action.delete" onAction="#onDelete" styleClass="danger-button,action-delete"/>
             <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
         </HBox>
     </top>
     <center>
         <TableView fx:id="table">
+            <columnResizePolicy>
+                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
+            </columnResizePolicy>
             <columns>
                 <TableColumn fx:id="nameColumn" text="%customer.field.name" prefWidth="200"/>
                 <TableColumn fx:id="phoneColumn" text="%customer.field.phone" prefWidth="140"/>
                 <TableColumn fx:id="addressColumn" text="%customer.field.address" prefWidth="260"/>
+                <TableColumn fx:id="emailColumn" text="%customer.field.email" prefWidth="180"/>
                 <TableColumn fx:id="taxNoColumn" text="%customer.field.taxNo" prefWidth="140"/>
             </columns>
         </TableView>

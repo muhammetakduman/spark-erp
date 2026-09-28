@@ -24,6 +24,8 @@ public class CustomerFormController {
     @FXML
     private TextField addressField;
     @FXML
+    private TextField emailField;
+    @FXML
     private TextField taxNoField;
     @FXML
     private TextArea noteField;
@@ -41,6 +43,7 @@ public class CustomerFormController {
         nameField.setText(customer.getName());
         phoneField.setText(customer.getPhone());
         addressField.setText(customer.getAddress());
+        emailField.setText(customer.getEmail());
         taxNoField.setText(customer.getTaxNo());
         noteField.setText(customer.getNote());
     }
@@ -57,6 +60,8 @@ public class CustomerFormController {
     private void onSave(javafx.event.ActionEvent event) {
         Customer customer = new Customer(nameField.getText(), phoneField.getText(), addressField.getText(),
                 taxNoField.getText(), noteField.getText());
+        customer.setEmail(emailField.getText() == null || emailField.getText().isBlank() ? null
+                : emailField.getText().trim());
         try {
             if (editingId == null) {
                 result = customerService.create(customer);

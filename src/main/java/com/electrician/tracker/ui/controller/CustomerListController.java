@@ -5,18 +5,21 @@ import java.util.List;
 import com.electrician.tracker.domain.Customer;
 import com.electrician.tracker.service.CustomerService;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
+import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.DialogUtil;
+import com.electrician.tracker.ui.util.EmptyState;
 import com.electrician.tracker.ui.util.ModalStageOpener;
+import com.electrician.tracker.ui.util.TableSorting;
 import com.electrician.tracker.ui.util.TaskRunner;
-import javafx.collections.FXCollections;
 import javafx.fxml.FXML;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
-import javafx.scene.control.cell.PropertyValueFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 @Component
+@Scope("prototype")
 public class CustomerListController {
 
     private static final String FORM_FXML = "/fxml/customer_form.fxml";
@@ -34,6 +37,8 @@ public class CustomerListController {
     @FXML
     private TableColumn<Customer, String> addressColumn;
     @FXML
+    private TableColumn<Customer, String> emailColumn;
+    @FXML
     private TableColumn<Customer, String> taxNoColumn;
     @FXML
     private ProgressIndicator loadingIndicator;
@@ -47,10 +52,13 @@ public class CustomerListController {
 
     @FXML
     private void initialize() {
-        nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
-        phoneColumn.setCellValueFactory(new PropertyValueFactory<>("phone"));
-        addressColumn.setCellValueFactory(new PropertyValueFactory<>("address"));
-        taxNoColumn.setCellValueFactory(new PropertyValueFactory<>("taxNo"));
+        table.setPlaceholder(EmptyState.of(AppIcon.CUSTOMERS, "customers.emptyState",
+                "customer.action.new", this::onNew));
+        TableSorting.text(nameColumn, Customer::getName);
+        TableSorting.text(phoneColumn, Customer::getPhone);
+        TableSorting.text(addressColumn, Customer::getAddress);
+        TableSorting.text(emailColumn, Customer::getEmail);
+        TableSorting.text(taxNoColumn, Customer::getTaxNo);
         refresh();
     }
 
@@ -59,7 +67,7 @@ public class CustomerListController {
     }
 
     private void showCustomers(List<Customer> customers) {
-        table.setItems(FXCollections.observableArrayList(customers));
+        table.setItems(TableSorting.sorted(customers, TableSorting.customers()));
     }
 
     @FXML

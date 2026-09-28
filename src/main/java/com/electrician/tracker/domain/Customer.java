@@ -22,6 +22,8 @@ public class Customer {
 
     private String address;
 
+    private String email;
+
     @Column(name = "tax_no")
     private String taxNo;
 
@@ -64,6 +66,14 @@ public class Customer {
 
     public void setAddress(String address) {
         this.address = address;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getTaxNo() {

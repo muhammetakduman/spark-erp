@@ -30,14 +30,17 @@
         <Label text="%customer.field.address" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
         <TextField fx:id="addressField" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
-        <Label text="%customer.field.taxNo" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <TextField fx:id="taxNoField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <Label text="%customer.field.email" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <TextField fx:id="emailField" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
 
-        <Label text="%customer.field.note" styleClass="form-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <TextArea fx:id="noteField" prefRowCount="3" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        <Label text="%customer.field.taxNo" styleClass="form-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <TextField fx:id="taxNoField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+
+        <Label text="%customer.field.note" styleClass="form-label" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <TextArea fx:id="noteField" prefRowCount="3" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
     </GridPane>
     <HBox spacing="10" styleClass="dialog-buttons">
-        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button"/>
+        <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>
         <Button text="%action.cancel" onAction="#onCancel" cancelButton="true"/>
     </HBox>
 </VBox>
