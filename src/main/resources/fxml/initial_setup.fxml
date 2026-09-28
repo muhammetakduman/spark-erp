@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.electrician.tracker.ui.controller.InitialSetupController"
+      styleClass="login-root">
+    <VBox styleClass="login-brand">
+        <Region VBox.vgrow="ALWAYS"/>
+        <ImageView fx:id="appIconView" fitWidth="120" fitHeight="120" preserveRatio="true" smooth="true"/>
+        <Label text="%app.title" styleClass="login-app-name"/>
+        <Label fx:id="versionLabel" styleClass="login-version"/>
+        <Region VBox.vgrow="ALWAYS"/>
+        <Label fx:id="developerLabel" styleClass="login-developer"/>
+    </VBox>
+    <VBox styleClass="login-form" HBox.hgrow="ALWAYS">
+        <Region VBox.vgrow="ALWAYS"/>
+        <Label text="%setup.title" styleClass="login-heading"/>
+        <Label text="%setup.intro" styleClass="muted-text" wrapText="true"/>
+        <GridPane styleClass="setup-grid">
+            <columnConstraints>
+                <ColumnConstraints/>
+                <ColumnConstraints hgrow="ALWAYS"/>
+            </columnConstraints>
+            <Label text="%user.field.username" styleClass="login-field-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <TextField fx:id="usernameField" styleClass="login-input" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+            <Label text="%user.field.fullName" styleClass="login-field-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <TextField fx:id="fullNameField" styleClass="login-input" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+            <Label text="%user.field.title" styleClass="login-field-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <TextField fx:id="titleField" promptText="%user.field.title.prompt" styleClass="login-input" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+            <Label text="%user.field.password" styleClass="login-field-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+            <PasswordField fx:id="passwordField" styleClass="login-input" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+            <Label text="%user.field.passwordRepeat" styleClass="login-field-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+            <PasswordField fx:id="passwordRepeatField" styleClass="login-input" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
+        </GridPane>
+        <Label text="%setup.passwordHint" styleClass="muted-text" wrapText="true"/>
+        <Label fx:id="errorLabel" styleClass="field-error-text" wrapText="true" visible="false" managed="false"/>
+        <Button fx:id="saveButton" text="%setup.action.finish" onAction="#onSave" defaultButton="true"
+                styleClass="login-button" maxWidth="Infinity"/>
+        <Hyperlink text="%login.exit" onAction="#onExit" styleClass="login-exit"/>
+        <Region VBox.vgrow="ALWAYS"/>
+    </VBox>
+</HBox>
