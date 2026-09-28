@@ -1,6 +1,6 @@
 # Şantiye Takip – Kullanım Kılavuzu
 
-**Sürüm 1.1.0** · Elektrik ustaları ve küçük elektrik firmaları için iş takip programı
+**Sürüm 2.4.2** · Elektrik ustaları ve küçük elektrik firmaları için iş takip programı
 
 Şantiye Takip; şantiyelerinizi, servis işlerinizi, kullandığınız malzemeleri, personel puantajını ve tahsilatlarınızı tek bir yerde tutar. Hangi işte ne kadar kazandığınızı, kimden ne kadar alacağınız kaldığını ve ay sonunda ne kazandığınızı birkaç tıkla görürsünüz.
 
@@ -50,7 +50,7 @@
 - Ayrıca Java ya da başka bir program kurmanıza gerek yoktur; gereken her şey kurulumun içindedir.
 
 ### Kurulum
-1. Size gönderilen **`SantiyeTakip-1.1.0.exe`** dosyasını çalıştırın.
+1. Size gönderilen **`SantiyeTakip-2.4.2.exe`** dosyasını çalıştırın.
 2. Lisans sözleşmesini okuyup kabul edin.
 3. İsterseniz kurulum klasörünü değiştirin, sonra **Kur**'a basın.
 4. Kurulum bitince masaüstünde ve Başlat menüsünde **SantiyeTakip** kısayolu oluşur.

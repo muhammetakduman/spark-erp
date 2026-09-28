@@ -64,7 +64,7 @@ class ServiceJobServiceTest {
         MaterialItem kept = line(1L);
         MaterialItem removed = line(2L);
         MaterialItem added = line(null);
-        when(materialService.findByJob(SERVICE_ID)).thenReturn(List.of(kept, removed));
+        when(materialService.findLineIds(SERVICE_ID)).thenReturn(List.of(1L, 2L));
 
         serviceJobService.save(SERVICE_ID, service, List.of(kept, added));
 

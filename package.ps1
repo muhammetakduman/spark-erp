@@ -135,6 +135,8 @@ $jpackageArgs = @(
     '--main-jar', $MainJar,
     '--main-class', $MainClass,
     '--java-options', '-Dfile.encoding=UTF-8',
+    # Electric panel icon: desktop shortcut, Start menu, Add/Remove Programs and the exe itself.
+    '--icon', (Join-Path $PSScriptRoot 'src\main\resources\ikon\ikon.ico'),
     '--dest', $DistDir
 )
 if ($Installer) {

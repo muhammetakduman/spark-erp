@@ -25,6 +25,7 @@ import com.electrician.tracker.domain.PaymentMethod;
 import com.electrician.tracker.domain.PriceEntryType;
 import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.domain.ProductUnit;
+import com.electrician.tracker.domain.UserRole;
 import com.electrician.tracker.dto.AttendanceEntry;
 import com.electrician.tracker.dto.AttendanceSaveResult;
 import com.electrician.tracker.dto.DashboardFigures;
@@ -37,6 +38,7 @@ import com.electrician.tracker.dto.MonthlyReport;
 import com.electrician.tracker.dto.MonthlyReportRow;
 import com.electrician.tracker.dto.ReportJobFilter;
 import com.electrician.tracker.dto.ReportTotals;
+import com.electrician.tracker.dto.SessionUser;
 import com.electrician.tracker.dto.VatBreakdown;
 import com.electrician.tracker.dto.YearlyReport;
 import com.electrician.tracker.service.AttendanceService;
@@ -50,6 +52,7 @@ import com.electrician.tracker.service.PaymentService;
 import com.electrician.tracker.service.PriceHistoryService;
 import com.electrician.tracker.service.ProductService;
 import com.electrician.tracker.service.ServiceJobService;
+import com.electrician.tracker.service.SessionService;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
 import com.electrician.tracker.ui.util.Bicimlendirici;
 import org.apache.poi.ss.usermodel.Row;
@@ -105,6 +108,8 @@ class AylikRaporEntegrasyonTest {
     @Autowired
     private JobSummaryService jobSummaryService;
     @Autowired
+    private SessionService sessionService;
+    @Autowired
     private PriceHistoryService priceHistoryService;
     @Autowired
     private AylikRaporService aylikRaporService;
@@ -139,6 +144,7 @@ class AylikRaporEntegrasyonTest {
 
     @BeforeAll
     void enterSampleData() {
+        sessionService.start(new SessionUser(1L, "admin", "Test Admin", null, UserRole.ADMIN));
         mehmet = employeeService.create(new Employee("Mehmet", money("2500"), true, true));
         ali = employeeService.create(new Employee("Ali", money("1500"), false, true));
         veli = employeeService.create(new Employee("Veli", money("1500"), false, true));
@@ -271,7 +277,7 @@ class AylikRaporEntegrasyonTest {
         assertThat(s2.paymentReceived()).isFalse();
         assertThat(s2.remaining()).isEqualByComparingTo("800.00");
         // 14. Pending service payment on the main screen: 800
-        DashboardFigures figures = jobSummaryService.dashboard(jobSummaryService.loadBoard(), SEPTEMBER);
+        DashboardFigures figures = jobSummaryService.loadDashboard(SEPTEMBER);
         assertThat(figures.pendingServicePayment()).isEqualByComparingTo("800.00");
     }
 
@@ -402,9 +408,9 @@ class AylikRaporEntegrasyonTest {
     void f_completingSiteWithBalance() {
         // 24. Site B still owes 700: the form warns (outstanding balance > 0) and, once completed,
         //     it is listed as "bitmiş ama tahsilatı eksik"
-        assertThat(jobSummaryService.outstandingBalance(siteB.getId())).isEqualByComparingTo("700.00");
+        assertThat(jobSummaryService.outstandingBalance(siteB.getId()).orElseThrow()).isEqualByComparingTo("700.00");
         jobService.changeStatus(siteB.getId(), JobStatus.COMPLETED);
-        DashboardFigures figures = jobSummaryService.dashboard(jobSummaryService.loadBoard(), SEPTEMBER);
+        DashboardFigures figures = jobSummaryService.loadDashboard(SEPTEMBER);
         assertThat(figures.completedSitesWithBalance()).extracting(Job::getId).containsExactly(siteB.getId());
         assertThat(figures.activeSiteCount()).isEqualTo(3);
     }

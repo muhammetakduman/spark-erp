@@ -33,7 +33,7 @@ class PaymentServiceTest {
     @BeforeEach
     void setUp() {
         repository = mock(PaymentRepository.class);
-        paymentService = new PaymentService(repository);
+        paymentService = new PaymentService(repository, TestAccess.admin());
     }
 
     @Test

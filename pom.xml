@@ -14,7 +14,7 @@
     <groupId>com.electrician</groupId>
     <artifactId>electrician-tracker</artifactId>
     <!-- The only place the application version is written; see app.version in application.yml. -->
-    <version>1.1.0</version>
+    <version>2.4.2</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -25,6 +25,8 @@
         <hibernate-community-dialects.version>6.6.29.Final</hibernate-community-dialects.version>
         <openpdf.version>3.0.5</openpdf.version>
         <poi.version>5.5.1</poi.version>
+        <ikonli.version>12.4.0</ikonli.version>
+        <batik.version>1.19</batik.version>
         <launcher.class>com.electrician.tracker.Launcher</launcher.class>
     </properties>
 
@@ -64,6 +66,12 @@
             <version>${hibernate-community-dialects.version}</version>
         </dependency>
 
+        <!-- BCrypt password hashing only; version managed by the Spring Boot BOM. -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-crypto</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-core</artifactId>
@@ -78,6 +86,36 @@
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>${poi.version}</version>
+        </dependency>
+
+        <!-- Vector icons (Font Awesome 5), coloured and sized from CSS. -->
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-javafx</artifactId>
+            <version>${ikonli.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.kordamp.ikonli</groupId>
+            <artifactId>ikonli-fontawesome5-pack</artifactId>
+            <version>${ikonli.version}</version>
+        </dependency>
+
+        <!-- Rasterizes an SVG company logo to PNG (PDFs and previews cannot use SVG). -->
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-transcoder</artifactId>
+            <version>${batik.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.xmlgraphics</groupId>
+            <artifactId>batik-codec</artifactId>
+            <version>${batik.version}</version>
+        </dependency>
+
+        <!-- JSON content of item-set templates; version managed by the Spring Boot BOM. -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
         </dependency>
 
         <dependency>

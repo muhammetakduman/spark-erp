@@ -57,7 +57,8 @@ class AttendanceServiceTest {
         attendanceRepository = mock(AttendanceRepository.class);
         jobRepository = mock(JobRepository.class);
         employeeRepository = mock(EmployeeRepository.class);
-        service = new AttendanceService(attendanceRepository, jobRepository, employeeRepository);
+        service = new AttendanceService(attendanceRepository, jobRepository, employeeRepository, TestAccess.admin(),
+                TestAccess.masker(TestAccess.admin()));
         mustafa = employee(MUSTAFA_ID, "Mustafa");
         ali = employee(ALI_ID, "Ali");
         when(jobRepository.findById(JOB_ID)).thenReturn(Optional.of(completedJob));
@@ -111,6 +112,7 @@ class AttendanceServiceTest {
 
     @Test
     void rejectsInvalidDayFactor() {
+        when(employeeRepository.findAllById(anyList())).thenReturn(List.of(mustafa));
         List<AttendanceEntry> entries = List.of(new AttendanceEntry(MUSTAFA_ID, WAGE, new BigDecimal("0.75")));
 
         assertThatThrownBy(() -> service.saveBatch(JOB_ID, List.of(FRIDAY), entries))
@@ -120,6 +122,7 @@ class AttendanceServiceTest {
 
     @Test
     void rejectsNegativeWage() {
+        when(employeeRepository.findAllById(anyList())).thenReturn(List.of(mustafa));
         List<AttendanceEntry> entries = List.of(new AttendanceEntry(MUSTAFA_ID, new BigDecimal("-1")));
 
         assertThatThrownBy(() -> service.saveBatch(JOB_ID, List.of(FRIDAY), entries))

@@ -1,5 +1,8 @@
 package com.electrician.tracker.service;
 
+import com.electrician.tracker.repository.PaymentRepository;
+import com.electrician.tracker.repository.MaterialItemRepository;
+import com.electrician.tracker.repository.AttendanceRepository;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -29,7 +32,8 @@ class JobServiceTest {
     void setUp() {
         repository = mock(JobRepository.class);
         when(repository.save(any(Job.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        service = new JobService(repository);
+        service = new JobService(repository, mock(MaterialItemRepository.class), mock(AttendanceRepository.class),
+                mock(PaymentRepository.class), TestAccess.admin());
     }
 
     @Test

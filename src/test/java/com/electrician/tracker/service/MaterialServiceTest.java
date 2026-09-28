@@ -12,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import com.electrician.tracker.domain.CurrencyCode;
 import com.electrician.tracker.domain.Customer;
 import com.electrician.tracker.domain.Job;
 import com.electrician.tracker.domain.JobStatus;
@@ -21,6 +22,7 @@ import com.electrician.tracker.domain.PriceEntryType;
 import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.domain.ProductUnit;
 import com.electrician.tracker.repository.MaterialItemRepository;
+import com.electrician.tracker.service.exception.AccessDeniedException;
 import com.electrician.tracker.service.exception.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,12 +35,15 @@ class MaterialServiceTest {
 
     private MaterialItemRepository repository;
     private MaterialService service;
+    private ExchangeRateService exchangeRates;
 
     @BeforeEach
     void setUp() {
         repository = mock(MaterialItemRepository.class);
         when(repository.save(any(MaterialItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        service = new MaterialService(repository);
+        exchangeRates = mock(ExchangeRateService.class);
+        service = new MaterialService(repository, TestAccess.admin(), TestAccess.masker(TestAccess.admin()),
+                exchangeRates);
     }
 
     @Test
@@ -191,5 +196,52 @@ class MaterialServiceTest {
         item.setPurchaseVat(18, false);
 
         assertThatThrownBy(() -> service.addItem(item)).hasMessage("error.vat.rate.invalid");
+    }
+
+    @Test
+    void foreignPurchaseIsFrozenInLiraAndItsRateRemembered() {
+        MaterialItem item = unitLine(product, "2", "5000");
+        item.setPurchaseUnitPrice(new BigDecimal("120"));
+        item.setPurchaseCurrency(CurrencyCode.USD, new BigDecimal("34.25"), null);
+
+        MaterialItem saved = service.addItem(item);
+
+        assertThat(saved.getPurchaseUnitPriceTl()).isEqualByComparingTo("4110.00");
+        assertThat(saved.getPurchaseUnitPrice()).isEqualByComparingTo("120");
+        assertThat(saved.getPurchaseExchangeRate()).isEqualByComparingTo("34.25");
+        assertThat(saved.isForeignCurrencyPurchase()).isTrue();
+        verify(exchangeRates).remember(CurrencyCode.USD, new BigDecimal("34.25"));
+    }
+
+    @Test
+    void foreignPurchaseNeedsAPositiveRate() {
+        MaterialItem item = unitLine(product, "1", "10");
+        item.setPurchaseUnitPrice(new BigDecimal("3"));
+        item.setPurchaseCurrency(CurrencyCode.EUR, BigDecimal.ZERO, null);
+
+        assertThatThrownBy(() -> service.addItem(item)).hasMessage("error.exchangeRate.required");
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void liraPurchaseHasRateOneAndItsOwnLiraValue() {
+        MaterialItem item = unitLine(product, "1", "10");
+        item.setPurchaseUnitPrice(new BigDecimal("7.5"));
+
+        MaterialItem saved = service.addItem(item);
+
+        assertThat(saved.getPurchaseCurrency()).isEqualTo(CurrencyCode.TRY);
+        assertThat(saved.getPurchaseExchangeRate()).isEqualByComparingTo("1");
+        assertThat(saved.getPurchaseUnitPriceTl()).isEqualByComparingTo("7.50");
+        verify(exchangeRates, never()).remember(any(), any());
+    }
+
+    @Test
+    void managerCannotAddMaterialToASite() {
+        MaterialService managerService = new MaterialService(repository, TestAccess.manager(),
+                TestAccess.masker(TestAccess.manager()), exchangeRates);
+
+        assertThatThrownBy(() -> managerService.addItem(unitLine(product, "1", "10")))
+                .isInstanceOf(AccessDeniedException.class);
     }
 }

@@ -26,7 +26,8 @@ class EmployeeServiceTest {
     void setUp() {
         employeeRepository = mock(EmployeeRepository.class);
         attendanceRepository = mock(AttendanceRepository.class);
-        service = new EmployeeService(employeeRepository, attendanceRepository);
+        service = new EmployeeService(employeeRepository, attendanceRepository, TestAccess.admin(),
+                TestAccess.masker(TestAccess.admin()));
     }
 
     @Test

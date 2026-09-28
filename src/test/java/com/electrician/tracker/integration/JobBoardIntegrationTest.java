@@ -18,6 +18,8 @@ import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.PriceEntryType;
 import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.domain.ProductUnit;
+import com.electrician.tracker.domain.UserRole;
+import com.electrician.tracker.dto.SessionUser;
 import com.electrician.tracker.dto.JobBoard;
 import com.electrician.tracker.dto.JobSummary;
 import com.electrician.tracker.service.AttendanceService;
@@ -31,11 +33,13 @@ import com.electrician.tracker.service.PaymentService;
 import com.electrician.tracker.service.PriceHistoryService;
 import com.electrician.tracker.service.ProductService;
 import com.electrician.tracker.service.ReportService;
+import com.electrician.tracker.service.SessionService;
 import com.electrician.tracker.domain.Payment;
 import com.electrician.tracker.domain.PaymentMethod;
 import com.electrician.tracker.dto.AttendanceEntry;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,6 +77,13 @@ class JobBoardIntegrationTest {
     private ReportService reportService;
     @Autowired
     private PriceHistoryService priceHistoryService;
+    @Autowired
+    private SessionService sessionService;
+
+    @BeforeEach
+    void logInAsAdmin() {
+        sessionService.start(new SessionUser(1L, "admin", "Test Admin", null, UserRole.ADMIN));
+    }
 
     @BeforeAll
     static void createTempDatabase() throws IOException {
@@ -136,7 +147,7 @@ class JobBoardIntegrationTest {
         Job site = jobService.create(new Job(customer, JobType.SITE, "Toplam Şantiyesi", null,
                 LocalDate.now(), null, JobStatus.ACTIVE, null, null, false, null));
 
-        Product picked = productService.createOrReuse("  ISIKLI anahtar ", ProductUnit.SET).product();
+        Product picked = productService.createOrReuse("  ISIKLI anahtar ", null, null, ProductUnit.SET).product();
         materialService.addItem(new MaterialItem(site, picked, LocalDate.now(), new BigDecimal("3"),
                 null, null, null, PriceEntryType.TOTAL, new BigDecimal("100"), null, null));
 
