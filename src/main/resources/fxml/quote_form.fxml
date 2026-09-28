@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Hyperlink?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
+<?import javafx.scene.control.MenuItem?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.Spinner?>
+<?import javafx.scene.control.TableColumn?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import com.electrician.tracker.ui.util.DecimalField?>
+
+<ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.electrician.tracker.ui.controller.QuoteFormController"
+            fitToWidth="true" prefWidth="1040" prefHeight="780" styleClass="screen-root">
+    <VBox fx:id="rootContent" styleClass="form-root" spacing="12">
+        <padding>
+            <Insets top="16" right="20" bottom="20" left="20"/>
+        </padding>
+
+        <FlowPane hgap="24" vgap="12">
+            <GridPane hgap="10" vgap="6" styleClass="form-grid" prefWidth="600">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="100"/>
+                    <ColumnConstraints minWidth="260" hgrow="ALWAYS"/>
+                </columnConstraints>
+                <Label text="%quote.field.companyName" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <VBox styleClass="limited-field" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                    <ComboBox fx:id="companyNameComboBox" editable="true" promptText="%quote.customer.prompt" maxWidth="Infinity"/>
+                    <HBox styleClass="field-footer">
+                        <CheckBox fx:id="addCustomerCheckBox" text="%quote.customer.addToList" selected="true"
+                                  visible="false" managed="false"/>
+                        <Label fx:id="customerMatchLabel" styleClass="info-note" visible="false" managed="false"/>
+                        <Region HBox.hgrow="ALWAYS"/>
+                        <Label fx:id="companyNameCounter"/>
+                    </HBox>
+                </VBox>
+                <Label text="%quote.field.address" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <VBox styleClass="limited-field" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                    <TextArea fx:id="addressArea" prefRowCount="2" wrapText="true"/>
+                    <Label fx:id="addressCounter"/>
+                </VBox>
+                <Label text="%quote.field.contactPerson" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <VBox styleClass="limited-field" GridPane.rowIndex="2" GridPane.columnIndex="1">
+                    <TextField fx:id="contactPersonField"/>
+                    <Label fx:id="contactPersonCounter"/>
+                </VBox>
+                <Label text="%quote.field.phone" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                <HBox spacing="10" GridPane.rowIndex="3" GridPane.columnIndex="1">
+                    <VBox styleClass="limited-field" HBox.hgrow="ALWAYS">
+                        <TextField fx:id="phoneField"/>
+                        <Label fx:id="phoneCounter"/>
+                    </VBox>
+                    <Label text="%quote.field.fax" styleClass="form-label" minWidth="40"/>
+                    <VBox styleClass="limited-field" HBox.hgrow="ALWAYS">
+                        <TextField fx:id="faxField"/>
+                        <Label fx:id="faxCounter"/>
+                    </VBox>
+                </HBox>
+                <Label text="%quote.field.email" styleClass="form-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+                <VBox styleClass="limited-field" GridPane.rowIndex="4" GridPane.columnIndex="1">
+                    <TextField fx:id="emailField"/>
+                    <Label fx:id="emailCounter"/>
+                </VBox>
+                <Label text="%quote.field.subject" styleClass="form-label" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+                <VBox styleClass="limited-field" GridPane.rowIndex="5" GridPane.columnIndex="1">
+                    <TextField fx:id="subjectField"/>
+                    <Label fx:id="subjectCounter"/>
+                </VBox>
+            </GridPane>
+            <GridPane hgap="10" vgap="8" styleClass="form-grid">
+                <columnConstraints>
+                    <ColumnConstraints minWidth="110"/>
+                    <ColumnConstraints minWidth="180"/>
+                </columnConstraints>
+                <Label text="%quote.field.date" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                <DatePicker fx:id="datePicker" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+                <Label text="%quote.field.number" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                <HBox spacing="6" GridPane.rowIndex="1" GridPane.columnIndex="1">
+                    <TextField fx:id="numberField" prefColumnCount="8"/>
+                    <Button text="%quote.action.newNumber" onAction="#onSuggestNumber"/>
+                </HBox>
+                <Label text="%quote.field.validity" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                <Spinner fx:id="validitySpinner" editable="true" prefWidth="110" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                <Label text="%quote.field.status" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+                <ComboBox fx:id="statusComboBox" maxWidth="Infinity" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+            </GridPane>
+        </FlowPane>
+
+        <HBox spacing="10" styleClass="toolbar">
+            <Label text="%quote.section.items" styleClass="subsection-title"/>
+            <Label fx:id="lineCountLabel" styleClass="muted-text"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="%quote.action.fromTemplate" onAction="#onAddFromTemplate" styleClass="action-from-template"/>
+            <MenuButton text="%action.more" styleClass="more-button">
+                <items>
+                    <MenuItem text="%quote.action.saveItemsAsTemplate" onAction="#onSaveItemsAsTemplate"
+                              styleClass="action-template"/>
+                </items>
+            </MenuButton>
+        </HBox>
+        <Label fx:id="smallFontNotice" text="%quote.items.smallFont" styleClass="info-strip"
+               maxWidth="Infinity" visible="false" managed="false"/>
+        <HBox spacing="8">
+            <TableView fx:id="itemTable" prefHeight="260" HBox.hgrow="ALWAYS">
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY_FLEX_LAST_COLUMN"/>
+                </columnResizePolicy>
+                <columns>
+                    <TableColumn fx:id="lineNoColumn" text="%quote.column.lineNo" prefWidth="50" sortable="false" reorderable="false"/>
+                    <TableColumn fx:id="brandColumn" text="%quote.column.brand" prefWidth="110" sortable="false" reorderable="false"/>
+                    <TableColumn fx:id="productColumn" text="%quote.column.product" prefWidth="300" sortable="false" reorderable="false"/>
+                    <TableColumn fx:id="quantityColumn" text="%quote.column.quantity" prefWidth="80" sortable="false" reorderable="false"/>
+                    <TableColumn fx:id="unitColumn" text="%quote.column.unit" prefWidth="70" sortable="false" reorderable="false"/>
+                    <TableColumn fx:id="unitPriceColumn" text="%quote.column.unitPrice" prefWidth="120" sortable="false" reorderable="false"/>
+                    <TableColumn fx:id="totalColumn" text="%quote.column.total" prefWidth="130" sortable="false" reorderable="false"/>
+                </columns>
+            </TableView>
+            <VBox spacing="6" styleClass="move-buttons">
+                <Button fx:id="moveUpButton" onAction="#onMoveUp" styleClass="icon-only-button,action-move-up"/>
+                <Button fx:id="moveDownButton" onAction="#onMoveDown" styleClass="icon-only-button,action-move-down"/>
+            </VBox>
+        </HBox>
+        <HBox spacing="8" styleClass="table-actions">
+            <Button fx:id="addItemButton" text="%quote.action.addItem" onAction="#onAddItem" styleClass="action-add"/>
+            <Button fx:id="insertItemButton" text="%quote.action.insertItem" onAction="#onInsertItem"/>
+            <Button text="%action.edit" onAction="#onEditItem" styleClass="action-edit"/>
+            <Button text="%quote.action.removeItem" onAction="#onRemoveItem" styleClass="danger-button,action-delete"/>
+            <Label fx:id="lineLimitLabel" text="%quote.items.limitReached" styleClass="warning-note" wrapText="true"
+                   visible="false" managed="false"/>
+        </HBox>
+
+        <FlowPane hgap="24" vgap="12">
+            <VBox spacing="6" prefWidth="560">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <Label text="%quote.field.notes" styleClass="subsection-title"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <ComboBox fx:id="noteTemplateComboBox" promptText="%quote.notes.chooseTemplate" prefWidth="200"/>
+                    <Button text="%quote.notes.saveAsTemplate" onAction="#onSaveNotesAsTemplate" styleClass="action-template"/>
+                </HBox>
+                <TextArea fx:id="notesArea" prefRowCount="7" wrapText="true"/>
+                <Label fx:id="notesCounter"/>
+            </VBox>
+            <VBox spacing="8" minWidth="340">
+                <GridPane hgap="10" vgap="8" styleClass="form-grid">
+                    <columnConstraints>
+                        <ColumnConstraints minWidth="90"/>
+                        <ColumnConstraints minWidth="220"/>
+                    </columnConstraints>
+                    <Label text="%quote.total.discount" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <HBox spacing="6" GridPane.rowIndex="0" GridPane.columnIndex="1">
+                        <ComboBox fx:id="discountTypeComboBox" prefWidth="100"/>
+                        <DecimalField fx:id="discountField" prefWidth="110"/>
+                    </HBox>
+                    <Label text="%quote.total.labor" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <DecimalField fx:id="laborField" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+                    <Label text="%material.field.vatRate" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+                    <ComboBox fx:id="vatComboBox" prefWidth="110" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                </GridPane>
+                <GridPane fx:id="totalsGrid" hgap="16" vgap="4" styleClass="quote-totals"/>
+            </VBox>
+        </FlowPane>
+
+        <HBox spacing="16" alignment="CENTER_LEFT">
+            <Label fx:id="preparedByLabel" styleClass="muted-text"/>
+            <Hyperlink fx:id="jobLink" styleClass="quote-link" visible="false" managed="false" onAction="#onOpenJob"/>
+        </HBox>
+
+        <HBox spacing="10" styleClass="dialog-buttons">
+            <Button fx:id="convertButton" text="%quote.action.convert" onAction="#onConvert"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Button text="%quote.action.pdf" onAction="#onPdf" styleClass="action-pdf"/>
+            <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>
+            <Button text="%action.close" onAction="#onClose" cancelButton="true"/>
+        </HBox>
+    </VBox>
+</ScrollPane>
