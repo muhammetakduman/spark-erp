@@ -14,8 +14,6 @@ import com.electrician.tracker.ui.util.EnumLabels;
 import com.electrician.tracker.ui.util.ModalStageOpener;
 import com.electrician.tracker.ui.util.SelectionLists;
 import com.electrician.tracker.ui.util.VatSelector;
-import java.math.BigDecimal;
-
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -77,7 +75,7 @@ public class JobFormController {
 
     @FXML
     private void initialize() {
-        SelectionLists.setSorted(customerComboBox, customerService.findAll(), Customer::getName);
+        SelectionLists.setSorted(customerComboBox, customerService.findAllActive(), Customer::getName);
         customerComboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(Customer customer) {

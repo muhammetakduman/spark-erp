@@ -1,8 +1,10 @@
 package com.electrician.tracker.repository;
 
+import java.util.Collection;
 import java.util.List;
 
 import com.electrician.tracker.domain.MaterialItem;
+import com.electrician.tracker.dto.IdCount;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -35,4 +37,10 @@ public interface MaterialItemRepository extends JpaRepository<MaterialItem, Long
     /** Every line with its product (no job), for the per-product purchase statistics. */
     @Query("select m from MaterialItem m join fetch m.product")
     List<MaterialItem> findAllWithProduct();
+    long countByJobIdIn(Collection<Long> jobIds);
+
+    /** Material lines per product, for many products in one query. */
+    @Query("select new com.electrician.tracker.dto.IdCount(m.product.id, count(m)) from MaterialItem m "
+            + "where m.product.id in :productIds group by m.product.id")
+    List<IdCount> countByProductIds(@Param("productIds") Collection<Long> productIds);
 }

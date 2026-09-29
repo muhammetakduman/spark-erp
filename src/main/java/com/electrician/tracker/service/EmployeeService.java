@@ -1,9 +1,14 @@
 package com.electrician.tracker.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.electrician.tracker.domain.Employee;
+import com.electrician.tracker.dto.BulkDeletionResult;
+import com.electrician.tracker.dto.IdCount;
 import com.electrician.tracker.repository.AttendanceRepository;
 import com.electrician.tracker.repository.EmployeeRepository;
 import com.electrician.tracker.service.exception.NotFoundException;
@@ -98,5 +103,20 @@ public class EmployeeService {
         if (employee.getDefaultDailyWage() == null || employee.getDefaultDailyWage().compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidationException("error.employee.wage.negative");
         }
+    }
+    /** Deletes the selected employees without attendance; the others are skipped (they can be made inactive). */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        Map<String, List<IdCount>> references = new LinkedHashMap<>();
+        references.put("error.employee.delete.hasAttendance", attendanceRepository.countByEmployeeIds(ids));
+        return BulkDeletions.deleteUnreferenced(ids, references, employeeRepository::deleteAllByIdInBatch);
+    }
+
+    /** "Seçilenleri pasife al" for employees. */
+    @Transactional
+    public void deactivateAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        employeeRepository.findAllById(ids).forEach(employee -> employee.setActive(false));
     }
 }

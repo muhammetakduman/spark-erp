@@ -1,12 +1,14 @@
 package com.electrician.tracker.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
 import com.electrician.tracker.domain.CurrencyCode;
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.PriceEntryType;
+import com.electrician.tracker.dto.BulkDeletionResult;
 import com.electrician.tracker.repository.MaterialItemRepository;
 import com.electrician.tracker.service.exception.NotFoundException;
 import com.electrician.tracker.service.exception.ValidationException;
@@ -236,5 +238,13 @@ public class MaterialService {
             return null;
         }
         return CanonicalNames.canonical(typed, materialItemRepository.findDistinctSupplierNames());
+    }
+    /** Deletes the selected material lines of a site in one statement; ADMIN only. */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        List<Long> distinct = ids.stream().distinct().toList();
+        materialItemRepository.deleteAllByIdInBatch(distinct);
+        return BulkDeletionResult.allDeleted(distinct.size());
     }
 }

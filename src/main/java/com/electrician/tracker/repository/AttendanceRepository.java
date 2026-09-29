@@ -5,6 +5,7 @@ import java.util.Collection;
 import java.util.List;
 
 import com.electrician.tracker.domain.Attendance;
+import com.electrician.tracker.dto.IdCount;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -55,4 +56,10 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     long countByEmployeeId(Long employeeId);
 
     long countByJobId(Long jobId);
+    long countByJobIdIn(Collection<Long> jobIds);
+
+    /** Attendance rows per employee, for many employees in one query. */
+    @Query("select new com.electrician.tracker.dto.IdCount(a.employee.id, count(a)) from Attendance a "
+            + "where a.employee.id in :employeeIds group by a.employee.id")
+    List<IdCount> countByEmployeeIds(@Param("employeeIds") Collection<Long> employeeIds);
 }

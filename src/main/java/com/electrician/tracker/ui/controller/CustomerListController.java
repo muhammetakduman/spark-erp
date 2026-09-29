@@ -3,9 +3,12 @@ package com.electrician.tracker.ui.controller;
 import java.util.List;
 
 import com.electrician.tracker.domain.Customer;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.CustomerService;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
 import com.electrician.tracker.ui.util.AppIcon;
+import com.electrician.tracker.ui.util.BulkDeleteFlow;
+import com.electrician.tracker.ui.util.BulkSelection;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EmptyState;
 import com.electrician.tracker.ui.util.ModalStageOpener;
@@ -27,6 +30,7 @@ public class CustomerListController {
     private final CustomerService customerService;
     private final ModalStageOpener modalStageOpener;
     private final TaskRunner taskRunner;
+    private final AccessControl accessControl;
 
     @FXML
     private TableView<Customer> table;
@@ -44,26 +48,46 @@ public class CustomerListController {
     private ProgressIndicator loadingIndicator;
 
     public CustomerListController(CustomerService customerService, ModalStageOpener modalStageOpener,
-            TaskRunner taskRunner) {
+            TaskRunner taskRunner, AccessControl accessControl) {
         this.customerService = customerService;
         this.modalStageOpener = modalStageOpener;
         this.taskRunner = taskRunner;
+        this.accessControl = accessControl;
     }
 
     @FXML
     private void initialize() {
         table.setPlaceholder(EmptyState.of(AppIcon.CUSTOMERS, "customers.emptyState",
                 "customer.action.new", this::onNew));
-        TableSorting.text(nameColumn, Customer::getName);
+        TableSorting.text(nameColumn, CustomerListController::nameWithState);
         TableSorting.text(phoneColumn, Customer::getPhone);
         TableSorting.text(addressColumn, Customer::getAddress);
         TableSorting.text(emailColumn, Customer::getEmail);
         TableSorting.text(taxNoColumn, Customer::getTaxNo);
+        if (accessControl.isAdmin()) {
+            BulkSelection.forTable(table, Customer::getId, this::deleteSelected);
+        }
         refresh();
     }
 
     private void refresh() {
         taskRunner.run(customerService::findAll, this::showCustomers, loadingIndicator, table);
+    }
+
+    /** "Ahmet Yılmaz (pasif)" for a customer no longer offered in pickers. */
+    private static String nameWithState(Customer customer) {
+        return customer.isActive() ? customer.getName()
+                : DialogUtil.message("common.inactiveName", customer.getName());
+    }
+
+    /** "Seçilenleri Sil": customers with jobs are skipped and can be made inactive instead. */
+    private void deleteSelected(List<Customer> customers) {
+        BulkDeleteFlow.of(customers, Customer::getId, Customer::getName)
+                .itemCount("bulk.count.customers")
+                .delete(customerService::deleteAll)
+                .deactivate(customerService::deactivateAll)
+                .afterwards(this::refresh)
+                .run();
     }
 
     private void showCustomers(List<Customer> customers) {

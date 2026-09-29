@@ -197,7 +197,7 @@ public class ServiceFormController {
 
     @FXML
     private void initialize() {
-        SelectionLists.setSorted(customerComboBox, customerService.findAll(), Customer::getName);
+        SelectionLists.setSorted(customerComboBox, customerService.findAllActive(), Customer::getName);
         customerComboBox.setConverter(new StringConverter<>() {
             @Override
             public String toString(Customer customer) {

@@ -97,7 +97,7 @@ public class DailyJobFormController {
         datePicker.setValue(dailyJobService.today());
         titlePicker = new SuggestionPicker(titleComboBox, templateService.findByType(TemplateType.JOB_DESCRIPTION)
                 .stream().map(TemplateView::content).toList());
-        customerField = new CustomerNameField(customerComboBox, customerService.findAll());
+        customerField = new CustomerNameField(customerComboBox, customerService.findAllActive());
         customerField.setOnCustomerChosen(this::fillFromCustomer);
         jobComboBox.getItems().setAll(dailyJobService.linkableJobs());
         jobComboBox.valueProperty().addListener((obs, old, option) -> fillFromJob(option));
@@ -182,7 +182,7 @@ public class DailyJobFormController {
         if (!controller.isSaved() || created == null) {
             return;
         }
-        customerField.reload(customerService.findAll());
+        customerField.reload(customerService.findAllActive());
         customerField.showName(created.getName());
         fillFromCustomer(created);
     }

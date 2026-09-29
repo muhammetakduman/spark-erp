@@ -12,6 +12,8 @@ import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.QuoteService;
 import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.Bicimlendirici;
+import com.electrician.tracker.ui.util.BulkDeleteFlow;
+import com.electrician.tracker.ui.util.BulkSelection;
 import com.electrician.tracker.ui.util.DeleteConfirmation;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EmptyState;
@@ -105,6 +107,9 @@ public class QuoteListController {
         validityColumn.setCellValueFactory(data -> new javafx.beans.property.SimpleObjectProperty<>(data.getValue()));
         validityColumn.setCellFactory(column -> new ValidityCell());
         validityColumn.setComparator(java.util.Comparator.comparing(QuoteRow::validUntil));
+        if (accessControl.isAdmin()) {
+            BulkSelection.forTable(quoteTable, QuoteRow::id, this::deleteSelected);
+        }
         quoteTable.setRowFactory(table -> {
             TableRow<QuoteRow> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -195,6 +200,16 @@ public class QuoteListController {
                 return file;
             }, done -> DialogUtil.showInfo("quote.pdf.success"), loadingIndicator, quoteTable);
         });
+    }
+
+    /** "Seçilenleri Sil" for quotes (their lines go with them). */
+    private void deleteSelected(List<QuoteRow> rows) {
+        BulkDeleteFlow.of(rows, QuoteRow::id, row -> row.quoteNo() + " – " + row.companyName())
+                .itemCount("bulk.count.quotes")
+                .impact(quoteService::bulkDeletionImpact)
+                .delete(quoteService::deleteAll)
+                .afterwards(this::refresh)
+                .run();
     }
 
     @FXML

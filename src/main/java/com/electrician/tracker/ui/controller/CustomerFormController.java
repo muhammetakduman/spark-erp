@@ -5,6 +5,7 @@ import com.electrician.tracker.service.CustomerService;
 import com.electrician.tracker.ui.util.DialogUtil;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.stage.Stage;
@@ -29,6 +30,8 @@ public class CustomerFormController {
     private TextField taxNoField;
     @FXML
     private TextArea noteField;
+    @FXML
+    private CheckBox activeCheckBox;
 
     private Long editingId;
     private boolean saved;
@@ -46,6 +49,7 @@ public class CustomerFormController {
         emailField.setText(customer.getEmail());
         taxNoField.setText(customer.getTaxNo());
         noteField.setText(customer.getNote());
+        activeCheckBox.setSelected(customer.isActive());
     }
 
     public boolean isSaved() {
@@ -62,6 +66,7 @@ public class CustomerFormController {
                 taxNoField.getText(), noteField.getText());
         customer.setEmail(emailField.getText() == null || emailField.getText().isBlank() ? null
                 : emailField.getText().trim());
+        customer.setActive(activeCheckBox.isSelected());
         try {
             if (editingId == null) {
                 result = customerService.create(customer);

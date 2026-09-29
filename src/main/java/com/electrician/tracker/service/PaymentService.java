@@ -1,9 +1,11 @@
 package com.electrician.tracker.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 
 import com.electrician.tracker.domain.Payment;
+import com.electrician.tracker.dto.BulkDeletionResult;
 import com.electrician.tracker.repository.PaymentRepository;
 import com.electrician.tracker.service.exception.NotFoundException;
 import com.electrician.tracker.service.exception.ValidationException;
@@ -64,5 +66,13 @@ public class PaymentService {
         if (payment.getMethod() == null) {
             throw new ValidationException("error.payment.method.required");
         }
+    }
+    /** Deletes the selected payments in one statement; ADMIN only. */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        List<Long> distinct = ids.stream().distinct().toList();
+        paymentRepository.deleteAllByIdInBatch(distinct);
+        return BulkDeletionResult.allDeleted(distinct.size());
     }
 }

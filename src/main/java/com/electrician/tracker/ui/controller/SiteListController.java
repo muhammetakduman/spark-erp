@@ -18,6 +18,7 @@ import com.electrician.tracker.dto.JobSummary;
 import com.electrician.tracker.dto.QuoteLink;
 import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.AttendanceService;
+import com.electrician.tracker.service.JobLabels;
 import com.electrician.tracker.service.JobService;
 import com.electrician.tracker.service.JobSummaryService;
 import com.electrician.tracker.service.MaterialService;
@@ -27,6 +28,8 @@ import com.electrician.tracker.service.QuoteService;
 import com.electrician.tracker.service.ReportService;
 import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.Bicimlendirici;
+import com.electrician.tracker.ui.util.BulkDeleteFlow;
+import com.electrician.tracker.ui.util.BulkSelection;
 import com.electrician.tracker.ui.util.DeleteConfirmation;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EmptyState;
@@ -46,7 +49,6 @@ import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Accordion;
-import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.Hyperlink;
@@ -107,6 +109,9 @@ public class SiteListController {
     @FXML
     private Accordion siteAccordion;
 
+    private BulkSelection<Job> selection;
+    private List<Job> visibleSites = List.of();
+
     private JobBoard board;
     private Map<Long, QuoteLink> quoteLinks = Map.of();
     private int selectedTabIndex;
@@ -134,6 +139,9 @@ public class SiteListController {
     private void initialize() {
         accessControl.requireAdmin();
         board = null;
+        selection = new BulkSelection<>(() -> visibleSites, Job::getId, this::deleteSelected);
+        selection.placeAbove(siteAccordion);
+        selection.installKeys(rootContent);
         siteSearchField.textProperty().addListener((obs, o, n) -> rebuildAccordion());
         activeOnlyCheckBox.selectedProperty().addListener((obs, o, n) -> rebuildAccordion());
         refreshAll();
@@ -197,15 +205,17 @@ public class SiteListController {
         }
         String search = MetinKarsilastirici.normalize(siteSearchField.getText());
         boolean activeOnly = activeOnlyCheckBox.isSelected();
-        List<TitledPane> panes = board.jobs().stream()
+        List<Job> sites = board.jobs().stream()
                 .filter(job -> job.getType() == JobType.SITE)
                 .filter(job -> !activeOnly || job.getStatus() == JobStatus.ACTIVE)
                 .filter(job -> search.isEmpty()
                         || MetinKarsilastirici.normalize(job.getCustomer().getName()).contains(search)
                         || MetinKarsilastirici.normalize(job.getName()).contains(search))
                 .sorted(TableSorting.sites())
-                .map(this::buildPane)
                 .toList();
+        visibleSites = sites;
+        selection.clear();
+        List<TitledPane> panes = sites.stream().map(this::buildPane).toList();
         Object expandedJobId = siteAccordion.getExpandedPane() == null ? null
                 : siteAccordion.getExpandedPane().getUserData();
         siteAccordion.getPanes().setAll(panes);
@@ -261,7 +271,7 @@ public class SiteListController {
                 job.getStatus() == JobStatus.ACTIVE ? "status-active" : "status-completed");
         Region spacer = new Region();
         HBox.setHgrow(spacer, Priority.ALWAYS);
-        HBox header = new HBox(HEADER_SPACING, titleLabel, statusLabel, spacer);
+        HBox header = new HBox(HEADER_SPACING, selection.checkBoxFor(job), titleLabel, statusLabel, spacer);
         if (summary.hasFinancials()) {
             Label balanceLabel = new Label(summary.isFullyPaid() ? DialogUtil.message("home.header.paid")
                     : DialogUtil.message("home.header.remaining", Bicimlendirici.money(summary.remaining())));
@@ -391,6 +401,16 @@ public class SiteListController {
         tabs.getSelectionModel().select(Math.min(selectedTabIndex, tabs.getTabs().size() - 1));
         tabs.getSelectionModel().selectedIndexProperty().addListener((obs, o, n) -> selectedTabIndex = n.intValue());
         return tabs;
+    }
+
+    /** "Seçilenleri Sil": the ticked sites with their material lines, attendance and payments. */
+    private void deleteSelected(List<Job> sites) {
+        BulkDeleteFlow.of(sites, Job::getId, JobLabels::full)
+                .itemCount("bulk.count.sites")
+                .impact(jobService::bulkDeletionImpact)
+                .delete(jobService::deleteAll)
+                .afterwards(this::refreshAll)
+                .run();
     }
 
     /** Asks with the exact counts of what goes with the site; deletes everything in one transaction. */

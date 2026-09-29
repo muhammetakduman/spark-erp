@@ -21,6 +21,7 @@ import com.electrician.tracker.dto.AttendanceEntry;
 import com.electrician.tracker.dto.AttendanceMatrix;
 import com.electrician.tracker.dto.AttendancePreview;
 import com.electrician.tracker.dto.AttendanceSaveResult;
+import com.electrician.tracker.dto.BulkDeletionResult;
 import com.electrician.tracker.dto.EmployeeAttendanceReport;
 import com.electrician.tracker.dto.EmployeeJobAttendance;
 import com.electrician.tracker.repository.AttendanceRepository;
@@ -309,5 +310,13 @@ public class AttendanceService {
 
     private static String key(Long employeeId, LocalDate date) {
         return employeeId + "|" + date;
+    }
+    /** Deletes the selected attendance rows in one statement; ADMIN only. */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        List<Long> distinct = ids.stream().distinct().toList();
+        attendanceRepository.deleteAllByIdInBatch(distinct);
+        return BulkDeletionResult.allDeleted(distinct.size());
     }
 }

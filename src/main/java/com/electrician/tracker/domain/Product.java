@@ -44,6 +44,10 @@ public class Product {
     @Column(name = "purchase_price")
     private BigDecimal purchasePrice;
 
+    /** Inactive ones stay in their list and old records but are not offered in pickers. */
+    @Column(nullable = false)
+    private boolean active = true;
+
     protected Product() {
     }
 
@@ -114,5 +118,12 @@ public class Product {
     /** "ÖZNUR — 1,5mm NYA Kablo", or just the name when there is no brand. */
     public String getDisplayName() {
         return brand == null || brand.isBlank() ? name : brand + BRAND_SEPARATOR + name;
+    }
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

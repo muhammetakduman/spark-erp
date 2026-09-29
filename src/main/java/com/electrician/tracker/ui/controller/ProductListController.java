@@ -18,6 +18,8 @@ import com.electrician.tracker.service.ProductService;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
 import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.Bicimlendirici;
+import com.electrician.tracker.ui.util.BulkDeleteFlow;
+import com.electrician.tracker.ui.util.BulkSelection;
 import com.electrician.tracker.ui.util.Debouncer;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EmptyState;
@@ -101,6 +103,9 @@ public class ProductListController {
         filteredProducts = new FilteredList<>(products);
         TableSorting.bindSorted(productTable, filteredProducts);
         productTable.getColumns().setAll(columns());
+        if (accessControl.isAdmin()) {
+            BulkSelection.forTable(productTable, overview -> overview.product().getId(), this::deleteSelected);
+        }
         productTable.setPlaceholder(EmptyState.of(AppIcon.PRODUCTS, "product.empty",
                 "product.action.new", this::onNew));
         boolean purchaseVisible = accessControl.canViewFinancials();
@@ -120,7 +125,7 @@ public class ProductListController {
 
     private List<TableColumn<ProductOverview, ?>> columns() {
         List<TableColumn<ProductOverview, ?>> columns = new ArrayList<>();
-        columns.add(textColumn("product.field.name", overview -> overview.product().getName()));
+        columns.add(textColumn("product.field.name", overview -> nameWithState(overview.product())));
         columns.add(textColumn("product.field.brand", overview -> overview.product().getBrand()));
         columns.add(textColumn("product.field.category", overview -> overview.product().getCategory()));
         columns.add(textColumn("product.field.unit", overview -> EnumLabels.label(overview.product().getUnit())));
@@ -282,6 +287,22 @@ public class ProductListController {
         } catch (ReferencedEntityException ex) {
             DialogUtil.showError(ex);
         }
+    }
+
+    /** "Kablo 3x2,5 (pasif)" for a product no longer offered in pickers. */
+    private static String nameWithState(Product product) {
+        return product.isActive() ? product.getName() : DialogUtil.message("common.inactiveName", product.getName());
+    }
+
+    /** "Seçilenleri Sil": products used on material or quote lines are skipped and can be made inactive. */
+    private void deleteSelected(List<ProductOverview> overviews) {
+        BulkDeleteFlow.of(overviews, overview -> overview.product().getId(),
+                        overview -> overview.product().getDisplayName())
+                .itemCount("bulk.count.products")
+                .delete(productService::deleteAll)
+                .deactivate(productService::deactivateAll)
+                .afterwards(this::refresh)
+                .run();
     }
 
     private Product selectedProduct() {

@@ -1,9 +1,14 @@
 package com.electrician.tracker.service;
 
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.electrician.tracker.domain.Customer;
+import com.electrician.tracker.dto.BulkDeletionResult;
+import com.electrician.tracker.dto.IdCount;
 import com.electrician.tracker.repository.CustomerRepository;
 import com.electrician.tracker.repository.JobRepository;
 import com.electrician.tracker.service.exception.NotFoundException;
@@ -22,10 +27,13 @@ public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private final JobRepository jobRepository;
+    private final AccessControl accessControl;
 
-    public CustomerService(CustomerRepository customerRepository, JobRepository jobRepository) {
+    public CustomerService(CustomerRepository customerRepository, JobRepository jobRepository,
+            AccessControl accessControl) {
         this.customerRepository = customerRepository;
         this.jobRepository = jobRepository;
+        this.accessControl = accessControl;
     }
 
     @Transactional(readOnly = true)
@@ -87,6 +95,7 @@ public class CustomerService {
         existing.setEmail(changes.getEmail());
         existing.setTaxNo(changes.getTaxNo());
         existing.setNote(changes.getNote());
+        existing.setActive(changes.isActive());
         return existing;
     }
 
@@ -111,5 +120,26 @@ public class CustomerService {
 
     /** A customer found by name ({@code created == false}) or just added. */
     public record CustomerMatch(Customer customer, boolean created) {
+    }
+    /** Customers offered in pickers (inactive ones are left out). */
+    @Transactional(readOnly = true)
+    public List<Customer> findAllActive() {
+        return customerRepository.findAll().stream().filter(Customer::isActive).toList();
+    }
+
+    /** Deletes the selected customers without jobs; the others are skipped (they can be made inactive). */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        Map<String, List<IdCount>> references = new LinkedHashMap<>();
+        references.put("error.customer.delete.hasJobs", jobRepository.countByCustomerIds(ids));
+        return BulkDeletions.deleteUnreferenced(ids, references, customerRepository::deleteAllByIdInBatch);
+    }
+
+    /** "Seçilenleri pasife al" for customers. */
+    @Transactional
+    public void deactivateAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        customerRepository.findAllById(ids).forEach(customer -> customer.setActive(false));
     }
 }

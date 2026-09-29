@@ -74,8 +74,23 @@ public final class JobAttendancePane {
             HBox buttons = new HBox(SPACING, deleteButton);
             buttons.getStyleClass().add("table-actions");
             content.getChildren().add(buttons);
+            BulkSelection.forTable(rawTable, Attendance::getId, rows -> deleteRows(rows, changed));
         }
         return content;
+    }
+
+    /** "Seçilenleri Sil" for attendance rows. */
+    private void deleteRows(List<Attendance> rows, Runnable changed) {
+        BulkDeleteFlow.of(rows, Attendance::getId, JobAttendancePane::rowLabel)
+                .itemCount("bulk.count.attendance")
+                .delete(attendanceService::deleteAll)
+                .afterwards(changed)
+                .run();
+    }
+
+    private static String rowLabel(Attendance row) {
+        return DialogUtil.message("delete.single.attendance", row.getEmployee().getName(),
+                Bicimlendirici.date(row.getAttendanceDate()), Bicimlendirici.factor(row.getDayFactor()));
     }
 
     private TableView<EmployeeWageSummary> buildSummaryTable(List<EmployeeWageSummary> summaries) {

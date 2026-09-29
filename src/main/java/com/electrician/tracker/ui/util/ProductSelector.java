@@ -55,7 +55,7 @@ public final class ProductSelector {
         productComboBox.setMaxWidth(Double.MAX_VALUE);
         productComboBox.setPromptText(DialogUtil.message("product.search.prompt"));
         HBox.setHgrow(productComboBox, Priority.ALWAYS);
-        productPicker = new ProductPicker(productComboBox, productService.findAll());
+        productPicker = new ProductPicker(productComboBox, productService.findAllActive());
         categoryFilter.setPrefWidth(CATEGORY_WIDTH);
         FilterChoices.setUp(categoryFilter, productService.findDistinctCategories());
         categoryFilter.valueProperty().addListener((obs, o, n) ->

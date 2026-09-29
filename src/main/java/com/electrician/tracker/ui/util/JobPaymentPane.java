@@ -70,7 +70,19 @@ public final class JobPaymentPane {
         deleteButton.setOnAction(e -> deleteSelected(table, jobId));
         HBox buttons = new HBox(SPACING, editButton, deleteButton);
         buttons.getStyleClass().add("table-actions");
-        return new VBox(SPACING, table, buttons);
+        VBox content = new VBox(SPACING, table, buttons);
+        BulkSelection.forTable(table, Payment::getId, selected -> deletePayments(selected, jobId));
+        return content;
+    }
+
+    /** "Seçilenleri Sil" for payments (only an ADMIN sees payments at all). */
+    private void deletePayments(List<Payment> selected, Long jobId) {
+        BulkDeleteFlow.of(selected, Payment::getId, payment -> DialogUtil.message("delete.single.payment",
+                        Bicimlendirici.date(payment.getPaymentDate()), Bicimlendirici.money(payment.getAmount())))
+                .itemCount("bulk.count.payments")
+                .delete(paymentService::deleteAll)
+                .afterwards(() -> onChanged.accept(jobId))
+                .run();
     }
 
     private void editSelected(TableView<Payment> table) {

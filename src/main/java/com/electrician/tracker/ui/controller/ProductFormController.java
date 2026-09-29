@@ -15,6 +15,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
@@ -37,6 +38,8 @@ public class ProductFormController {
     private final MaterialService materialService;
     private final AccessControl accessControl;
 
+    @FXML
+    private CheckBox activeCheckBox;
     @FXML
     private TextField nameField;
     @FXML
@@ -94,6 +97,7 @@ public class ProductFormController {
 
     public void editExisting(Product product) {
         this.editingId = product.getId();
+        activeCheckBox.setSelected(product.isActive());
         nameField.setText(product.getName());
         brandPicker.select(product.getBrand());
         categoryPicker.select(product.getCategory());
@@ -111,6 +115,7 @@ public class ProductFormController {
         Product product = new Product(nameField.getText(), unitComboBox.getValue(), brandPicker.typedText(),
                 categoryPicker.typedText());
         try {
+            product.setActive(activeCheckBox.isSelected());
             product.setSupplierName(supplierPicker.typedText());
             product.setPurchasePrice(purchasePriceField.getValue());
             if (editingId == null) {

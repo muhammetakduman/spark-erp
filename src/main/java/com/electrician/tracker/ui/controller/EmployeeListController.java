@@ -8,6 +8,8 @@ import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.EmployeeService;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
 import com.electrician.tracker.ui.util.AppIcon;
+import com.electrician.tracker.ui.util.BulkDeleteFlow;
+import com.electrician.tracker.ui.util.BulkSelection;
 import com.electrician.tracker.ui.util.ContentNavigator;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EmptyState;
@@ -75,6 +77,9 @@ public class EmployeeListController {
         TableSorting.text(activeColumn, employee -> yesNo(employee.isActive()));
         deleteButton.setVisible(accessControl.isAdmin());
         deleteButton.setManaged(accessControl.isAdmin());
+        if (accessControl.isAdmin()) {
+            BulkSelection.forTable(table, Employee::getId, this::deleteSelected);
+        }
         table.setRowFactory(tv -> {
             TableRow<Employee> row = new TableRow<>();
             row.setOnMouseClicked(event -> {
@@ -98,6 +103,16 @@ public class EmployeeListController {
 
     private void refresh() {
         taskRunner.run(employeeService::findAll, this::showEmployees, loadingIndicator, table);
+    }
+
+    /** "Seçilenleri Sil": employees with attendance are skipped and can be made inactive instead. */
+    private void deleteSelected(List<Employee> employees) {
+        BulkDeleteFlow.of(employees, Employee::getId, Employee::getName)
+                .itemCount("bulk.count.employees")
+                .delete(employeeService::deleteAll)
+                .deactivate(employeeService::deactivateAll)
+                .afterwards(this::refresh)
+                .run();
     }
 
     private void showEmployees(List<Employee> employees) {

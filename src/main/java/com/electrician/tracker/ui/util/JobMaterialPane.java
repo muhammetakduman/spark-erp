@@ -58,7 +58,25 @@ public final class JobMaterialPane {
             buttons.getChildren().add(deleteButton);
         }
         buttons.getStyleClass().add("table-actions");
-        return new VBox(SPACING, table, buttons);
+        VBox content = new VBox(SPACING, table, buttons);
+        if (accessControl.isAdmin()) {
+            BulkSelection.forTable(table, MaterialItem::getId, lines -> deleteLines(lines, jobId));
+        }
+        return content;
+    }
+
+    /** "Seçilenleri Sil" for material lines. */
+    private void deleteLines(List<MaterialItem> lines, Long jobId) {
+        BulkDeleteFlow.of(lines, MaterialItem::getId, JobMaterialPane::lineLabel)
+                .itemCount("bulk.count.materials")
+                .delete(materialService::deleteAll)
+                .afterwards(() -> onChanged.accept(jobId))
+                .run();
+    }
+
+    private static String lineLabel(MaterialItem line) {
+        return DialogUtil.message("delete.single.material", line.getProduct().getDisplayName(),
+                Bicimlendirici.quantity(line.getQuantity()), EnumLabels.label(line.getProduct().getUnit()));
     }
 
     private TableView<MaterialItem> buildTable(List<MaterialItem> materials) {

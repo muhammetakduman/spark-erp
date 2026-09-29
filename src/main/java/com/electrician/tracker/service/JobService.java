@@ -1,11 +1,14 @@
 package com.electrician.tracker.service;
 
 import java.math.BigDecimal;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.electrician.tracker.domain.Job;
 import com.electrician.tracker.domain.JobStatus;
-import com.electrician.tracker.domain.JobType;
+import com.electrician.tracker.dto.BulkDeletionResult;
 import com.electrician.tracker.dto.JobDeletionImpact;
 import com.electrician.tracker.repository.AttendanceRepository;
 import com.electrician.tracker.repository.JobRepository;
@@ -145,5 +148,27 @@ public class JobService {
         if (value != null && value.compareTo(BigDecimal.ZERO) < 0) {
             throw new ValidationException(messageKey);
         }
+    }
+    /**
+     * "Bu işlemle birlikte silinecekler" for many sites or services: how many
+     * material lines, attendance rows and payments go with them.
+     */
+    @Transactional(readOnly = true)
+    public Map<String, Long> bulkDeletionImpact(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        Map<String, Long> related = new LinkedHashMap<>();
+        related.put("delete.count.materials", materialItemRepository.countByJobIdIn(ids));
+        related.put("delete.count.attendance", attendanceRepository.countByJobIdIn(ids));
+        related.put("delete.count.payments", paymentRepository.countByJobIdIn(ids));
+        return BulkDeletions.withoutZeros(related);
+    }
+
+    /** Deletes many jobs in one statement; the database cascades their lines, attendance and payments. */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        List<Long> distinct = ids.stream().distinct().toList();
+        jobRepository.deleteAllByIdInBatch(distinct);
+        return BulkDeletionResult.allDeleted(distinct.size());
     }
 }

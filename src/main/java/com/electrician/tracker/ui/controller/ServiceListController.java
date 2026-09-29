@@ -3,6 +3,7 @@ package com.electrician.tracker.ui.controller;
 import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.function.Predicate;
 
 import com.electrician.tracker.domain.Job;
@@ -10,11 +11,14 @@ import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.dto.JobBoard;
 import com.electrician.tracker.dto.JobSummary;
 import com.electrician.tracker.service.AccessControl;
+import com.electrician.tracker.service.JobLabels;
 import com.electrician.tracker.service.JobService;
 import com.electrician.tracker.service.JobSummaryService;
 import com.electrician.tracker.service.ReportService;
 import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.Bicimlendirici;
+import com.electrician.tracker.ui.util.BulkDeleteFlow;
+import com.electrician.tracker.ui.util.BulkSelection;
 import com.electrician.tracker.ui.util.DeleteConfirmation;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EmptyState;
@@ -110,6 +114,9 @@ public class ServiceListController {
         setShown(pendingTotalLabel, accessControl.canViewFinancials());
         setUpColumns();
         setUpRows();
+        if (accessControl.isAdmin()) {
+            BulkSelection.forTable(serviceTable, Job::getId, this::deleteSelected);
+        }
         serviceTable.setPlaceholder(EmptyState.of(AppIcon.SERVICES, "services.emptyState", "home.action.newService",
                 this::onNewService));
         filterGroup.selectedToggleProperty().addListener((obs, oldToggle, newToggle) -> {
@@ -309,6 +316,16 @@ public class ServiceListController {
             }
             refresh();
         });
+    }
+
+    /** "Seçilenleri Sil": the ticked services with their lines, attendance and payments. */
+    private void deleteSelected(List<Job> jobs) {
+        BulkDeleteFlow.of(jobs, Job::getId, JobLabels::full)
+                .itemCount("bulk.count.services")
+                .impact(jobService::bulkDeletionImpact)
+                .delete(jobService::deleteAll)
+                .afterwards(this::refresh)
+                .run();
     }
 
     private java.util.Optional<Job> selected() {

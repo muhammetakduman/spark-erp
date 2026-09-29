@@ -29,6 +29,10 @@ public class Customer {
 
     private String note;
 
+    /** Inactive ones stay in their list and old records but are not offered in pickers. */
+    @Column(nullable = false)
+    private boolean active = true;
+
     protected Customer() {
     }
 
@@ -90,5 +94,12 @@ public class Customer {
 
     public void setNote(String note) {
         this.note = note;
+    }
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

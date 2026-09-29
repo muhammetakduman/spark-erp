@@ -2,6 +2,7 @@
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
+<?import javafx.scene.control.CheckBox?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.TextArea?>
 <?import javafx.scene.control.TextField?>
@@ -38,6 +39,8 @@
 
         <Label text="%customer.field.note" styleClass="form-label" GridPane.rowIndex="5" GridPane.columnIndex="0"/>
         <TextArea fx:id="noteField" prefRowCount="3" GridPane.rowIndex="5" GridPane.columnIndex="1"/>
+        <CheckBox fx:id="activeCheckBox" text="%common.activeInPickers" selected="true"
+                  GridPane.rowIndex="6" GridPane.columnIndex="1"/>
     </GridPane>
     <HBox spacing="10" styleClass="dialog-buttons">
         <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>

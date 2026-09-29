@@ -1,13 +1,17 @@
 package com.electrician.tracker.service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.domain.ProductUnit;
+import com.electrician.tracker.dto.BulkDeletionResult;
+import com.electrician.tracker.dto.IdCount;
 import com.electrician.tracker.dto.ProductCreationResult;
 import com.electrician.tracker.repository.MaterialItemRepository;
 import com.electrician.tracker.repository.ProductRepository;
@@ -131,6 +135,7 @@ public class ProductService {
         existing.setUnit(changes.getUnit());
         existing.setBrand(changes.getBrand());
         existing.setCategory(changes.getCategory());
+        existing.setActive(changes.isActive());
         if (accessControl.canViewFinancials()) {
             existing.setSupplierName(changes.getSupplierName());
             existing.setPurchasePrice(changes.getPurchasePrice());
@@ -195,5 +200,30 @@ public class ProductService {
 
     static String identityKey(String name, String brand) {
         return MetinKarsilastirici.normalize(name) + "|" + MetinKarsilastirici.normalize(brand);
+    }
+    /** Products offered in pickers (inactive ones are left out). */
+    @Transactional(readOnly = true)
+    public List<Product> findAllActive() {
+        return productRepository.findAll().stream().filter(Product::isActive).toList();
+    }
+
+    /**
+     * Deletes the selected products that nothing uses; a product still on a
+     * material line or quote line is skipped (it can be made inactive).
+     */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        Map<String, List<IdCount>> references = new LinkedHashMap<>();
+        references.put("error.product.delete.hasMaterialItems", materialItemRepository.countByProductIds(ids));
+        references.put("error.product.delete.hasQuoteItems", quoteItemRepository.countByProductIds(ids));
+        return BulkDeletions.deleteUnreferenced(ids, references, productRepository::deleteAllByIdInBatch);
+    }
+
+    /** "Seçilenleri pasife al": the products stay but are no longer offered in pickers. */
+    @Transactional
+    public void deactivateAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        productRepository.findAllById(ids).forEach(product -> product.setActive(false));
     }
 }
