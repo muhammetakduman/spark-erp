@@ -63,12 +63,19 @@ public class QuotePdfGenerator {
     private static final int FIRST_NUMERIC_HEADER = 3;
     private static final int UNIT_HEADER = 4;
 
+    private final PdfFooter pdfFooter;
+
+    public QuotePdfGenerator(PdfFooter pdfFooter) {
+        this.pdfFooter = pdfFooter;
+    }
+
     public void generate(QuoteView quote, Company company, Path outputFile) {
         PdfStyle style = new PdfStyle(company);
         Document document = new Document(PageSize.A4, MARGIN, MARGIN, TOP_MARGIN, MARGIN);
         try (FileOutputStream out = new FileOutputStream(outputFile.toFile())) {
             PdfWriter writer = PdfWriter.getInstance(document, out);
             writer.setPageEvent(new PageNumberStamp());
+            pdfFooter.attachTo(writer);
             document.open();
             PdfCompanyHeader.add(document, company, style);
             addTitle(document, style);

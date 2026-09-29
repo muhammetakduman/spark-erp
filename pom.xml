@@ -13,9 +13,12 @@
 
     <groupId>com.electrician</groupId>
     <artifactId>electrician-tracker</artifactId>
-    <!-- The only place the application version is written; see app.version in application.yml. -->
-    <version>2.4.2</version>
+    <!-- The only place the application name, version and description are written;
+         see app.* in application.yml (filtered at build time) and package.ps1. -->
+    <version>2.8.3</version>
     <packaging>jar</packaging>
+    <name>Spark ERP</name>
+    <description>Elektrik ustaları ve taahhüt firmaları için şantiye takibi, günlük servis işleri, malzeme alış fiyatı ve tedarikçi karşılaştırması, teklif hazırlama ve kâr–zarar raporlaması yapan masaüstü iş takip programı.</description>
 
     <properties>
         <maven.compiler.release>21</maven.compiler.release>

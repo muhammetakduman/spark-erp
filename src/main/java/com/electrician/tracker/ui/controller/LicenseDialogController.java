@@ -15,7 +15,8 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
- * Shows the licence with the developer's signature. On first run (and after
+ * Shows the licence with the program name, version, description and the
+ * developer's signature. On first run (and after
  * an update) the user must tick "Okudum, kabul ediyorum" before continuing;
  * from the menu it opens read-only as the About dialog.
  */
@@ -30,6 +31,8 @@ public class LicenseDialogController {
     private ImageView appIconView;
     @FXML
     private Label versionLabel;
+    @FXML
+    private Label descriptionLabel;
     @FXML
     private Label noticeLabel;
     @FXML
@@ -54,6 +57,7 @@ public class LicenseDialogController {
     private void initialize() {
         appIconView.setImage(WindowDecorations.largeIcon());
         versionLabel.setText(appSignature.versionLine());
+        descriptionLabel.setText(appSignature.description());
         noticeLabel.setText(appSignature.noticeLine());
         copyrightLabel.setText(appSignature.copyrightLine());
         licenseTextArea.setText(licenseService.licenseText());

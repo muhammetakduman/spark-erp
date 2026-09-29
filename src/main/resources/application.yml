@@ -16,9 +16,12 @@ logging:
   level:
     root: INFO
 
-# Application identity shown in the signature, About dialog and licence screen.
-# The version comes from pom.xml at build time (the only place it is written).
+# Application identity shown in the window title, signature, About dialog,
+# licence screen and PDF footers. Name, version and description come from
+# pom.xml at build time (the only place they are written).
 app:
+  name: "@project.name@"
   version: "@project.version@"
+  description: "@project.description@"
   developer: "Muhammet Akduman"
   copyright-year: 2026

@@ -32,6 +32,8 @@ public class InitialSetupController {
     @FXML
     private ImageView appIconView;
     @FXML
+    private Label appNameLabel;
+    @FXML
     private Label versionLabel;
     @FXML
     private Label developerLabel;
@@ -60,6 +62,7 @@ public class InitialSetupController {
     @FXML
     private void initialize() {
         appIconView.setImage(WindowDecorations.largeIcon());
+        appNameLabel.setText(appSignature.appName());
         versionLabel.setText(appSignature.versionOnly());
         developerLabel.setText(appSignature.developer());
         Platform.runLater(usernameField::requestFocus);

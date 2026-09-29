@@ -41,10 +41,16 @@ public class MonthlyReportPdfGenerator {
     };
     private static final float[] JOB_WIDTHS = { 8, 16, 18, 7, 9, 9, 9, 9, 9, 10 };
 
+    private final PdfFooter pdfFooter;
+
+    public MonthlyReportPdfGenerator(PdfFooter pdfFooter) {
+        this.pdfFooter = pdfFooter;
+    }
+
     public void generate(MonthlyReport report, Path outputFile) {
         Document document = new Document(PageSize.A4.rotate());
         try (FileOutputStream out = new FileOutputStream(outputFile.toFile())) {
-            PdfWriter.getInstance(document, out);
+            pdfFooter.attachTo(PdfWriter.getInstance(document, out));
             document.open();
             addSummary(document, report);
             addJobs(document, report);

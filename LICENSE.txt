@@ -1,11 +1,11 @@
-ŞANTİYE TAKİP – SON KULLANICI LİSANS SÖZLEŞMESİ
+SPARK ERP – SON KULLANICI LİSANS SÖZLEŞMESİ
 
 (c) 2026 Muhammet Akduman – Tüm hakları saklıdır.
 
 
 1. GELİŞTİRİCİ VE HAK SAHİPLİĞİ
 
-Bu program Muhammet Akduman tarafından geliştirilmiştir. Programın, kaynak
+Spark ERP programı Muhammet Akduman tarafından geliştirilmiştir. Programın, kaynak
 kodunun ve belgelerinin tüm hakları Muhammet Akduman'a aittir.
 
 

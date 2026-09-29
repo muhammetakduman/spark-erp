@@ -14,7 +14,7 @@ import java.util.stream.Stream;
 
 import javax.sql.DataSource;
 
-import com.electrician.tracker.config.DatabasePathResolver;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -31,20 +31,34 @@ public class BackupService {
     private static final DateTimeFormatter BACKUP_TIMESTAMP = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm");
     private static final int MAX_BACKUPS_KEPT = 30;
 
+    private static final String SQLITE_URL_PREFIX = "jdbc:sqlite:";
+    private static final String URL_PARAMETERS = "?";
+
     private final SettingService settingService;
     private final DataSource dataSource;
     private final AccessControl accessControl;
+    private final Path databaseFile;
 
-    public BackupService(SettingService settingService, DataSource dataSource, AccessControl accessControl) {
+    public BackupService(SettingService settingService, DataSource dataSource, AccessControl accessControl,
+            @Value("${spring.datasource.url}") String databaseUrl) {
         this.settingService = settingService;
         this.dataSource = dataSource;
         this.accessControl = accessControl;
+        this.databaseFile = databaseFileOf(databaseUrl);
+    }
+
+    /** The file of the database actually in use ("jdbc:sqlite:C:\...\veri.db?foreign_keys=on"). */
+    static Path databaseFileOf(String databaseUrl) {
+        String path = databaseUrl.startsWith(SQLITE_URL_PREFIX)
+                ? databaseUrl.substring(SQLITE_URL_PREFIX.length()) : databaseUrl;
+        int parameters = path.indexOf(URL_PARAMETERS);
+        return Path.of(parameters < 0 ? path : path.substring(0, parameters));
     }
 
     public Path getBackupFolder() {
         return settingService.getValue(BACKUP_FOLDER_SETTING_KEY)
                 .map(Path::of)
-                .orElseGet(() -> DatabasePathResolver.resolveDatabaseFile().getParent().resolve(DEFAULT_BACKUP_FOLDER_NAME));
+                .orElseGet(() -> databaseFile.toAbsolutePath().getParent().resolve(DEFAULT_BACKUP_FOLDER_NAME));
     }
 
     public void setBackupFolder(Path folder) {
@@ -53,7 +67,6 @@ public class BackupService {
     }
 
     public Path backupNow() {
-        Path databaseFile = DatabasePathResolver.resolveDatabaseFile();
         Path folder = getBackupFolder();
         try {
             Files.createDirectories(folder);
@@ -107,7 +120,6 @@ public class BackupService {
      */
     public void restoreFromBackup(Path backupFile) {
         accessControl.requireAdmin();
-        Path databaseFile = DatabasePathResolver.resolveDatabaseFile();
         if (dataSource instanceof Closeable closeable) {
             try {
                 closeable.close();

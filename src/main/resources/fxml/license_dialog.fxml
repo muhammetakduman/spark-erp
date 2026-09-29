@@ -19,6 +19,7 @@
         <ImageView fx:id="appIconView" fitWidth="64" fitHeight="64" preserveRatio="true" smooth="true"/>
         <VBox spacing="4" HBox.hgrow="ALWAYS">
             <Label fx:id="versionLabel" styleClass="section-title"/>
+            <Label fx:id="descriptionLabel" wrapText="true" styleClass="muted-text"/>
             <Label fx:id="noticeLabel" wrapText="true"/>
         </VBox>
     </HBox>

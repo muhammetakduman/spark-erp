@@ -1,13 +1,14 @@
 ﻿<#
 .SYNOPSIS
-    Şantiye Takip uygulamasını Windows için paketler.
+    Spark ERP uygulamasını Windows için paketler.
 
 .DESCRIPTION
-    Sürüm yalnızca pom.xml'den okunur (tek kaynak). Proje derlenir, testler
-    çalıştırılır ve jpackage ile Java'sı içinde gelen bir uygulama üretilir.
+    Ad, sürüm ve açıklama yalnızca pom.xml'den okunur (tek kaynak). Proje
+    derlenir, testler çalıştırılır ve jpackage ile Java'sı içinde gelen bir
+    uygulama üretilir.
 
-    Varsayılan:  dist\SantiyeTakip\SantiyeTakip.exe (kurulum gerektirmeyen klasör)
-    -Installer:  dist\SantiyeTakip-<sürüm>.exe kurulum dosyası; kurulumda
+    Varsayılan:  dist\Spark ERP\Spark ERP.exe (kurulum gerektirmeyen klasör)
+    -Installer:  dist\Spark ERP-<sürüm>.exe kurulum dosyası; kurulumda
                  LICENSE.txt gösterilir ve kabul edilmesi istenir.
                  WiX Toolset 3 gerekir (PATH'te ya da standart kurulum
                  klasöründe, ör. C:\Program Files (x86)\WiX Toolset v3.14).
@@ -27,12 +28,12 @@ param(
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
-$AppName     = 'SantiyeTakip'
 $Vendor      = 'Muhammet Akduman'
 $Copyright   = '(c) 2026 Muhammet Akduman - Tüm hakları saklıdır'
-$Description = 'Şantiye ve servis takip uygulaması'
 $MainClass   = 'com.electrician.tracker.Launcher'
-# Fixed so that a newer installer upgrades an older installation instead of installing beside it.
+# Fixed so that a newer installer upgrades an older installation instead of
+# installing beside it. NEVER change it: the old "Şantiye Takip" installs must
+# be upgraded in place by Spark ERP, leaving one entry in Add/Remove Programs.
 $UpgradeUuid = '6f2c1d9e-3b4a-4f7e-9a51-2d8c7b0e4a13'
 $DistDir     = Join-Path $PSScriptRoot 'dist'
 $InputDir    = Join-Path $PSScriptRoot 'target\jpackage-input'
@@ -53,9 +54,11 @@ function Find-Tool([string]$name) {
     throw "$name bulunamadı. JAVA_HOME değişkenini JDK 21 klasörüne ayarlayın."
 }
 
-# 1. Sürüm: tek kaynak pom.xml
+# 1. Ad, sürüm, açıklama: tek kaynak pom.xml
 [xml]$pom = Get-Content (Join-Path $PSScriptRoot 'pom.xml') -Encoding UTF8
-$Version = $pom.project.version.Trim()
+$AppName     = $pom.project.name.Trim()
+$Description = $pom.project.description.Trim()
+$Version     = $pom.project.version.Trim()
 if ($Version -notmatch '^\d+\.\d+\.\d+$') {
     throw "pom.xml sürümü '$Version' jpackage için uygun değil (örnek: 1.0.0)."
 }
@@ -145,7 +148,8 @@ if ($Installer) {
     $jpackageArgs += @(
         '--type', 'exe',
         '--license-file', $licenseRtf,
-        '--win-menu', '--win-shortcut', '--win-dir-chooser',
+        '--install-dir', $AppName,
+        '--win-menu', '--win-menu-group', $AppName, '--win-shortcut', '--win-dir-chooser',
         '--win-upgrade-uuid', $UpgradeUuid
     )
 } else {

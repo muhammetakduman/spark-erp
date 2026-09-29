@@ -48,11 +48,17 @@ public class DailyPlanPdfGenerator {
     private static final String LINE_BREAK = "\n";
     private static final String NAME_SEPARATOR = ", ";
 
+    private final PdfFooter pdfFooter;
+
+    public DailyPlanPdfGenerator(PdfFooter pdfFooter) {
+        this.pdfFooter = pdfFooter;
+    }
+
     public void generate(DayPlan plan, Company company, Path outputFile) {
         PdfStyle style = new PdfStyle(company);
         Document document = new Document(PageSize.A4, MARGIN, MARGIN, MARGIN, MARGIN);
         try (FileOutputStream out = new FileOutputStream(outputFile.toFile())) {
-            PdfWriter.getInstance(document, out);
+            pdfFooter.attachTo(PdfWriter.getInstance(document, out));
             document.open();
             if (company != null && company.getName() != null) {
                 document.add(new Paragraph(company.getName(), PdfStyle.muted(COMPANY_SIZE)));

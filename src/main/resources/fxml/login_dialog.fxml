@@ -17,7 +17,7 @@
     <VBox styleClass="login-brand">
         <Region VBox.vgrow="ALWAYS"/>
         <ImageView fx:id="appIconView" fitWidth="120" fitHeight="120" preserveRatio="true" smooth="true"/>
-        <Label text="%app.title" styleClass="login-app-name"/>
+        <Label fx:id="appNameLabel" styleClass="login-app-name"/>
         <Label fx:id="versionLabel" styleClass="login-version"/>
         <Region VBox.vgrow="ALWAYS"/>
         <Label fx:id="developerLabel" styleClass="login-developer"/>

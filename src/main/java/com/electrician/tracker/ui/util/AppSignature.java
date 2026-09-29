@@ -17,9 +17,9 @@ public class AppSignature {
         this.appInfo = appInfo;
     }
 
-    /** "Sürüm 1.0.0 · Geliştirici: Muhammet Akduman". */
+    /** "Spark ERP 2.8.3 · Geliştirici: Muhammet Akduman" (menu footer, About). */
     public String versionLine() {
-        return DialogUtil.message("signature.version", appInfo.version(), appInfo.developer());
+        return DialogUtil.message("signature.version", appInfo.name(), appInfo.version(), appInfo.developer());
     }
 
     /** "Bu program lisanslıdır; izinsiz kopyalanamaz ve üçüncü kişilerle paylaşılamaz." */
@@ -34,9 +34,19 @@ public class AppSignature {
                 appInfo.developer());
     }
 
-    /** "Şantiye Takip 1.0.0" for the window title. */
+    /** "Spark ERP 2.8.3" for the window title. */
     public String windowTitle() {
-        return DialogUtil.message("app.title") + " " + appInfo.version();
+        return appInfo.nameAndVersion();
+    }
+
+    /** "Spark ERP": login brand band, header, installer. */
+    public String appName() {
+        return appInfo.name();
+    }
+
+    /** The one-sentence description of the program (About dialog). */
+    public String description() {
+        return appInfo.description();
     }
 
     /** "Sürüm 2.4.2" for the login screen. */

@@ -57,6 +57,12 @@ public class JobPdfReportGenerator {
     private static final float[] TOTALS_WIDTHS = { 3, 2 };
     private static final float TOTALS_WIDTH_PERCENT = 50;
 
+    private final PdfFooter pdfFooter;
+
+    public JobPdfReportGenerator(PdfFooter pdfFooter) {
+        this.pdfFooter = pdfFooter;
+    }
+
     public void generate(Job job, JobSummary summary, List<MaterialItem> materials, List<Payment> payments,
             Company company, boolean includePayments, Path outputFile) {
         PdfStyle style = new PdfStyle(company);
@@ -64,6 +70,7 @@ public class JobPdfReportGenerator {
         try (FileOutputStream out = new FileOutputStream(outputFile.toFile())) {
             PdfWriter writer = PdfWriter.getInstance(document, out);
             writer.setPageEvent(new PageNumberStamp());
+            pdfFooter.attachTo(writer);
             document.open();
             PdfCompanyHeader.add(document, company, style);
             addHeader(document, job, style);

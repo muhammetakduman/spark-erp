@@ -4,9 +4,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
  * Application identity from the {@code app} section of application.yml. The
- * version is filled in from pom.xml at build time, so it is written in one
- * place only.
+ * name, version and description are filled in from pom.xml at build time, so
+ * they are written in one place only.
  */
 @ConfigurationProperties(prefix = "app")
-public record AppInfo(String version, String developer, int copyrightYear) {
+public record AppInfo(String name, String version, String description, String developer, int copyrightYear) {
+
+    /** "Spark ERP 2.8.3": window title, PDF footers. */
+    public String nameAndVersion() {
+        return name + " " + version;
+    }
 }

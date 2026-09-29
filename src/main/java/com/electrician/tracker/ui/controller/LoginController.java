@@ -47,6 +47,8 @@ public class LoginController {
     @FXML
     private ImageView appIconView;
     @FXML
+    private Label appNameLabel;
+    @FXML
     private Label versionLabel;
     @FXML
     private Label developerLabel;
@@ -77,6 +79,7 @@ public class LoginController {
     @FXML
     private void initialize() {
         appIconView.setImage(WindowDecorations.largeIcon());
+        appNameLabel.setText(appSignature.appName());
         versionLabel.setText(appSignature.versionOnly());
         developerLabel.setText(appSignature.developer());
         usernameBox.getChildren().add(0, Icons.of(AppIcon.USER, IconSize.BUTTON));

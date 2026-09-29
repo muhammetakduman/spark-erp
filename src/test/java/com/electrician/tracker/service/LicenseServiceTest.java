@@ -21,7 +21,7 @@ class LicenseServiceTest {
     @BeforeEach
     void setUp() {
         settingService = mock(SettingService.class);
-        licenseService = new LicenseService(settingService, new AppInfo("1.0.0", "Muhammet Akduman", 2026));
+        licenseService = new LicenseService(settingService, new AppInfo("Spark ERP", "1.0.0", "Açıklama", "Muhammet Akduman", 2026));
     }
 
     @Test
