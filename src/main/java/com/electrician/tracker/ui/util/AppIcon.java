@@ -69,7 +69,22 @@ public enum AppIcon {
     SEARCH(FontAwesomeSolid.SEARCH, null),
     PALETTE(FontAwesomeSolid.PALETTE, null),
     FOLDER(FontAwesomeSolid.FOLDER_OPEN, null),
-    CANCEL(FontAwesomeSolid.BAN, null);
+    CANCEL(FontAwesomeSolid.BAN, null),
+    DIALOG_INFO(FontAwesomeSolid.INFO_CIRCLE, null),
+    DIALOG_SUCCESS(FontAwesomeSolid.CHECK_CIRCLE, null),
+    DIALOG_WARNING(FontAwesomeSolid.EXCLAMATION_TRIANGLE, null),
+    DIALOG_ERROR(FontAwesomeSolid.TIMES_CIRCLE, null),
+    DIALOG_QUESTION(FontAwesomeSolid.QUESTION_CIRCLE, null),
+    STATUS_PLANNED(FontAwesomeSolid.CLOCK, null),
+    STATUS_COMPLETED(FontAwesomeSolid.CHECK, null),
+    STATUS_NOT_VISITED(FontAwesomeSolid.TIMES, null),
+    STATUS_POSTPONED(FontAwesomeSolid.ARROW_RIGHT, null),
+    STATUS_CANCELLED(FontAwesomeSolid.BAN, null),
+    URGENT(FontAwesomeSolid.EXCLAMATION_CIRCLE, "icon-danger"),
+    THEME_LIGHT(FontAwesomeSolid.SUN, null),
+    THEME_DARK(FontAwesomeSolid.MOON, null),
+    SELECT_CLEAR(FontAwesomeSolid.TIMES, null),
+    DEACTIVATE(FontAwesomeSolid.USER_SLASH, null);
 
     private final Ikon ikon;
     private final String tone;

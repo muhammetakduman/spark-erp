@@ -12,8 +12,8 @@ import com.electrician.tracker.dto.AttendanceConflict;
 import com.electrician.tracker.dto.AttendanceEntry;
 import com.electrician.tracker.dto.AttendancePreview;
 import com.electrician.tracker.dto.AttendanceSaveResult;
-import com.electrician.tracker.service.AttendanceMath;
 import com.electrician.tracker.service.AccessControl;
+import com.electrician.tracker.service.AttendanceMath;
 import com.electrician.tracker.service.AttendanceService;
 import com.electrician.tracker.service.EmployeeService;
 import com.electrician.tracker.service.JobLabels;
@@ -22,9 +22,9 @@ import com.electrician.tracker.ui.util.DecimalField;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.ModalStageOpener;
 import com.electrician.tracker.ui.util.SelectionLists;
+import com.electrician.tracker.ui.util.SparkDialog;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
@@ -257,9 +257,7 @@ public class AttendanceEntryController {
     }
 
     private void showInfo(String text) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, text);
-        alert.setHeaderText(null);
-        alert.showAndWait();
+        SparkDialog.info(text);
     }
 
     @FXML

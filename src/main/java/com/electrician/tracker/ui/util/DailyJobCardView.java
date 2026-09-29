@@ -2,6 +2,7 @@ package com.electrician.tracker.ui.util;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import com.electrician.tracker.domain.DailyJobStatus;
 import com.electrician.tracker.dto.DailyJobCard;
@@ -9,6 +10,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
+import javafx.scene.control.ContentDisplay;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
@@ -21,7 +23,7 @@ import javafx.scene.layout.VBox;
 /**
  * One daily job as a card: time · title · status badge on top, customer,
  * address and phone below, the team as small badges, notes. An urgent job
- * has a red left edge. While the job is open the right side carries the two
+ * has a red left edge and a red exclamation mark after its title. While the job is open the right side carries the two
  * big buttons "Gidildi" / "Gidilmedi" (and, for a job of a site or service,
  * "Puantaja da yaz", ticked); rarely used actions sit under "Daha fazla".
  */
@@ -32,9 +34,15 @@ public final class DailyJobCardView {
     private static final double BADGE_GAP = 4;
 
     private final Actions actions;
+    private Function<DailyJobCard, Node> selectBox;
 
     public DailyJobCardView(Actions actions) {
         this.actions = actions;
+    }
+
+    /** A tick box at the left of every card, for bulk actions (ADMIN). */
+    public void setSelectBox(Function<DailyJobCard, Node> value) {
+        this.selectBox = value;
     }
 
     /** What the card's buttons do; implemented by the plan screen. */
@@ -76,6 +84,9 @@ public final class DailyJobCardView {
     private HBox frame(DailyJobCard card, VBox main, Node side) {
         HBox.setHgrow(main, Priority.ALWAYS);
         HBox box = new HBox(CARD_SPACING, main, side);
+        if (selectBox != null) {
+            box.getChildren().add(0, selectBox.apply(card));
+        }
         box.getStyleClass().add("job-card");
         if (card.isUrgent()) {
             box.getStyleClass().add("job-card-urgent");
@@ -108,7 +119,7 @@ public final class DailyJobCardView {
         return main;
     }
 
-    /** "09:00 · Ahmet Bey – priz arızası  [Planlandı] [ACİL] 2 kez ertelendi". */
+    /** "09:00 · Ahmet Bey – priz arızası (!)  [Planlandı] 2 kez ertelendi". */
     private HBox headerLine(DailyJobCard card, boolean withDate) {
         List<Node> parts = new ArrayList<>();
         if (withDate) {
@@ -119,11 +130,12 @@ public final class DailyJobCardView {
         }
         Label title = styled(new Label(card.title()), "job-card-title");
         title.setWrapText(true);
-        parts.add(title);
-        parts.add(statusBadge(card.status()));
         if (card.isUrgent()) {
-            parts.add(styled(new Label(DialogUtil.message("dailyJob.card.urgent")), "urgent-badge"));
+            title.setGraphic(StatusBadges.urgentMark());
+            title.setContentDisplay(ContentDisplay.RIGHT);
         }
+        parts.add(title);
+        parts.add(StatusBadges.of(card.status()));
         if (card.postponeCount() > 0) {
             Label postponed = new Label(DialogUtil.message("dailyJob.card.postponed", card.postponeCount()));
             postponed.getStyleClass().add(card.isFrequentlyPostponed() ? "warning-badge" : "muted-text");
@@ -132,13 +144,6 @@ public final class DailyJobCardView {
         HBox line = new HBox(SPACING * 2, parts.toArray(Node[]::new));
         line.setAlignment(Pos.CENTER_LEFT);
         return line;
-    }
-
-    private static Label statusBadge(DailyJobStatus status) {
-        Label badge = new Label(EnumLabels.label(status));
-        badge.getStyleClass().addAll("status-badge", "status-" + status.name().toLowerCase(java.util.Locale.ROOT)
-                .replace('_', '-'));
-        return badge;
     }
 
     private static java.util.Optional<Node> placeLine(DailyJobCard card) {

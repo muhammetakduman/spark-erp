@@ -6,12 +6,10 @@ import java.util.ResourceBundle;
 
 import com.electrician.tracker.service.exception.LoginBlockedException;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
-
 /**
- * Small wrapper around JavaFX {@link Alert} so every screen shows errors and
- * confirmations the same way, with Turkish text resolved from the bundle.
+ * Resolves Turkish texts from the bundle and shows errors, notices and
+ * yes/no questions through {@link SparkDialog}, so every screen does it the
+ * same way.
  */
 public final class DialogUtil {
 
@@ -25,9 +23,7 @@ public final class DialogUtil {
      * bundle key, translated to Turkish before display.
      */
     public static void showError(RuntimeException ex) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, errorText(ex));
-        alert.setHeaderText(null);
-        alert.showAndWait();
+        SparkDialog.error(errorText(ex));
     }
 
     /** Translated text of a service exception, with its arguments filled in. */
@@ -51,15 +47,16 @@ public final class DialogUtil {
             root = root.getCause();
         }
         String detail = root.getMessage() == null ? root.getClass().getSimpleName() : resolveMessage(root.getMessage());
-        Alert alert = new Alert(Alert.AlertType.ERROR, message("error.unexpected", detail));
-        alert.setHeaderText(null);
-        alert.showAndWait();
+        SparkDialog.error(message("error.unexpected.title"), message("error.unexpected", detail));
     }
 
     public static void showErrorMessage(String messageKey) {
-        Alert alert = new Alert(Alert.AlertType.ERROR, resolveMessage(messageKey));
-        alert.setHeaderText(null);
-        alert.showAndWait();
+        SparkDialog.error(resolveMessage(messageKey));
+    }
+
+    /** "Kayıt güncellendi." and the like: the green tick window. */
+    public static void showSuccess(String messageKey) {
+        SparkDialog.success(resolveMessage(messageKey));
     }
 
     public static void showInfo(String messageKey) {
@@ -68,9 +65,7 @@ public final class DialogUtil {
 
     /** Information with already-resolved text (e.g. a message with arguments). */
     public static void showInfoText(String text) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, text);
-        alert.setHeaderText(null);
-        alert.showAndWait();
+        SparkDialog.info(text);
     }
 
     public static String message(String messageKey) {
@@ -91,9 +86,7 @@ public final class DialogUtil {
 
     /** Yes/no question with already-resolved text; true when the user answers yes. */
     public static boolean confirmText(String text) {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, text, ButtonType.YES, ButtonType.NO);
-        alert.setHeaderText(null);
-        return alert.showAndWait().filter(button -> button == ButtonType.YES).isPresent();
+        return SparkDialog.confirm(text, null);
     }
 
     private static String resolveMessage(String messageKey) {

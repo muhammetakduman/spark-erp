@@ -5,21 +5,15 @@ import java.util.List;
 
 import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.dto.JobDeletionImpact;
-import javafx.application.Platform;
-import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 
 /**
  * The delete confirmation used everywhere something is deleted: it names what
  * will be deleted (for a job, how many records go with it), says it cannot be
- * undone, and starts on "Vazgeç" — Enter cancels, only a click on the red
- * delete button deletes.
+ * undone, and starts on "Vazgeç" — Enter does nothing, only a click on the red
+ * delete button deletes (see {@link SparkDialog}).
  */
 public final class DeleteConfirmation {
 
-    private static final String DANGER_STYLE = "danger-button";
     private static final String BULLET = "· ";
 
     private DeleteConfirmation() {
@@ -57,18 +51,6 @@ public final class DeleteConfirmation {
     }
 
     private static boolean ask(String question, String details, String deleteText) {
-        ButtonType cancel = new ButtonType(DialogUtil.message("delete.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
-        ButtonType delete = new ButtonType(deleteText, ButtonBar.ButtonData.OTHER);
-        Alert alert = new Alert(Alert.AlertType.WARNING, details, cancel, delete);
-        alert.setTitle(DialogUtil.message("delete.title"));
-        alert.setHeaderText(question);
-        Stylesheets.apply(alert.getDialogPane());
-        Button cancelButton = (Button) alert.getDialogPane().lookupButton(cancel);
-        Button deleteButton = (Button) alert.getDialogPane().lookupButton(delete);
-        cancelButton.setDefaultButton(true);
-        deleteButton.setDefaultButton(false);
-        deleteButton.getStyleClass().add(DANGER_STYLE);
-        Platform.runLater(cancelButton::requestFocus);
-        return alert.showAndWait().filter(delete::equals).isPresent();
+        return SparkDialog.confirmDelete(question, details, deleteText);
     }
 }
