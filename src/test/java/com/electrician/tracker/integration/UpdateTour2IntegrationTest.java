@@ -346,6 +346,33 @@ class UpdateTour2IntegrationTest {
         assertThat(dailyJobService.dayPlan(today).cards()).extracting(DailyJobCard::title).contains("Unutulan iş");
     }
 
+    @Test
+    void unlinkedVisitBecomesServiceAndOnlyServicesAreLinkable() {
+        LocalDate today = dailyJobService.today();
+        Customer customer = customerService.create(new Customer("Link Müşterisi", null, null, null, null));
+        jobService.create(new Job(customer, JobType.SITE, "Link Şantiyesi", null, today, null, JobStatus.ACTIVE,
+                null, null, false, null));
+        assertThat(dailyJobService.linkableJobs()).allSatisfy(option ->
+                assertThat(option.type()).isEqualTo(JobType.SERVICE));
+
+        Employee usta = employeeService.create(new Employee("Servis Usta", new BigDecimal("1500"), true, true));
+        DailyJobDraft draft = new DailyJobDraft(today, null, "Priz arızası", null, "Yeni Servis Müşterisi", "Kadıköy",
+                "0555", List.of(usta.getId()), DailyJobPriority.NORMAL, null, null);
+        DailyJobCard visit = dailyJobService.save(null, draft);
+
+        assertThat(dailyJobService.complete(visit.id(), null, true).serviceCreated()).isTrue();
+
+        Customer created = customerService.findByName("Yeni Servis Müşterisi").orElseThrow();
+        DailyJobCard done = dailyJobService.dayPlan(today).cards().stream()
+                .filter(card -> card.id().equals(visit.id())).findFirst().orElseThrow();
+        Job service = jobService.findById(done.jobId());
+        assertThat(service.getType()).isEqualTo(JobType.SERVICE);
+        assertThat(service.getCustomer().getId()).isEqualTo(created.getId());
+        assertThat(service.getName()).isEqualTo("Priz arızası");
+        assertThat(service.getServiceFee()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(attendanceService.findByJob(service.getId())).hasSize(1);
+    }
+
     // ---- 26–27: templates ------------------------------------------------------------
 
     @Test

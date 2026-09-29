@@ -1,5 +1,6 @@
 package com.electrician.tracker.service;
 
+import java.math.BigDecimal;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -17,8 +18,11 @@ import com.electrician.tracker.domain.DailyJobPriority;
 import com.electrician.tracker.domain.DailyJobStatus;
 import com.electrician.tracker.domain.Employee;
 import com.electrician.tracker.domain.Job;
+import com.electrician.tracker.domain.JobStatus;
+import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.dto.AttendanceSaveResult;
 import com.electrician.tracker.dto.DailyJobCard;
+import com.electrician.tracker.dto.DailyJobCompletion;
 import com.electrician.tracker.dto.DailyJobDraft;
 import com.electrician.tracker.dto.DayPlan;
 import com.electrician.tracker.dto.EmployeeBooking;
@@ -38,7 +42,9 @@ import org.springframework.transaction.annotation.Transactional;
  * went, and moving what was not done to another day (the old entry stays as
  * POSTPONED and the new one points back to it). A completed entry that
  * belongs to a site or service can be written to the attendance in the same
- * step. Both roles use it; a MANAGER can only link services.
+ * step. An entry done without a link becomes a new service of its customer,
+ * so every visit shows up in the services list. Entries are linked to
+ * services only; a site keeps the link it was planned with.
  */
 @Service
 public class DailyJobService {
@@ -109,13 +115,20 @@ public class DailyJobService {
         return DailyJobMapper.toDraft(findEntity(id));
     }
 
-    /** Active sites (ADMIN only) and services a daily job can be linked to. */
+    /** Active services a daily job can be linked to. */
     @Transactional(readOnly = true)
     public List<JobOption> linkableJobs() {
         return jobService.findActiveAccessible().stream()
+                .filter(job -> job.getType() == JobType.SERVICE)
                 .map(DailyJobMapper::toOption)
                 .sorted(Comparator.comparing(JobOption::label, String.CASE_INSENSITIVE_ORDER))
                 .toList();
+    }
+
+    /** The option of one job, for a site planned from its own screen or an entry already linked to it. */
+    @Transactional(readOnly = true)
+    public JobOption jobOption(Long jobId) {
+        return DailyJobMapper.toOption(jobService.findById(jobId));
     }
 
     /**
@@ -162,20 +175,40 @@ public class DailyJobService {
     }
 
     /**
-     * "Gidildi": done, with an optional note. For an entry of a site or
-     * service, {@code writeAttendance} also records one full day for each
-     * employee who went (at their default wage; days already recorded are
-     * skipped).
+     * "Gidildi": done, with an optional note. An entry without a link that
+     * has a customer becomes a new service (fees left empty, a typed customer
+     * name is saved as a customer). For an entry of a site or service,
+     * {@code writeAttendance} also records one full day for each employee who
+     * went (at their default wage; days already recorded are skipped).
      */
     @Transactional
-    public AttendanceSaveResult complete(Long id, String note, boolean writeAttendance) {
+    public DailyJobCompletion complete(Long id, String note, boolean writeAttendance) {
         DailyJob entry = findOpenEntity(id);
         entry.complete(blankToNull(note));
+        boolean serviceCreated = entry.getJob() == null && openServiceFor(entry);
         if (!writeAttendance || entry.getJob() == null || entry.getEmployees().isEmpty()) {
-            return new AttendanceSaveResult(0, 0);
+            return new DailyJobCompletion(new AttendanceSaveResult(0, 0), serviceCreated);
         }
-        return attendanceService.saveFullDays(entry.getJob().getId(), entry.getJobDate(),
-                entry.getEmployees().stream().map(Employee::getId).toList());
+        return new DailyJobCompletion(attendanceService.saveFullDays(entry.getJob().getId(), entry.getJobDate(),
+                entry.getEmployees().stream().map(Employee::getId).toList()), serviceCreated);
+    }
+
+    /** Links the entry to a new completed service of its customer; false when it has no customer. */
+    private boolean openServiceFor(DailyJob entry) {
+        Customer customer = entry.getCustomer();
+        if (customer == null && entry.getCustomerName() == null) {
+            return false;
+        }
+        if (customer == null) {
+            customer = customerService.findOrCreate(entry.getCustomerName(), entry.getPhone(), entry.getAddress(),
+                    null).customer();
+            entry.setCustomer(customer);
+            entry.setCustomerName(null);
+        }
+        entry.setJob(jobService.create(new Job(customer, JobType.SERVICE, entry.getTitle(), entry.getAddress(),
+                entry.getJobDate(), null, JobStatus.COMPLETED, BigDecimal.ZERO, BigDecimal.ZERO, false,
+                entry.getNote())));
+        return true;
     }
 
     /** Adds or changes the note of an entry that was already marked as done. */

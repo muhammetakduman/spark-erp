@@ -46,6 +46,11 @@ public record DailyJobCard(
         return jobId != null;
     }
 
+    /** Linked, or unlinked with a customer (it becomes a service when done). */
+    public boolean willHaveJob() {
+        return isLinkedToJob() || (customerName != null && !customerName.isBlank());
+    }
+
     public boolean isFrequentlyPostponed() {
         return postponeCount >= FREQUENTLY_POSTPONED;
     }

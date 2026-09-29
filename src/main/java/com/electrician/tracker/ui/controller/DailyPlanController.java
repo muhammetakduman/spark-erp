@@ -2,12 +2,14 @@ package com.electrician.tracker.ui.controller;
 
 import java.io.File;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import com.electrician.tracker.dto.AttendanceSaveResult;
 import com.electrician.tracker.dto.DailyJobCard;
+import com.electrician.tracker.dto.DailyJobCompletion;
 import com.electrician.tracker.dto.DayPlan;
 import com.electrician.tracker.dto.WeekPlan;
 import com.electrician.tracker.service.DailyJobService;
@@ -265,14 +267,27 @@ public class DailyPlanController implements DailyJobCardView.Actions {
     @Override
     public void done(DailyJobCard card, boolean writeAttendance) {
         try {
-            AttendanceSaveResult result = dailyJobService.complete(card.id(), null, writeAttendance);
+            DailyJobCompletion completion = dailyJobService.complete(card.id(), null, writeAttendance);
             noteEditorsOpen.add(card.id());
-            showNotice(writeAttendance ? DialogUtil.message("dailyJob.attendanceWritten", result.createdCount(),
-                    result.skippedCount()) : null);
+            showNotice(completionNotice(completion, writeAttendance));
         } catch (RuntimeException ex) {
             DialogUtil.showError(ex);
         }
         reloadShownTab();
+    }
+
+    /** "Servisler listesine eklendi." and/or "Puantaja 2 kayıt yazıldı (…)."; null when there is nothing to say. */
+    private static String completionNotice(DailyJobCompletion completion, boolean writeAttendance) {
+        List<String> parts = new ArrayList<>();
+        if (completion.serviceCreated()) {
+            parts.add(DialogUtil.message("dailyJob.serviceCreated"));
+        }
+        if (writeAttendance) {
+            AttendanceSaveResult attendance = completion.attendance();
+            parts.add(DialogUtil.message("dailyJob.attendanceWritten", attendance.createdCount(),
+                    attendance.skippedCount()));
+        }
+        return parts.isEmpty() ? null : String.join(" ", parts);
     }
 
     @Override

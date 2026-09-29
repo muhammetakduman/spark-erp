@@ -170,7 +170,7 @@ public final class DailyJobCardView {
     private VBox openActions(DailyJobCard card) {
         CheckBox attendance = new CheckBox(DialogUtil.message("dailyJob.writeAttendance"));
         attendance.setSelected(true);
-        boolean canWrite = card.isLinkedToJob() && !card.employeeIds().isEmpty();
+        boolean canWrite = card.willHaveJob() && !card.employeeIds().isEmpty();
         Button done = Icons.button(AppIcon.DONE, "dailyJob.action.done",
                 () -> actions.done(card, canWrite && attendance.isSelected()));
         done.getStyleClass().add("done-button");

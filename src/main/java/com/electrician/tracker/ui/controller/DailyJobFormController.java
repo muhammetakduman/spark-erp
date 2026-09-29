@@ -21,7 +21,9 @@ import com.electrician.tracker.service.TemplateService;
 import com.electrician.tracker.ui.util.Bicimlendirici;
 import com.electrician.tracker.ui.util.CustomerNameField;
 import com.electrician.tracker.ui.util.DialogUtil;
+import com.electrician.tracker.ui.util.ModalStageOpener;
 import com.electrician.tracker.ui.util.SuggestionPicker;
+import com.electrician.tracker.ui.util.ViewPaths;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
@@ -37,9 +39,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * Adds or changes a daily job: day, optional time, title (typed or picked
- * from the job title templates), optional link to an active site or service
- * (fills title, customer, address and phone), customer, address, phone, who
- * goes, urgent and a note. When someone is already on another job that day
+ * from the job title templates), optional link to an active service (fills
+ * title, customer, address and phone), customer (a new one can be added
+ * here), address, phone, who goes, urgent and a note. When someone is already on another job that day
  * the form asks before saving.
  */
 @Component
@@ -50,6 +52,7 @@ public class DailyJobFormController {
     private final CustomerService customerService;
     private final EmployeeService employeeService;
     private final TemplateService templateService;
+    private final ModalStageOpener modalStageOpener;
 
     @FXML
     private DatePicker datePicker;
@@ -81,11 +84,12 @@ public class DailyJobFormController {
     private boolean saved;
 
     public DailyJobFormController(DailyJobService dailyJobService, CustomerService customerService,
-            EmployeeService employeeService, TemplateService templateService) {
+            EmployeeService employeeService, TemplateService templateService, ModalStageOpener modalStageOpener) {
         this.dailyJobService = dailyJobService;
         this.customerService = customerService;
         this.employeeService = employeeService;
         this.templateService = templateService;
+        this.modalStageOpener = modalStageOpener;
     }
 
     @FXML
@@ -117,8 +121,7 @@ public class DailyJobFormController {
 
     /** "Bu şantiyeye gün planla": already linked to the site. */
     public void startForJob(Long jobId) {
-        jobComboBox.getItems().stream().filter(option -> option.jobId().equals(jobId)).findFirst()
-                .ifPresent(jobComboBox::setValue);
+        selectJob(jobId);
     }
 
     public void editExisting(Long id) {
@@ -127,8 +130,7 @@ public class DailyJobFormController {
         datePicker.setValue(draft.date());
         timeField.setText(draft.timeOfDay());
         urgentCheckBox.setSelected(draft.priority() == DailyJobPriority.URGENT);
-        jobComboBox.getItems().stream().filter(option -> option.jobId().equals(draft.jobId())).findFirst()
-                .ifPresent(jobComboBox::setValue);
+        selectJob(draft.jobId());
         titlePicker.select(draft.title());
         customerField.showName(draft.customerName());
         addressField.setText(draft.address());
@@ -139,6 +141,20 @@ public class DailyJobFormController {
 
     public boolean isSaved() {
         return saved;
+    }
+
+    /** Only services are listed; a site (planned from its screen or linked before) is added to the list. */
+    private void selectJob(Long jobId) {
+        if (jobId == null) {
+            return;
+        }
+        JobOption option = jobComboBox.getItems().stream().filter(item -> item.jobId().equals(jobId)).findFirst()
+                .orElseGet(() -> {
+                    JobOption loaded = dailyJobService.jobOption(jobId);
+                    jobComboBox.getItems().add(0, loaded);
+                    return loaded;
+                });
+        jobComboBox.setValue(option);
     }
 
     private void fillFromJob(JobOption option) {
@@ -156,6 +172,19 @@ public class DailyJobFormController {
     private void fillFromCustomer(Customer customer) {
         addressField.setText(customer.getAddress());
         phoneField.setText(customer.getPhone());
+    }
+
+    @FXML
+    private void onNewCustomer() {
+        CustomerFormController controller = modalStageOpener.openAndWait(ViewPaths.CUSTOMER_FORM,
+                "customer.dialog.new", saveButton.getScene().getWindow());
+        Customer created = controller.getResult();
+        if (!controller.isSaved() || created == null) {
+            return;
+        }
+        customerField.reload(customerService.findAll());
+        customerField.showName(created.getName());
+        fillFromCustomer(created);
     }
 
     @FXML

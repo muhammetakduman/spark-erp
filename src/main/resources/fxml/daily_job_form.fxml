@@ -46,8 +46,11 @@
                   GridPane.rowIndex="2" GridPane.columnIndex="1"/>
 
         <Label text="%dailyJob.field.customer" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <ComboBox fx:id="customerComboBox" editable="true" promptText="%material.field.optional" maxWidth="Infinity"
-                  GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <HBox spacing="8" GridPane.rowIndex="3" GridPane.columnIndex="1">
+            <ComboBox fx:id="customerComboBox" editable="true" promptText="%material.field.optional"
+                      maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+            <Button text="%dailyJob.action.newCustomer" onAction="#onNewCustomer" styleClass="action-add"/>
+        </HBox>
 
         <Label text="%dailyJob.field.address" styleClass="form-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
         <TextField fx:id="addressField" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
