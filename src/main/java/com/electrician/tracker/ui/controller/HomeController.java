@@ -14,9 +14,11 @@ import com.electrician.tracker.ui.util.Bicimlendirici;
 import com.electrician.tracker.ui.util.ContentNavigator;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.JobNavigator;
+import com.electrician.tracker.ui.util.PendingJobsBadge;
 import com.electrician.tracker.ui.util.StatBoxes;
 import com.electrician.tracker.ui.util.TaskRunner;
 import com.electrician.tracker.ui.util.ViewPaths;
+import javafx.beans.binding.Bindings;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.Hyperlink;
@@ -46,9 +48,14 @@ public class HomeController {
     private final TaskRunner taskRunner;
     private final JobNavigator jobNavigator;
     private final ContentNavigator contentNavigator;
+    private final PendingJobsBadge pendingJobsBadge;
 
     @FXML
     private VBox rootContent;
+    @FXML
+    private VBox pendingJobsBox;
+    @FXML
+    private Label pendingJobsLabel;
     @FXML
     private FlowPane summaryCardsBox;
     @FXML
@@ -61,17 +68,22 @@ public class HomeController {
     private ProgressIndicator loadingIndicator;
 
     public HomeController(JobSummaryService jobSummaryService, AccessControl accessControl, TaskRunner taskRunner,
-            JobNavigator jobNavigator, ContentNavigator contentNavigator) {
+            JobNavigator jobNavigator, ContentNavigator contentNavigator, PendingJobsBadge pendingJobsBadge) {
         this.jobSummaryService = jobSummaryService;
         this.accessControl = accessControl;
         this.taskRunner = taskRunner;
         this.jobNavigator = jobNavigator;
         this.contentNavigator = contentNavigator;
+        this.pendingJobsBadge = pendingJobsBadge;
     }
 
     @FXML
     private void initialize() {
         accessControl.requireAdmin();
+        pendingJobsBox.visibleProperty().bind(pendingJobsBadge.countProperty().greaterThan(0));
+        pendingJobsBox.managedProperty().bind(pendingJobsBox.visibleProperty());
+        pendingJobsLabel.textProperty().bind(Bindings.createStringBinding(() -> DialogUtil.message(
+                "home.pendingJobs.text", pendingJobsBadge.countProperty().get()), pendingJobsBadge.countProperty()));
         taskRunner.run(() -> jobSummaryService.loadDashboard(YearMonth.now()), this::show, loadingIndicator,
                 rootContent);
     }
@@ -111,6 +123,12 @@ public class HomeController {
             card.setOnMouseClicked(event -> onClick.run());
         }
         return card;
+    }
+
+    /** "Bekleyen işler" card: İş Takip, "Bekleyen" tab. */
+    @FXML
+    private void onOpenPendingJobs() {
+        contentNavigator.<DailyPlanController>show(ViewPaths.DAILY_PLAN, DailyPlanController::showPendingTab);
     }
 
     private void showMonthlyReport() {

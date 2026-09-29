@@ -10,6 +10,7 @@ import java.util.Map;
 import com.electrician.tracker.domain.DailyJob;
 import com.electrician.tracker.domain.DailyJobPriority;
 import com.electrician.tracker.dto.DailyJobCard;
+import com.electrician.tracker.dto.DailyJobLink;
 import com.electrician.tracker.dto.DayPlan;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -47,6 +48,23 @@ class DailyPlanCalculatorTest {
         assertThat(plan.plannedCount()).isEqualTo(1);
         assertThat(plan.completedCount()).isEqualTo(1);
         assertThat(plan.notVisitedCount()).isEqualTo(1);
+    }
+
+    @Test
+    void waitingJobsPostponedThreeTimesComeFirstThenTheOldest() {
+        DailyJob old = entry(1L, "Eski iş", null, DailyJobPriority.NORMAL);
+        old.setJobDate(DAY.minusDays(5));
+        DailyJob recent = entry(2L, "Yeni iş", null, DailyJobPriority.NORMAL);
+        recent.setJobDate(DAY.minusDays(1));
+        DailyJob often = entry(10L, "Sık ertelenen", null, DailyJobPriority.NORMAL);
+        often.setJobDate(DAY.minusDays(1));
+        List<DailyJobLink> chain = List.of(new DailyJobLink(10L, 9L), new DailyJobLink(9L, 8L),
+                new DailyJobLink(8L, 7L));
+
+        List<DailyJobCard> cards = DailyPlanCalculator.pendingCards(List.of(recent, often, old), chain);
+
+        assertThat(cards).extracting(DailyJobCard::title).containsExactly("Sık ertelenen", "Eski iş", "Yeni iş");
+        assertThat(cards.get(0).postponeCount()).isEqualTo(3);
     }
 
     @Test

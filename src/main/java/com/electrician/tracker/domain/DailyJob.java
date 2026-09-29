@@ -137,6 +137,11 @@ public class DailyJob {
         this.completionNote = reason;
     }
 
+    /** A job marked "not visited" is planned again (e.g. it was done after all). */
+    public void reopen() {
+        this.status = DailyJobStatus.PLANNED;
+    }
+
     public void cancel() {
         this.status = DailyJobStatus.CANCELLED;
     }

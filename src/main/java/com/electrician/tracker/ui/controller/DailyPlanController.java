@@ -12,11 +12,15 @@ import com.electrician.tracker.dto.DailyJobCard;
 import com.electrician.tracker.dto.DailyJobCompletion;
 import com.electrician.tracker.dto.DayPlan;
 import com.electrician.tracker.dto.WeekPlan;
+import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.DailyJobService;
 import com.electrician.tracker.service.DailyPlanCalculator;
 import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.Bicimlendirici;
+import com.electrician.tracker.ui.util.BulkDeleteFlow;
+import com.electrician.tracker.ui.util.BulkSelection;
 import com.electrician.tracker.ui.util.DailyJobCardView;
+import com.electrician.tracker.ui.util.DayWatcher;
 import com.electrician.tracker.ui.util.DeleteConfirmation;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EmptyState;
@@ -26,6 +30,8 @@ import com.electrician.tracker.ui.util.StatBoxes;
 import com.electrician.tracker.ui.util.TaskRunner;
 import com.electrician.tracker.ui.util.ViewPaths;
 import com.electrician.tracker.ui.util.WeekGridView;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
 import javafx.scene.control.DatePicker;
@@ -56,6 +62,9 @@ public class DailyPlanController implements DailyJobCardView.Actions {
     private final ModalStageOpener modalStageOpener;
     private final TaskRunner taskRunner;
     private final PendingJobsBadge pendingJobsBadge;
+    private final DayWatcher dayWatcher;
+    private final AccessControl accessControl;
+    private final ChangeListener<LocalDate> dayListener = (obs, oldDay, newDay) -> onDayChanged(oldDay, newDay);
 
     @FXML
     private BorderPane rootContent;
@@ -87,15 +96,21 @@ public class DailyPlanController implements DailyJobCardView.Actions {
     private VBox pendingList;
 
     private final DailyJobCardView cardView = new DailyJobCardView(this);
+    private List<DailyJobCard> shownCards = List.of();
+    private final BulkSelection<DailyJobCard> selection =
+            new BulkSelection<>(() -> shownCards, DailyJobCard::id, this::deleteSelected);
     private final Set<Long> noteEditorsOpen = new HashSet<>();
     private LocalDate weekDay;
 
     public DailyPlanController(DailyJobService dailyJobService, ModalStageOpener modalStageOpener,
-            TaskRunner taskRunner, PendingJobsBadge pendingJobsBadge) {
+            TaskRunner taskRunner, PendingJobsBadge pendingJobsBadge, DayWatcher dayWatcher,
+            AccessControl accessControl) {
         this.dailyJobService = dailyJobService;
         this.modalStageOpener = modalStageOpener;
         this.taskRunner = taskRunner;
         this.pendingJobsBadge = pendingJobsBadge;
+        this.dayWatcher = dayWatcher;
+        this.accessControl = accessControl;
     }
 
     @FXML
@@ -110,8 +125,31 @@ public class DailyPlanController implements DailyJobCardView.Actions {
             }
         });
         tabPane.getSelectionModel().selectedItemProperty().addListener((obs, old, tab) -> reloadShownTab());
+        dayWatcher.todayProperty().addListener(new WeakChangeListener<>(dayListener));
+        if (accessControl.isAdmin()) {
+            cardView.setSelectBox(selection::checkBoxFor);
+            selection.placeAbove(tabPane);
+            selection.installKeys(rootContent);
+        }
         loadDay();
         loadPendingCount();
+    }
+
+    /** Opens the "Bekleyen" tab (from the home screen's pending-jobs card). */
+    public void showPendingTab() {
+        tabPane.getSelectionModel().select(pendingTab);
+    }
+
+    /** After midnight the screen moves on to the new day if it was showing "today". */
+    private void onDayChanged(LocalDate oldDay, LocalDate newDay) {
+        if (newDay == null) {
+            return;
+        }
+        if (oldDay == null || oldDay.equals(datePicker.getValue())) {
+            datePicker.setValue(newDay);
+        } else {
+            reloadShownTab();
+        }
     }
 
     // ---- Loading ---------------------------------------------------------------
@@ -135,6 +173,7 @@ public class DailyPlanController implements DailyJobCardView.Actions {
     }
 
     private void showDay(DayPlan plan) {
+        showCards(plan.cards());
         dayNameLabel.setText(Bicimlendirici.dateWithDay(plan.date()));
         counterBox.getChildren().setAll(
                 counter("dailyPlan.counter.planned", plan.plannedCount(), "stat-box-planned"),
@@ -156,6 +195,22 @@ public class DailyPlanController implements DailyJobCardView.Actions {
         return box;
     }
 
+    /** The cards now on screen are the ones a bulk selection works on. */
+    private void showCards(List<DailyJobCard> cards) {
+        shownCards = cards;
+        selection.clear();
+    }
+
+    /** "Seçilenleri Sil" for daily jobs. */
+    private void deleteSelected(List<DailyJobCard> cards) {
+        BulkDeleteFlow.of(cards, DailyJobCard::id,
+                        card -> Bicimlendirici.date(card.date()) + " – " + card.title())
+                .itemCount("bulk.count.dailyJobs")
+                .delete(dailyJobService::deleteAll)
+                .afterwards(this::reloadShownTab)
+                .run();
+    }
+
     private void loadWeek() {
         LocalDate day = weekDay;
         LocalDate today = dailyJobService.today();
@@ -164,6 +219,7 @@ public class DailyPlanController implements DailyJobCardView.Actions {
     }
 
     private void showWeek(WeekPlan plan, LocalDate today) {
+        showCards(List.of());
         List<LocalDate> days = plan.days();
         weekLabel.setText(DialogUtil.message("dailyPlan.week.range", Bicimlendirici.date(days.get(0)),
                 Bicimlendirici.date(days.get(days.size() - 1))));
@@ -180,6 +236,7 @@ public class DailyPlanController implements DailyJobCardView.Actions {
     }
 
     private void showPending(List<DailyJobCard> cards) {
+        showCards(cards);
         updatePendingTitle(cards.size());
         if (cards.isEmpty()) {
             pendingList.getChildren().setAll(EmptyState.of(AppIcon.PENDING, "dailyPlan.pending.empty"));

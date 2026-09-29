@@ -23,6 +23,12 @@
 
         <FlowPane fx:id="summaryCardsBox" hgap="14" vgap="14"/>
 
+        <VBox fx:id="pendingJobsBox" spacing="4" styleClass="warning-panel, clickable-card" visible="false"
+              managed="false" onMouseClicked="#onOpenPendingJobs">
+            <Label text="%home.pendingJobs.title" styleClass="warning-panel-title"/>
+            <Label fx:id="pendingJobsLabel"/>
+        </VBox>
+
         <VBox fx:id="completedBalanceBox" spacing="4" styleClass="warning-panel" visible="false" managed="false">
             <Label text="%home.completedBalance.title" styleClass="warning-panel-title"/>
             <VBox fx:id="completedBalanceList" spacing="2"/>

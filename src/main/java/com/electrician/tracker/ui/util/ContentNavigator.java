@@ -72,6 +72,17 @@ public class ContentNavigator {
         return true;
     }
 
+    /** Builds the shown screen again (its data changed elsewhere, e.g. in the pending-jobs reminder). */
+    public void reloadCurrent() {
+        String shown = currentView.get();
+        if (contentArea == null || shown == null) {
+            return;
+        }
+        LoadedView<Object> view = fxmlViewLoader.loadWithController(shown);
+        contentArea.getChildren().setAll(view.root());
+        currentController = view.controller();
+    }
+
     /** True when nothing unsaved would be lost, or the user agreed to drop it. */
     public boolean confirmLeavingCurrent() {
         if (currentController instanceof UnsavedChangesAware aware && aware.hasUnsavedChanges()) {

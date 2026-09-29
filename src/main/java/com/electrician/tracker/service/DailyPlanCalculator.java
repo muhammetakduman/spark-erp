@@ -31,6 +31,11 @@ public final class DailyPlanCalculator {
             .comparing(DailyJobCard::isUrgent).reversed()
             .thenComparing(DailyJobCard::timeOfDay, Comparator.nullsLast(Comparator.naturalOrder()))
             .thenComparing(DailyJobCard::title, String.CASE_INSENSITIVE_ORDER);
+    /** Waiting jobs: postponed 3+ times on top, then the oldest day first, then plan order. */
+    private static final Comparator<DailyJobCard> PENDING_ORDER = Comparator
+            .comparing(DailyJobCard::isFrequentlyPostponed).reversed()
+            .thenComparing(DailyJobCard::date)
+            .thenComparing(CARD_ORDER);
 
     private DailyPlanCalculator() {
     }
@@ -56,6 +61,11 @@ public final class DailyPlanCalculator {
         Map<LocalDate, List<DailyJobCard>> byDay = cards.stream()
                 .collect(Collectors.groupingBy(DailyJobCard::date, LinkedHashMap::new, Collectors.toList()));
         return new WeekPlan(days, byDay, employeeRows(entries, activeEmployees));
+    }
+
+    /** Cards of waiting jobs (the "Bekleyen" list and the login reminder) in {@link #PENDING_ORDER}. */
+    public static List<DailyJobCard> pendingCards(List<DailyJob> entries, List<DailyJobLink> links) {
+        return cards(entries, links).stream().sorted(PENDING_ORDER).toList();
     }
 
     /** Cards of {@code entries} in plan order. */

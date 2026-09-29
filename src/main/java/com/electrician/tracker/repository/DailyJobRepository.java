@@ -33,6 +33,23 @@ public interface DailyJobRepository extends JpaRepository<DailyJob, Long> {
     List<DailyJob> findOverdue(@Param("today") LocalDate today,
             @Param("statuses") Collection<DailyJobStatus> statuses);
 
+    /** Entries of {@code date} in {@code status} that were moved there from an earlier day. */
+    @Query("select distinct d from DailyJob d "
+            + "left join fetch d.employees "
+            + "left join fetch d.customer "
+            + "left join fetch d.job j "
+            + "left join fetch j.customer "
+            + "where d.jobDate = :date and d.status = :status and d.sourceDailyJobId is not null")
+    List<DailyJob> findPostponedInto(@Param("date") LocalDate date, @Param("status") DailyJobStatus status);
+
+    /** Several entries with their details in one query (bulk actions). */
+    @Query("select distinct d from DailyJob d "
+            + "left join fetch d.employees "
+            + "left join fetch d.customer "
+            + "left join fetch d.job "
+            + "where d.id in :ids")
+    List<DailyJob> findWithDetailsByIdIn(@Param("ids") Collection<Long> ids);
+
     @Query("select count(d) from DailyJob d where d.jobDate < :today and d.status in :statuses")
     long countOverdue(@Param("today") LocalDate today, @Param("statuses") Collection<DailyJobStatus> statuses);
 

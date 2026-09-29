@@ -6,6 +6,7 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -21,6 +22,7 @@ import com.electrician.tracker.domain.Job;
 import com.electrician.tracker.domain.JobStatus;
 import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.dto.AttendanceSaveResult;
+import com.electrician.tracker.dto.BulkDeletionResult;
 import com.electrician.tracker.dto.DailyJobCard;
 import com.electrician.tracker.dto.DailyJobCompletion;
 import com.electrician.tracker.dto.DailyJobDraft;
@@ -60,13 +62,14 @@ public class DailyJobService {
     private final AttendanceService attendanceService;
     private final CompanyService companyService;
     private final DailyPlanPdfGenerator pdfGenerator;
+    private final TemplateService templateService;
     private final AccessControl accessControl;
     private final Clock clock;
 
     public DailyJobService(DailyJobRepository dailyJobRepository, EmployeeRepository employeeRepository,
             CustomerService customerService, JobService jobService, AttendanceService attendanceService,
-            CompanyService companyService, DailyPlanPdfGenerator pdfGenerator, AccessControl accessControl,
-            Clock clock) {
+            CompanyService companyService, DailyPlanPdfGenerator pdfGenerator, TemplateService templateService,
+            AccessControl accessControl, Clock clock) {
         this.dailyJobRepository = dailyJobRepository;
         this.employeeRepository = employeeRepository;
         this.customerService = customerService;
@@ -74,6 +77,7 @@ public class DailyJobService {
         this.attendanceService = attendanceService;
         this.companyService = companyService;
         this.pdfGenerator = pdfGenerator;
+        this.templateService = templateService;
         this.accessControl = accessControl;
         this.clock = clock;
     }
@@ -95,13 +99,61 @@ public class DailyJobService {
                 dailyJobRepository.findSourceLinks(), employeeRepository.findByActiveTrue());
     }
 
-    /** Entries before today still planned (forgotten) or not visited, oldest first. */
+    /**
+     * Entries before today still planned (forgotten) or not visited; jobs
+     * postponed three or more times first, then the oldest first.
+     */
     @Transactional(readOnly = true)
     public List<DailyJobCard> pending() {
-        List<DailyJobCard> cards = new ArrayList<>(DailyPlanCalculator.cards(
-                dailyJobRepository.findOverdue(today(), OVERDUE_STATUSES), dailyJobRepository.findSourceLinks()));
-        cards.sort(Comparator.comparing(DailyJobCard::date));
-        return cards;
+        return DailyPlanCalculator.pendingCards(dailyJobRepository.findOverdue(today(), OVERDUE_STATUSES),
+                dailyJobRepository.findSourceLinks());
+    }
+
+    /**
+     * What the login reminder lists: forgotten (planned) and not visited jobs
+     * of earlier days, plus the jobs moved to today from an earlier day. Same
+     * order as {@link #pending()}.
+     */
+    @Transactional(readOnly = true)
+    public List<DailyJobCard> reminderItems() {
+        List<DailyJob> entries = new ArrayList<>(dailyJobRepository.findOverdue(today(), OVERDUE_STATUSES));
+        entries.addAll(dailyJobRepository.findPostponedInto(today(), DailyJobStatus.PLANNED));
+        return DailyPlanCalculator.pendingCards(entries, dailyJobRepository.findSourceLinks());
+    }
+
+    /**
+     * "Tamamlandı" from the reminder: a forgotten or not visited job is marked
+     * as done after the fact; attendance is written for its team when it
+     * belongs to (or becomes) a service or site.
+     */
+    @Transactional
+    public DailyJobCompletion completePending(Long id) {
+        DailyJob entry = findUnresolvedEntity(id);
+        if (entry.getStatus() == DailyJobStatus.NOT_VISITED) {
+            entry.reopen();
+        }
+        return complete(id, null, true);
+    }
+
+    /** "İptal" from the reminder, also for a job that was not visited. */
+    @Transactional
+    public void cancelPending(Long id) {
+        findUnresolvedEntity(id).cancel();
+    }
+
+    /** "Tümünü Bugüne Al": every listed job of an earlier day is moved to today in one step. */
+    @Transactional
+    public int moveAllToToday(Collection<Long> ids) {
+        if (ids.isEmpty()) {
+            return 0;
+        }
+        LocalDate today = today();
+        List<DailyJob> movable = dailyJobRepository.findWithDetailsByIdIn(ids).stream()
+                .filter(entry -> entry.getJobDate().isBefore(today))
+                .filter(entry -> OVERDUE_STATUSES.contains(entry.getStatus()))
+                .toList();
+        movable.forEach(entry -> postpone(entry, today, entry.getCompletionNote()));
+        return movable.size();
     }
 
     /** Number shown on the "İş Takip" menu badge. */
@@ -171,6 +223,9 @@ public class DailyJobService {
         entry.setNote(blankToNull(draft.note()));
         entry.replaceEmployees(employeeRepository.findAllById(
                 draft.employeeIds() == null ? List.of() : draft.employeeIds()));
+        if (id == null) {
+            templateService.recordJobDescriptionUse(entry.getTitle());
+        }
         return DailyJobMapper.toCard(dailyJobRepository.save(entry), 0);
     }
 
@@ -285,6 +340,15 @@ public class DailyJobService {
         entry.setCustomerName(customer == null ? blankToNull(draft.customerName()) : null);
     }
 
+    /** Planned or not visited: still waiting for a decision. */
+    private DailyJob findUnresolvedEntity(Long id) {
+        DailyJob entry = findEntity(id);
+        if (!OVERDUE_STATUSES.contains(entry.getStatus())) {
+            throw new ValidationException("error.dailyJob.notOpen");
+        }
+        return entry;
+    }
+
     private DailyJob findOpenEntity(Long id) {
         DailyJob entry = findEntity(id);
         if (!entry.isPlanned()) {
@@ -308,5 +372,13 @@ public class DailyJobService {
 
     private static String blankToNull(String text) {
         return text == null || text.isBlank() ? null : text.trim();
+    }
+    /** Deletes the selected daily jobs at once (their team links go with them); ADMIN only. */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        List<Long> distinct = ids.stream().distinct().toList();
+        dailyJobRepository.deleteAllByIdInBatch(distinct);
+        return BulkDeletionResult.allDeleted(distinct.size());
     }
 }
