@@ -228,7 +228,7 @@ class UpdateTour2IntegrationTest {
             QuoteDraft full = new QuoteDraft(quoteService.suggestNumber(LocalDate.now()), LocalDate.now(), 15, null,
                     "Ğ".repeat(10) + " İnşaat Çelik Şirketi", "a".repeat(120), "İlgili Kişi", "0532 000 00 00",
                     null, "x@y.test", "Konu: şantiye elektrik tesisatı", DiscountType.PERCENT, new BigDecimal("5"),
-                    new BigDecimal("2500"), 20, "Ş".repeat(600), QuoteStatus.DRAFT, lines, false);
+                    new BigDecimal("2500"), 20, "Ş".repeat(600), QuoteStatus.DRAFT, lines, false, null, null);
             QuoteView saved = quoteService.save(null, full);
             Path pdf = Files.createTempFile("teklif", ".pdf");
             pdf.toFile().deleteOnExit();
@@ -407,7 +407,7 @@ class UpdateTour2IntegrationTest {
     private QuoteDraft draft(String companyName, boolean addToList, List<QuoteLine> lines) {
         return new QuoteDraft(quoteService.suggestNumber(LocalDate.now()), LocalDate.now(), 15, null, companyName,
                 "Kadıköy", null, "0532 111 22 33", null, "info@yilmaz.test", "Tesisat", DiscountType.NONE, null, null,
-                20, "Notlar", QuoteStatus.DRAFT, QuoteLineNumbering.normalize(lines), addToList);
+                20, "Notlar", QuoteStatus.DRAFT, QuoteLineNumbering.normalize(lines), addToList, null, null);
     }
 
     private static QuoteLine freeLine(String name) {

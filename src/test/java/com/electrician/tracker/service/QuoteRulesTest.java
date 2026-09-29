@@ -43,6 +43,7 @@ class QuoteRulesTest {
 
     private static QuoteDraft draft(String companyName, String notes, QuoteLine line) {
         return new QuoteDraft("2026/0001", LocalDate.of(2026, 9, 28), 15, null, companyName, null, null, null, null,
-                null, null, DiscountType.NONE, null, null, 20, notes, QuoteStatus.DRAFT, List.of(line), false);
+                null, null, DiscountType.NONE, null, null, 20, notes, QuoteStatus.DRAFT, List.of(line), false,
+                null, null);
     }
 }

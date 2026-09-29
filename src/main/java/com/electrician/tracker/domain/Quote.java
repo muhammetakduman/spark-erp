@@ -259,6 +259,12 @@ public class Quote {
         this.status = status;
     }
 
+    /** Free texts typed on the quote; not linked to a user account. */
+    public void setPreparedBy(String name, String title) {
+        this.preparedByName = name;
+        this.preparedByTitle = title;
+    }
+
     public String getPreparedByName() {
         return preparedByName;
     }

@@ -78,6 +78,8 @@ final class QuoteRules {
         requireMaxLength(draft.fax(), QuoteFieldLimits.PHONE);
         requireMaxLength(draft.email(), QuoteFieldLimits.EMAIL);
         requireMaxLength(draft.subject(), QuoteFieldLimits.SUBJECT);
+        requireMaxLength(draft.preparedByName(), QuoteFieldLimits.PREPARED_BY_NAME);
+        requireMaxLength(draft.preparedByTitle(), QuoteFieldLimits.PREPARED_BY_TITLE);
         requireMaxLength(draft.notes(), QuoteFieldLimits.NOTES);
     }
 

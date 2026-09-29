@@ -4,7 +4,9 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.IdentityHashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -18,15 +20,16 @@ import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.domain.Quote;
 import com.electrician.tracker.domain.QuoteItem;
 import com.electrician.tracker.domain.QuoteStatus;
+import com.electrician.tracker.dto.BulkDeletionResult;
 import com.electrician.tracker.dto.QuoteDraft;
 import com.electrician.tracker.dto.QuoteLine;
 import com.electrician.tracker.dto.QuoteLink;
 import com.electrician.tracker.dto.QuoteRow;
 import com.electrician.tracker.dto.QuoteTotals;
 import com.electrician.tracker.dto.QuoteView;
-import com.electrician.tracker.dto.SessionUser;
 import com.electrician.tracker.report.QuotePdfGenerator;
 import com.electrician.tracker.repository.ProductRepository;
+import com.electrician.tracker.repository.QuoteItemRepository;
 import com.electrician.tracker.repository.QuoteRepository;
 import com.electrician.tracker.service.exception.NotFoundException;
 import com.electrician.tracker.service.exception.ValidationException;
@@ -50,26 +53,33 @@ public class QuoteService {
 
     public static final int DEFAULT_VALIDITY_DAYS = 15;
     public static final Integer DEFAULT_VAT_RATE = 20;
+    private static final String LAST_PREPARED_BY_NAME = "quote.lastPreparedByName";
+    private static final String LAST_PREPARED_BY_TITLE = "quote.lastPreparedByTitle";
 
     private final QuoteRepository quoteRepository;
+    private final QuoteItemRepository quoteItemRepository;
     private final ProductRepository productRepository;
     private final ProductService productService;
     private final CustomerService customerService;
     private final TemplateService templateService;
     private final CompanyService companyService;
+    private final SettingService settingService;
     private final QuotePdfGenerator pdfGenerator;
     private final AccessControl accessControl;
     private final Clock clock;
 
-    public QuoteService(QuoteRepository quoteRepository, ProductRepository productRepository,
-            ProductService productService, CustomerService customerService, TemplateService templateService, CompanyService companyService,
+    public QuoteService(QuoteRepository quoteRepository, QuoteItemRepository quoteItemRepository,
+            ProductRepository productRepository,
+            ProductService productService, CustomerService customerService, TemplateService templateService, CompanyService companyService, SettingService settingService,
             QuotePdfGenerator pdfGenerator, AccessControl accessControl, Clock clock) {
         this.quoteRepository = quoteRepository;
+        this.quoteItemRepository = quoteItemRepository;
         this.productRepository = productRepository;
         this.productService = productService;
         this.customerService = customerService;
         this.templateService = templateService;
         this.companyService = companyService;
+        this.settingService = settingService;
         this.pdfGenerator = pdfGenerator;
         this.accessControl = accessControl;
         this.clock = clock;
@@ -90,17 +100,18 @@ public class QuoteService {
     /**
      * An unsaved quote for today: next number, 15 days validity, 20 % VAT, the
      * default note template (or {@code fallbackNotes} when there is none) and
-     * the logged-in user as the preparer.
+     * the last used "Hazırlayan" / "Unvan" (the logged-in user the first time).
      */
     @Transactional(readOnly = true)
     public QuoteView newQuote(String fallbackNotes) {
         LocalDate today = LocalDate.now(clock);
+        QuotePreparer preparer = QuotePreparer.resolve(settingService.getValue(LAST_PREPARED_BY_NAME).orElse(null),
+                settingService.getValue(LAST_PREPARED_BY_TITLE).orElse(null), accessControl.currentUser().orElse(null));
         QuoteDraft draft = new QuoteDraft(suggestNumber(today), today, DEFAULT_VALIDITY_DAYS, null, null, null, null,
                 null, null, null, null, DiscountType.NONE, null, null, DEFAULT_VAT_RATE,
-                templateService.defaultQuoteNote().orElse(fallbackNotes), QuoteStatus.DRAFT, List.of(), false);
-        SessionUser preparer = accessControl.currentUser().orElse(null);
-        return new QuoteView(null, draft, preparer == null ? null : preparer.fullName(),
-                preparer == null ? null : preparer.title(), null, null, QuoteMapper.totals(draft));
+                templateService.defaultQuoteNote().orElse(fallbackNotes), QuoteStatus.DRAFT, List.of(), false,
+                preparer.name(), preparer.title());
+        return new QuoteView(null, draft, preparer.name(), preparer.title(), null, null, QuoteMapper.totals(draft));
     }
 
     /** The next free number in the year of {@code date}. */
@@ -147,7 +158,8 @@ public class QuoteService {
         QuoteDraft copy = new QuoteDraft(suggestNumber(today), today, source.validityDays(), source.customerId(),
                 source.companyName(), source.address(), source.contactPerson(), source.phone(), source.fax(),
                 source.email(), source.subject(), source.discountType(), source.discountValue(),
-                source.laborAmount(), source.vatRate(), source.notes(), QuoteStatus.DRAFT, source.lines(), false);
+                source.laborAmount(), source.vatRate(), source.notes(), QuoteStatus.DRAFT, source.lines(), false,
+                source.preparedByName(), source.preparedByTitle());
         return save(null, copy);
     }
 
@@ -183,9 +195,16 @@ public class QuoteService {
     }
 
     private Quote newEntity() {
-        SessionUser preparer = accessControl.currentUser().orElse(null);
-        return new Quote(preparer == null ? null : preparer.fullName(), preparer == null ? null : preparer.title(),
-                LocalDateTime.now(clock));
+        return new Quote(null, null, LocalDateTime.now(clock));
+    }
+
+    /** Blank fields take the logged-in user's name and title; the values are remembered for the next quote. */
+    private void applyPreparer(Quote quote, QuoteDraft draft) {
+        QuotePreparer preparer = QuotePreparer.resolve(draft.preparedByName(), draft.preparedByTitle(),
+                accessControl.currentUser().orElse(null));
+        quote.setPreparedBy(preparer.name(), preparer.title());
+        settingService.setValue(LAST_PREPARED_BY_NAME, Objects.requireNonNullElse(preparer.name(), ""));
+        settingService.setValue(LAST_PREPARED_BY_TITLE, Objects.requireNonNullElse(preparer.title(), ""));
     }
 
     private void apply(Quote quote, QuoteDraft draft, String quoteNo) {
@@ -206,6 +225,7 @@ public class QuoteService {
         quote.setVatRate(draft.vatRate());
         quote.setNotes(draft.notes());
         quote.setStatus(draft.status());
+        applyPreparer(quote, draft);
         quote.replaceItems(toItems(QuoteLineNumbering.normalize(draft.lines())));
     }
 
@@ -256,5 +276,22 @@ public class QuoteService {
 
     private static String blankToNull(String text) {
         return text == null || text.isBlank() ? null : text.trim();
+    }
+    /** Lines of the selected quotes that go with them. */
+    @Transactional(readOnly = true)
+    public Map<String, Long> bulkDeletionImpact(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        Map<String, Long> related = new LinkedHashMap<>();
+        related.put("bulk.count.quoteLines", quoteItemRepository.countByQuoteIdIn(ids));
+        return BulkDeletions.withoutZeros(related);
+    }
+
+    /** Deletes many quotes (and their lines, by the database) at once; ADMIN only. */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        List<Long> distinct = ids.stream().distinct().toList();
+        quoteRepository.deleteAllByIdInBatch(distinct);
+        return BulkDeletionResult.allDeleted(distinct.size());
     }
 }

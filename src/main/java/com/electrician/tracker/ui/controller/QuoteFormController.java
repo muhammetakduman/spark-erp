@@ -3,7 +3,6 @@ package com.electrician.tracker.ui.controller;
 import java.io.File;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -36,19 +35,17 @@ import com.electrician.tracker.ui.util.EmptyState;
 import com.electrician.tracker.ui.util.EnumLabels;
 import com.electrician.tracker.ui.util.JobNavigator;
 import com.electrician.tracker.ui.util.ModalStageOpener;
+import com.electrician.tracker.ui.util.SparkDialog;
 import com.electrician.tracker.ui.util.TextLimits;
 import com.electrician.tracker.ui.util.ViewPaths;
+import javafx.animation.PauseTransition;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
-import javafx.scene.control.ButtonBar;
-import javafx.scene.control.ButtonType;
 import javafx.scene.control.CheckBox;
-import javafx.scene.control.ChoiceDialog;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Hyperlink;
@@ -59,7 +56,6 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.control.TextInputDialog;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.GridPane;
@@ -67,6 +63,7 @@ import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.stage.Window;
+import javafx.util.Duration;
 import javafx.util.StringConverter;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -86,6 +83,7 @@ import org.springframework.stereotype.Component;
 @Scope("prototype")
 public class QuoteFormController {
 
+    private static final Duration ITEM_SET_NOTICE_DURATION = Duration.seconds(4);
     private static final int NO_VAT = 0;
     private static final List<Integer> VAT_CHOICES = List.of(NO_VAT, 1, 10, 20);
     private static final int MAX_VALIDITY_DAYS = 365;
@@ -174,6 +172,8 @@ public class QuoteFormController {
     @FXML
     private ComboBox<TemplateView> noteTemplateComboBox;
     @FXML
+    private Label itemSetNotice;
+    @FXML
     private TextArea notesArea;
     @FXML
     private Label notesCounter;
@@ -188,7 +188,9 @@ public class QuoteFormController {
     @FXML
     private GridPane totalsGrid;
     @FXML
-    private Label preparedByLabel;
+    private TextField preparedByNameField;
+    @FXML
+    private TextField preparedByTitleField;
     @FXML
     private Hyperlink jobLink;
     @FXML
@@ -256,7 +258,7 @@ public class QuoteFormController {
      * "add to the customer list" appears (ticked by default).
      */
     private void setUpCustomerField() {
-        customerField = new CustomerNameField(companyNameComboBox, customerService.findAll());
+        customerField = new CustomerNameField(companyNameComboBox, customerService.findAllActive());
         customerField.setOnCustomerChosen(this::fillFromCustomer);
         customerField.matchedCustomerProperty().addListener((obs, o, n) -> refreshCustomerHint());
         companyNameComboBox.getEditor().textProperty().addListener((obs, o, n) -> refreshCustomerHint());
@@ -287,6 +289,8 @@ public class QuoteFormController {
         TextLimits.attach(emailField, emailCounter, QuoteFieldLimits.EMAIL);
         TextLimits.attach(subjectField, subjectCounter, QuoteFieldLimits.SUBJECT);
         TextLimits.attach(notesArea, notesCounter, QuoteFieldLimits.NOTES);
+        TextLimits.attach(preparedByNameField, QuoteFieldLimits.PREPARED_BY_NAME);
+        TextLimits.attach(preparedByTitleField, QuoteFieldLimits.PREPARED_BY_TITLE);
     }
 
     private void show(QuoteView shown) {
@@ -309,9 +313,8 @@ public class QuoteFormController {
         laborField.setValue(draft.laborAmount());
         vatComboBox.setValue(draft.vatRate() == null ? NO_VAT : draft.vatRate());
         notesArea.setText(draft.notes());
-        preparedByLabel.setText(DialogUtil.message("quote.preparedBy",
-                Objects.requireNonNullElse(shown.preparedByName(), "—"),
-                Objects.requireNonNullElse(shown.preparedByTitle(), "")));
+        preparedByNameField.setText(draft.preparedByName());
+        preparedByTitleField.setText(draft.preparedByTitle());
         showJobLink();
         refreshTotals();
         refreshConvertButton();
@@ -504,6 +507,7 @@ public class QuoteFormController {
         noteTemplateComboBox.valueProperty().addListener((obs, o, template) -> {
             if (template != null) {
                 notesArea.setText(template.content());
+                templateService.markUsed(template.id());
             }
         });
     }
@@ -533,23 +537,36 @@ public class QuoteFormController {
             DialogUtil.showInfo("quote.template.noItemSets");
             return;
         }
-        ChoiceDialog<TemplateView> dialog = new ChoiceDialog<>(sets.get(0), sets);
-        dialog.setTitle(DialogUtil.message("quote.action.fromTemplate"));
-        dialog.setHeaderText(null);
-        dialog.setContentText(DialogUtil.message("quote.template.choose"));
-        dialog.showAndWait().ifPresent(this::applyItemSet);
+        SparkDialog.choose(DialogUtil.message("quote.action.fromTemplate"),
+                DialogUtil.message("quote.template.choose"), sets, TemplateView::name)
+                .ifPresent(this::applyItemSet);
     }
 
     private void applyItemSet(TemplateView template) {
         try {
+            int before = lines.size();
             ItemSetApplication result = templateService.applyItemSet(template.id(), List.copyOf(lines));
             setLines(result.lines());
+            flashItemSetNotice(template.name(), result.lines().size() - before);
             if (result.skippedCount() > 0) {
                 DialogUtil.showInfoText(DialogUtil.message("quote.template.skipped", result.skippedCount()));
             }
         } catch (RuntimeException ex) {
             DialogUtil.showError(ex);
         }
+    }
+
+    /** "'Standart daire tesisatı' listesinden 12 kalem eklendi." for a few seconds, no window. */
+    private void flashItemSetNotice(String setName, int addedCount) {
+        itemSetNotice.setText(DialogUtil.message("quote.template.added", setName, addedCount));
+        itemSetNotice.setVisible(true);
+        itemSetNotice.setManaged(true);
+        PauseTransition hide = new PauseTransition(ITEM_SET_NOTICE_DURATION);
+        hide.setOnFinished(event -> {
+            itemSetNotice.setVisible(false);
+            itemSetNotice.setManaged(false);
+        });
+        hide.play();
     }
 
     @FXML
@@ -569,11 +586,7 @@ public class QuoteFormController {
     }
 
     private static Optional<String> askName(String promptKey) {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle(DialogUtil.message("template.dialog.new"));
-        dialog.setHeaderText(null);
-        dialog.setContentText(DialogUtil.message(promptKey));
-        return dialog.showAndWait().map(String::trim).filter(name -> !name.isEmpty());
+        return SparkDialog.askText(DialogUtil.message("template.dialog.new"), DialogUtil.message(promptKey));
     }
 
     // ---- Totals --------------------------------------------------------------
@@ -622,7 +635,7 @@ public class QuoteFormController {
                 contactPersonField.getText(), phoneField.getText(), faxField.getText(), emailField.getText(),
                 subjectField.getText(), discountTypeComboBox.getValue(), discountField.getValue(),
                 laborField.getValue(), vat, notesArea.getText(), statusComboBox.getValue(), List.copyOf(lines),
-                addToList);
+                addToList, preparedByNameField.getText(), preparedByTitleField.getText());
     }
 
     // ---- Actions -------------------------------------------------------------
@@ -638,7 +651,7 @@ public class QuoteFormController {
     private boolean save() {
         try {
             QuoteView saved = quoteService.save(view.id(), buildDraft());
-            customerField.reload(customerService.findAll());
+            customerField.reload(customerService.findAllActive());
             show(saved);
             changed = true;
             return true;
@@ -697,15 +710,9 @@ public class QuoteFormController {
     }
 
     private Optional<JobType> askJobType() {
-        ButtonType site = new ButtonType(EnumLabels.label(JobType.SITE), ButtonBar.ButtonData.YES);
-        ButtonType service = new ButtonType(EnumLabels.label(JobType.SERVICE), ButtonBar.ButtonData.NO);
-        ButtonType cancel = new ButtonType(DialogUtil.message("action.cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION, DialogUtil.message("quote.convert.question"),
-                site, service, cancel);
-        alert.setHeaderText(null);
-        return alert.showAndWait()
-                .filter(button -> button != cancel)
-                .map(button -> button == site ? JobType.SITE : JobType.SERVICE);
+        return SparkDialog.choose(DialogUtil.message("quote.action.convert"),
+                DialogUtil.message("quote.convert.question"), List.of(JobType.SITE, JobType.SERVICE),
+                EnumLabels::label);
     }
 
     @FXML

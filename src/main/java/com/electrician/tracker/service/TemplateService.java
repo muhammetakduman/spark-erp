@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -15,6 +16,7 @@ import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.domain.ProductUnit;
 import com.electrician.tracker.domain.Template;
 import com.electrician.tracker.domain.TemplateType;
+import com.electrician.tracker.dto.BulkDeletionResult;
 import com.electrician.tracker.dto.ItemSetApplication;
 import com.electrician.tracker.dto.QuoteLine;
 import com.electrician.tracker.dto.TemplateView;
@@ -43,12 +45,15 @@ public class TemplateService {
 
     private final TemplateRepository templateRepository;
     private final ProductRepository productRepository;
+    private final AccessControl accessControl;
     private final Clock clock;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public TemplateService(TemplateRepository templateRepository, ProductRepository productRepository, Clock clock) {
+    public TemplateService(TemplateRepository templateRepository, ProductRepository productRepository,
+            AccessControl accessControl, Clock clock) {
         this.templateRepository = templateRepository;
         this.productRepository = productRepository;
+        this.accessControl = accessControl;
         this.clock = clock;
     }
 
@@ -88,12 +93,52 @@ public class TemplateService {
     /** Saves a quote's lines (in their order) as a new item set. */
     @Transactional
     public TemplateView saveItemSet(String name, List<QuoteLine> lines) {
+        Template template = newTemplate(name, TemplateType.QUOTE_ITEM_SET, write(itemSetContent(lines)));
+        return toView(templateRepository.save(template));
+    }
+
+    /** Changes the name and lines of an item set ("Hazır Malzeme Listesi" editor). */
+    @Transactional
+    public TemplateView updateItemSet(Long id, String name, List<QuoteLine> lines) {
+        Template template = findItemSet(id);
+        rename(template, name);
+        template.setContent(write(itemSetContent(lines)));
+        return toView(template);
+    }
+
+    /** The lines of an item set as quote lines, numbered from 1 (catalog lines take the current product name). */
+    @Transactional(readOnly = true)
+    public List<QuoteLine> itemSetLines(Long id) {
+        List<ItemSetLine> setLines = read(findItemSet(id).getContent());
+        Map<Long, Product> products = productsOf(setLines);
+        return QuoteLineNumbering.appendAll(List.of(), setLines.stream()
+                .map(line -> line.toQuoteLine(products.get(line.productId()))).toList());
+    }
+
+    /** One more use of a template (e.g. quote terms picked in a quote). */
+    @Transactional
+    public void markUsed(Long id) {
+        findEntity(id).markUsed(LocalDateTime.now(clock));
+    }
+
+    /** A daily job titled like a "Hazır İş Tanımı" counts as a use of it. */
+    @Transactional
+    public void recordJobDescriptionUse(String title) {
+        if (title == null || title.isBlank()) {
+            return;
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        String wanted = MetinKarsilastirici.normalize(title);
+        templateRepository.findByTypeOrderByNameAsc(TemplateType.JOB_DESCRIPTION).stream()
+                .filter(template -> MetinKarsilastirici.normalize(template.getContent()).equals(wanted))
+                .forEach(template -> template.markUsed(now));
+    }
+
+    private static List<ItemSetLine> itemSetContent(List<QuoteLine> lines) {
         if (lines == null || lines.isEmpty()) {
             throw new ValidationException("error.template.lines.required");
         }
-        List<ItemSetLine> content = QuoteLineNumbering.normalize(lines).stream().map(ItemSetLine::of).toList();
-        Template template = newTemplate(name, TemplateType.QUOTE_ITEM_SET, write(content));
-        return toView(templateRepository.save(template));
+        return QuoteLineNumbering.normalize(lines).stream().map(ItemSetLine::of).toList();
     }
 
     @Transactional
@@ -122,18 +167,13 @@ public class TemplateService {
     /**
      * {@code lines} with the set's lines added below them (numbering goes on
      * from the last line). Catalog lines whose product no longer exists are
-     * skipped.
+     * skipped. Counts as a use of the set.
      */
-    @Transactional(readOnly = true)
+    @Transactional
     public ItemSetApplication applyItemSet(Long id, List<QuoteLine> lines) {
-        Template template = findEntity(id);
-        if (template.getType() != TemplateType.QUOTE_ITEM_SET) {
-            throw new ValidationException("error.template.type.invalid");
-        }
+        Template template = findItemSet(id);
         List<ItemSetLine> setLines = read(template.getContent());
-        Map<Long, Product> products = productRepository.findAllById(setLines.stream()
-                        .map(ItemSetLine::productId).filter(Objects::nonNull).toList()).stream()
-                .collect(Collectors.toMap(Product::getId, Function.identity()));
+        Map<Long, Product> products = productsOf(setLines);
         List<QuoteLine> added = new ArrayList<>();
         int skipped = 0;
         for (ItemSetLine setLine : setLines) {
@@ -143,7 +183,22 @@ public class TemplateService {
                 added.add(setLine.toQuoteLine(products.get(setLine.productId())));
             }
         }
+        template.markUsed(LocalDateTime.now(clock));
         return new ItemSetApplication(QuoteLineNumbering.appendAll(lines, added), skipped);
+    }
+
+    private Map<Long, Product> productsOf(List<ItemSetLine> setLines) {
+        return productRepository.findAllById(setLines.stream()
+                        .map(ItemSetLine::productId).filter(Objects::nonNull).toList()).stream()
+                .collect(Collectors.toMap(Product::getId, Function.identity()));
+    }
+
+    private Template findItemSet(Long id) {
+        Template template = findEntity(id);
+        if (template.getType() != TemplateType.QUOTE_ITEM_SET) {
+            throw new ValidationException("error.template.type.invalid");
+        }
+        return template;
     }
 
     private Template newTemplate(String name, TemplateType type, String content) {
@@ -181,7 +236,7 @@ public class TemplateService {
         boolean itemSet = template.getType() == TemplateType.QUOTE_ITEM_SET;
         return new TemplateView(template.getId(), template.getName(), template.getType(),
                 itemSet ? "" : template.getContent(), template.isDefaultTemplate(),
-                itemSet ? read(template.getContent()).size() : 0);
+                itemSet ? read(template.getContent()).size() : 0, template.getUseCount(), template.getLastUsedAt());
     }
 
     private String write(List<ItemSetLine> lines) {
@@ -214,5 +269,13 @@ public class TemplateService {
             String name = product == null ? productName : product.getName();
             return QuoteLine.unnumbered(productId, name, brand, quantity, unit, unitPrice, description);
         }
+    }
+    /** Deletes the selected templates at once; ADMIN only. */
+    @Transactional
+    public BulkDeletionResult deleteAll(Collection<Long> ids) {
+        accessControl.requireAdmin();
+        List<Long> distinct = ids.stream().distinct().toList();
+        templateRepository.deleteAllByIdInBatch(distinct);
+        return BulkDeletionResult.allDeleted(distinct.size());
     }
 }

@@ -17,6 +17,8 @@ public final class QuoteFieldLimits {
     public static final int UNIT = 10;
     public static final int DESCRIPTION = 80;
     public static final int NOTES = 600;
+    public static final int PREPARED_BY_NAME = 60;
+    public static final int PREPARED_BY_TITLE = 40;
 
     /** Above this many lines the PDF switches to a smaller font (a notice is shown). */
     public static final int SMALL_FONT_LINE_COUNT = 20;

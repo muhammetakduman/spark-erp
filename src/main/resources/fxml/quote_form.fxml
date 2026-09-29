@@ -112,6 +112,7 @@
                 </items>
             </MenuButton>
         </HBox>
+        <Label fx:id="itemSetNotice" styleClass="flash-strip" maxWidth="Infinity" visible="false" managed="false"/>
         <Label fx:id="smallFontNotice" text="%quote.items.smallFont" styleClass="info-strip"
                maxWidth="Infinity" visible="false" managed="false"/>
         <HBox spacing="8">
@@ -145,11 +146,13 @@
 
         <FlowPane hgap="24" vgap="12">
             <VBox spacing="6" prefWidth="560">
+                <Label text="%quote.field.notes" styleClass="subsection-title"/>
                 <HBox spacing="8" alignment="CENTER_LEFT">
-                    <Label text="%quote.field.notes" styleClass="subsection-title"/>
-                    <Region HBox.hgrow="ALWAYS"/>
+                    <Label text="%quote.notes.chooseTemplate.label" minWidth="-Infinity"/>
                     <ComboBox fx:id="noteTemplateComboBox" promptText="%quote.notes.chooseTemplate" prefWidth="200"/>
-                    <Button text="%quote.notes.saveAsTemplate" onAction="#onSaveNotesAsTemplate" styleClass="action-template"/>
+                    <Region HBox.hgrow="ALWAYS"/>
+                    <Button text="%quote.notes.saveAsTemplate" onAction="#onSaveNotesAsTemplate" styleClass="action-template"
+                            minWidth="-Infinity"/>
                 </HBox>
                 <TextArea fx:id="notesArea" prefRowCount="7" wrapText="true"/>
                 <Label fx:id="notesCounter"/>
@@ -174,8 +177,18 @@
             </VBox>
         </FlowPane>
 
+        <VBox spacing="4">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <Label text="%quote.field.preparedBy" styleClass="form-label"/>
+                <TextField fx:id="preparedByNameField" prefWidth="220"/>
+                <Label text="%quote.field.preparedByTitle" styleClass="form-label"/>
+                <TextField fx:id="preparedByTitleField" prefWidth="180"
+                           promptText="%quote.field.preparedByTitle.prompt"/>
+            </HBox>
+            <Label text="%quote.field.preparedBy.hint" styleClass="field-hint"/>
+        </VBox>
+
         <HBox spacing="16" alignment="CENTER_LEFT">
-            <Label fx:id="preparedByLabel" styleClass="muted-text"/>
             <Hyperlink fx:id="jobLink" styleClass="quote-link" visible="false" managed="false" onAction="#onOpenJob"/>
         </HBox>
 

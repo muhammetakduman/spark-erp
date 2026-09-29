@@ -39,6 +39,12 @@ public class Template {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "use_count", nullable = false)
+    private int useCount;
+
+    @Column(name = "last_used_at")
+    private LocalDateTime lastUsedAt;
+
     protected Template() {
     }
 
@@ -71,6 +77,20 @@ public class Template {
 
     public void setContent(String content) {
         this.content = content;
+    }
+
+    /** Counts one more use (terms picked, list added, job title used). */
+    public void markUsed(LocalDateTime when) {
+        this.useCount++;
+        this.lastUsedAt = when;
+    }
+
+    public int getUseCount() {
+        return useCount;
+    }
+
+    public LocalDateTime getLastUsedAt() {
+        return lastUsedAt;
     }
 
     public boolean isDefaultTemplate() {

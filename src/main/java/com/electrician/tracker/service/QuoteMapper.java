@@ -30,7 +30,8 @@ final class QuoteMapper {
                 quote.getCustomer() == null ? null : quote.getCustomer().getId(), quote.getCompanyName(),
                 quote.getAddress(), quote.getContactPerson(), quote.getPhone(), quote.getFax(), quote.getEmail(),
                 quote.getSubject(), quote.getDiscountType(), quote.getDiscountValue(), quote.getLaborAmount(),
-                quote.getVatRate(), quote.getNotes(), quote.getStatus(), lines(quote.getItems()), false);
+                quote.getVatRate(), quote.getNotes(), quote.getStatus(), lines(quote.getItems()), false,
+                quote.getPreparedByName(), quote.getPreparedByTitle());
     }
 
     static QuoteRow toRow(Quote quote, LocalDate today) {

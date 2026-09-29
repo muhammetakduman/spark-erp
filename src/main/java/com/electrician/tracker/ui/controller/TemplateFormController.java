@@ -46,6 +46,7 @@ public class TemplateFormController {
 
     private TemplateView editing;
     private boolean saved;
+    private Long savedId;
 
     public TemplateFormController(TemplateService templateService) {
         this.templateService = templateService;
@@ -77,15 +78,19 @@ public class TemplateFormController {
         return saved;
     }
 
+    /** Id of the saved template, to select it in the list. */
+    public Long savedId() {
+        return savedId;
+    }
+
     @FXML
     private void onSave() {
         try {
-            if (editing != null && !editing.type().isText()) {
-                templateService.renameTemplate(editing.id(), nameField.getText());
-            } else {
-                templateService.saveText(editing == null ? null : editing.id(), nameField.getText(),
-                        typeComboBox.getValue(), contentArea.getText());
-            }
+            TemplateView result = editing != null && !editing.type().isText()
+                    ? templateService.renameTemplate(editing.id(), nameField.getText())
+                    : templateService.saveText(editing == null ? null : editing.id(), nameField.getText(),
+                            typeComboBox.getValue(), contentArea.getText());
+            savedId = result.id();
             saved = true;
             close();
         } catch (RuntimeException ex) {

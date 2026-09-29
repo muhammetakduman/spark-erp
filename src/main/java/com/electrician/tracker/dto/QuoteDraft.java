@@ -13,7 +13,8 @@ import com.electrician.tracker.domain.QuoteStatus;
  * notes and status. Without a {@code customerId} the typed company name is
  * added to the customer list when {@code addCustomerToList} is set (or
  * linked to the customer that already has that name); otherwise the quote is
- * kept without a customer record.
+ * kept without a customer record. "Hazırlayan" / "Unvan" are free texts;
+ * blank ones are filled with the logged-in user's name and title on save.
  */
 public record QuoteDraft(
         String quoteNo,
@@ -34,5 +35,7 @@ public record QuoteDraft(
         String notes,
         QuoteStatus status,
         List<QuoteLine> lines,
-        boolean addCustomerToList) {
+        boolean addCustomerToList,
+        String preparedByName,
+        String preparedByTitle) {
 }
