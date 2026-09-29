@@ -34,7 +34,7 @@ class ProductServiceTest {
         when(productRepository.findAll()).thenReturn(List.of(existing));
         when(productRepository.save(any(Product.class))).thenAnswer(invocation -> invocation.getArgument(0));
         service = new ProductService(productRepository, mock(MaterialItemRepository.class),
-                mock(QuoteItemRepository.class));
+                mock(QuoteItemRepository.class), mock(AccessControl.class));
     }
 
     @Test

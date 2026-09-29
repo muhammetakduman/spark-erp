@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,7 +38,10 @@ import org.springframework.transaction.annotation.Transactional;
  * lines in their numbered order, copying, status changes, the default note
  * template and the PDF. A quote may be given to someone who is not a customer
  * yet: the typed name is then added to the customer list on request (or
- * linked to the customer who already has that name). Quotes only carry sale
+ * linked to the customer who already has that name). A free item typed into
+ * a quote is added to the product catalog on save (or linked to the product
+ * with the same name and brand), so its supplier and cost can be kept on the
+ * product. Quotes only carry sale
  * prices, so both roles may prepare them; only an ADMIN deletes one (turning
  * one into a job is {@link QuoteConversionService}).
  */
@@ -49,6 +53,7 @@ public class QuoteService {
 
     private final QuoteRepository quoteRepository;
     private final ProductRepository productRepository;
+    private final ProductService productService;
     private final CustomerService customerService;
     private final TemplateService templateService;
     private final CompanyService companyService;
@@ -57,10 +62,11 @@ public class QuoteService {
     private final Clock clock;
 
     public QuoteService(QuoteRepository quoteRepository, ProductRepository productRepository,
-            CustomerService customerService, TemplateService templateService, CompanyService companyService,
+            ProductService productService, CustomerService customerService, TemplateService templateService, CompanyService companyService,
             QuotePdfGenerator pdfGenerator, AccessControl accessControl, Clock clock) {
         this.quoteRepository = quoteRepository;
         this.productRepository = productRepository;
+        this.productService = productService;
         this.customerService = customerService;
         this.templateService = templateService;
         this.companyService = companyService;
@@ -223,16 +229,20 @@ public class QuoteService {
         List<Long> productIds = lines.stream().map(QuoteLine::productId).filter(Objects::nonNull).toList();
         Map<Long, Product> products = productRepository.findAllById(productIds).stream()
                 .collect(Collectors.toMap(Product::getId, Function.identity()));
-        return lines.stream().map(line -> toItem(line, products)).toList();
+        List<QuoteLine> freeLines = lines.stream().filter(QuoteLine::isFreeItem).toList();
+        List<Product> freeProducts = productService.createOrReuseAll(freeLines.stream()
+                .map(line -> new Product(line.productName(), line.unit(), blankToNull(line.brand()), null))
+                .toList());
+        Map<QuoteLine, Product> catalogOfFree = new IdentityHashMap<>();
+        for (int index = 0; index < freeLines.size(); index++) {
+            catalogOfFree.put(freeLines.get(index), freeProducts.get(index));
+        }
+        return lines.stream().map(line -> toItem(line,
+                line.isFreeItem() ? catalogOfFree.get(line) : products.get(line.productId()))).toList();
     }
 
     /** The brand is the quote's own copy, so later catalog changes never alter a quote. */
-    private static QuoteItem toItem(QuoteLine line, Map<Long, Product> products) {
-        if (line.isFreeItem()) {
-            return new QuoteItem(null, line.productName().trim(), blankToNull(line.brand()), line.quantity(),
-                    line.unit(), line.unitPrice(), blankToNull(line.description()));
-        }
-        Product product = products.get(line.productId());
+    private static QuoteItem toItem(QuoteLine line, Product product) {
         if (product == null) {
             throw new NotFoundException("error.product.notFound");
         }

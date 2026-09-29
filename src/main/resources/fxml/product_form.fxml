@@ -9,6 +9,7 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
+<?import com.electrician.tracker.ui.util.DecimalField?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.electrician.tracker.ui.controller.ProductFormController"
@@ -31,6 +32,14 @@
                   GridPane.rowIndex="2" GridPane.columnIndex="1" maxWidth="Infinity"/>
         <Label text="%product.field.unit" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
         <ComboBox fx:id="unitComboBox" GridPane.rowIndex="3" GridPane.columnIndex="1" maxWidth="Infinity"/>
+        <Label fx:id="supplierLabel" text="%material.field.supplier" styleClass="form-label"
+               GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="supplierComboBox" editable="true" promptText="%material.field.optional"
+                  GridPane.rowIndex="4" GridPane.columnIndex="1" maxWidth="Infinity"/>
+        <Label fx:id="purchasePriceLabel" text="%product.field.purchasePrice" styleClass="form-label"
+               GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <DecimalField fx:id="purchasePriceField" promptText="%material.field.optional"
+                      GridPane.rowIndex="5" GridPane.columnIndex="1"/>
     </GridPane>
     <HBox spacing="10" styleClass="dialog-buttons">
         <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>

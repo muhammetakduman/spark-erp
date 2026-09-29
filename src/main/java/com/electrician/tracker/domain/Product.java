@@ -1,5 +1,7 @@
 package com.electrician.tracker.domain;
 
+import java.math.BigDecimal;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -12,7 +14,8 @@ import jakarta.persistence.Table;
 /**
  * A catalog product. The brand is a property of the product itself ("ÖZNUR"
  * cable); where it was bought belongs to each material line (supplier). The
- * same name may exist once per brand.
+ * product only keeps its usual supplier and VAT-exclusive purchase cost as
+ * catalog defaults. The same name may exist once per brand.
  */
 @Entity
 @Table(name = "product")
@@ -34,6 +37,12 @@ public class Product {
     private String brand;
 
     private String category;
+
+    @Column(name = "supplier_name")
+    private String supplierName;
+
+    @Column(name = "purchase_price")
+    private BigDecimal purchasePrice;
 
     protected Product() {
     }
@@ -83,6 +92,23 @@ public class Product {
 
     public void setCategory(String category) {
         this.category = category;
+    }
+
+    public String getSupplierName() {
+        return supplierName;
+    }
+
+    public void setSupplierName(String supplierName) {
+        this.supplierName = supplierName;
+    }
+
+    /** The usual VAT-exclusive purchase unit price in TL, or {@code null}. */
+    public BigDecimal getPurchasePrice() {
+        return purchasePrice;
+    }
+
+    public void setPurchasePrice(BigDecimal purchasePrice) {
+        this.purchasePrice = purchasePrice;
     }
 
     /** "ÖZNUR — 1,5mm NYA Kablo", or just the name when there is no brand. */

@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.Product;
@@ -46,7 +47,11 @@ public final class PurchaseStatistics {
         return KdvHesaplayici.calculate(List.of(new KdvHesaplayici.Line(price, vatRate, vatIncluded))).excludingVat();
     }
 
-    /** Statistics of one product from all its material lines (in any order). */
+    /**
+     * Statistics of one product from all its material lines (in any order).
+     * Without a priced purchase the last price is the product's own cost; its
+     * usual supplier counts for the supplier filter.
+     */
     public static ProductOverview overview(Product product, List<MaterialItem> lines) {
         List<MaterialItem> priced = lines.stream().filter(item -> item.getPurchaseUnitPriceTl() != null).toList();
         BigDecimal totalQuantity = lines.stream().map(MaterialItem::getQuantity).reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -55,9 +60,10 @@ public final class PurchaseStatistics {
                 priced.stream().min(byPrice).map(PurchaseStatistics::supplierPrice).orElse(null),
                 priced.stream().max(byPrice).map(PurchaseStatistics::supplierPrice).orElse(null),
                 priced.stream().sorted(NEWEST_LINE_FIRST).findFirst()
-                        .map(PurchaseStatistics::unitPriceExcludingVat).orElse(null),
+                        .map(PurchaseStatistics::unitPriceExcludingVat).orElse(product.getPurchasePrice()),
                 priced.isEmpty() ? null : totalExpense(priced),
-                CanonicalNames.distinct(lines.stream().map(MaterialItem::getSupplierName).toList()));
+                CanonicalNames.distinct(Stream.concat(lines.stream().map(MaterialItem::getSupplierName),
+                        Stream.of(product.getSupplierName())).toList()));
     }
 
     /** Summary of usage rows; the rows must be newest first. */

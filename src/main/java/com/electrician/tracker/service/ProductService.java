@@ -1,6 +1,9 @@
 package com.electrician.tracker.service;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.electrician.tracker.domain.Product;
@@ -21,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
  * compared without case, Turkish letters or extra spaces, so "ÖZNUR 1,5mm NYA"
  * and "HES 1,5mm NYA" are two products while "öznur" and "ÖZNUR" are the same
  * brand. Brands and categories are free text; a variant of a known one is
- * stored with the spelling already in use.
+ * stored with the spelling already in use. The usual supplier and purchase
+ * cost are only written by users who may see purchase prices.
  */
 @Service
 public class ProductService {
@@ -29,12 +33,14 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final MaterialItemRepository materialItemRepository;
     private final QuoteItemRepository quoteItemRepository;
+    private final AccessControl accessControl;
 
     public ProductService(ProductRepository productRepository, MaterialItemRepository materialItemRepository,
-            QuoteItemRepository quoteItemRepository) {
+            QuoteItemRepository quoteItemRepository, AccessControl accessControl) {
         this.productRepository = productRepository;
         this.materialItemRepository = materialItemRepository;
         this.quoteItemRepository = quoteItemRepository;
+        this.accessControl = accessControl;
     }
 
     @Transactional(readOnly = true)
@@ -63,6 +69,10 @@ public class ProductService {
     @Transactional
     public Product create(Product product) {
         normalize(product);
+        if (!accessControl.canViewFinancials()) {
+            product.setSupplierName(null);
+            product.setPurchasePrice(null);
+        }
         if (findSame(product.getName(), product.getBrand()).isPresent()) {
             throw new DuplicateNameException("error.product.name.duplicate");
         }
@@ -85,6 +95,30 @@ public class ProductService {
         return new ProductCreationResult(productRepository.save(candidate), false);
     }
 
+    /**
+     * The catalog product for each of {@code candidates} (same order): an
+     * existing one with the same name and brand, else the candidate saved as
+     * new. The catalog is read once for the whole list.
+     */
+    @Transactional
+    public List<Product> createOrReuseAll(List<Product> candidates) {
+        List<String> brands = new ArrayList<>(productRepository.findDistinctBrands());
+        List<String> categories = new ArrayList<>(productRepository.findDistinctCategories());
+        Map<String, Product> byKey = new HashMap<>();
+        productRepository.findAll().forEach(product ->
+                byKey.putIfAbsent(identityKey(product.getName(), product.getBrand()), product));
+        List<Product> result = new ArrayList<>();
+        for (Product candidate : candidates) {
+            normalize(candidate, brands, categories);
+            Product product = byKey.computeIfAbsent(identityKey(candidate.getName(), candidate.getBrand()),
+                    key -> productRepository.save(candidate));
+            addIfAbsent(brands, product.getBrand());
+            addIfAbsent(categories, product.getCategory());
+            result.add(product);
+        }
+        return result;
+    }
+
     @Transactional
     public Product update(Long id, Product changes) {
         normalize(changes);
@@ -97,6 +131,10 @@ public class ProductService {
         existing.setUnit(changes.getUnit());
         existing.setBrand(changes.getBrand());
         existing.setCategory(changes.getCategory());
+        if (accessControl.canViewFinancials()) {
+            existing.setSupplierName(changes.getSupplierName());
+            existing.setPurchasePrice(changes.getPurchasePrice());
+        }
         return existing;
     }
 
@@ -113,18 +151,35 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
-    /** Validates, trims the name and writes brand/category in their known spelling. */
     private void normalize(Product product) {
+        normalize(product, productRepository.findDistinctBrands(), productRepository.findDistinctCategories());
+    }
+
+    /**
+     * Validates, trims the name and supplier, and writes brand/category in
+     * their known spelling (from {@code brands} and {@code categories}).
+     */
+    private static void normalize(Product product, List<String> brands, List<String> categories) {
         if (product.getName() == null || product.getName().isBlank()) {
             throw new ValidationException("error.product.name.required");
         }
         if (product.getUnit() == null) {
             throw new ValidationException("error.product.unit.required");
         }
+        if (product.getPurchasePrice() != null && product.getPurchasePrice().signum() < 0) {
+            throw new ValidationException("error.product.purchasePrice.negative");
+        }
         product.setName(product.getName().trim().replaceAll("\\s+", " "));
-        product.setBrand(CanonicalNames.canonical(product.getBrand(), productRepository.findDistinctBrands()));
-        product.setCategory(CanonicalNames.canonical(product.getCategory(),
-                productRepository.findDistinctCategories()));
+        product.setBrand(CanonicalNames.canonical(product.getBrand(), brands));
+        product.setCategory(CanonicalNames.canonical(product.getCategory(), categories));
+        String supplier = product.getSupplierName();
+        product.setSupplierName(supplier == null || supplier.isBlank() ? null : supplier.trim());
+    }
+
+    private static void addIfAbsent(List<String> names, String name) {
+        if (name != null && !names.contains(name)) {
+            names.add(name);
+        }
     }
 
     /**

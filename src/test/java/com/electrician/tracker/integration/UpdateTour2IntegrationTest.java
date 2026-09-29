@@ -186,6 +186,28 @@ class UpdateTour2IntegrationTest {
         assertThat(reloaded).extracting(QuoteLine::brand).containsExactly("HES", null, null);
     }
 
+    @Test
+    void freeQuoteItemIsAddedToCatalogOnceAndGetsSupplierAndCost() {
+        List<QuoteLine> lines = List.of(
+                QuoteLine.unnumbered(null, "Sıva altı buat", "Viko", BigDecimal.ONE, ProductUnit.PIECE,
+                        BigDecimal.TEN, null),
+                QuoteLine.unnumbered(null, "  SIVA ALTI  buat ", "viko", BigDecimal.ONE, ProductUnit.PIECE,
+                        BigDecimal.TEN, null));
+        QuoteView saved = quoteService.save(null, draft("Katalog Testi", false, lines));
+
+        List<QuoteLine> reloaded = quoteService.findById(saved.id()).draft().lines();
+        assertThat(reloaded).allSatisfy(line -> assertThat(line.isFreeItem()).isFalse());
+        assertThat(reloaded).extracting(QuoteLine::productId).containsOnly(reloaded.get(0).productId());
+
+        Product product = productService.findById(reloaded.get(0).productId());
+        product.setSupplierName("  Elektrik Market ");
+        product.setPurchasePrice(new BigDecimal("42.50"));
+        productService.update(product.getId(), product);
+        Product edited = productService.findById(product.getId());
+        assertThat(edited.getSupplierName()).isEqualTo("Elektrik Market");
+        assertThat(edited.getPurchasePrice()).isEqualByComparingTo("42.50");
+    }
+
     // ---- 9–10: one-page PDF with Turkish letters -------------------------------
 
     @Test
