@@ -1,0 +1,64 @@
+/*
+ * Light theme: the only place colours are written for daytime use.
+ * theme-dark.css defines exactly the same variables with night values;
+ * app.css uses these variables only (see ThemeService for switching).
+ */
+.root {
+    /* Corporate palette */
+    -color-navy: #1F3A5F;
+    -color-secondary: #4A6FA5;
+    -color-accent: #F2A900;
+    -color-background: #F5F7FA;
+    -color-text: #1F2933;
+    -color-success: #2E7D32;
+    -color-error: #C62828;
+    -color-muted: #7B8794;
+    -color-highlight: #E8EEF7;
+    -color-surface: #FFFFFF;
+    -color-border: #D9E0E8;
+
+    /* Text on coloured surfaces and headings */
+    -color-heading: #1F3A5F;
+    -color-on-primary: #FFFFFF;
+    -color-on-accent: #1F3A5F;
+    -color-sidebar: #1F3A5F;
+    -color-sidebar-active: #4A6FA5;
+    -color-sidebar-text: #FFFFFF;
+
+    /* Soft tints behind rows and notes */
+    -color-success-soft: #E3F2E4;
+    -color-error-soft: #FBE9E9;
+    -color-accent-soft: #FDF1CC;
+    -color-shadow: rgba(31, 58, 95, 0.25);
+    -color-scrim: rgba(0, 0, 0, 0.35);
+
+    /* Message windows (SparkDialog) */
+    -dialog-info: #1F6FEB;
+    -dialog-success: #1A7F37;
+    -dialog-warning: #BF8700;
+    -dialog-error: #CF222E;
+
+    /* Status badges */
+    -status-planned-bg: #EAEEF2;
+    -status-planned-fg: #57606A;
+    -status-completed-bg: #DAFBE1;
+    -status-completed-fg: #1A7F37;
+    -status-not-visited-bg: #FFEBE9;
+    -status-not-visited-fg: #CF222E;
+    -status-postponed-bg: #FFF8C5;
+    -status-postponed-fg: #9A6700;
+    -status-cancelled-bg: #F6F8FA;
+    -status-cancelled-fg: #8C959F;
+    -status-urgent: #CF222E;
+
+    /* PDF previews: always paper, in both themes */
+    -color-paper: #FFFFFF;
+    -color-paper-text: #000000;
+
+    /* Tables, inputs, charts */
+    -color-row-alt: #F9FAFC;
+    -color-selection: #4A6FA5;
+    -color-selection-text: #FFFFFF;
+    -color-chart-grid: #E1E6EC;
+
+}

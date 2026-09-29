@@ -12,9 +12,13 @@ import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.IconSize;
 import com.electrician.tracker.ui.util.Icons;
+import com.electrician.tracker.ui.util.LogoContrast;
+import com.electrician.tracker.ui.util.ThemeService;
 import com.electrician.tracker.ui.util.UnsavedChangesAware;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleBooleanProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -50,6 +54,7 @@ public class CompanySettingsController implements UnsavedChangesAware {
 
     private final CompanyService companyService;
     private final AccessControl accessControl;
+    private final ThemeService themeService;
 
     @FXML
     private VBox companySection;
@@ -90,13 +95,19 @@ public class CompanySettingsController implements UnsavedChangesAware {
     @FXML
     private Label previewAddressLabel;
 
+    @FXML
+    private Label logoDarkWarning;
+
     private final SimpleBooleanProperty hasLogo = new SimpleBooleanProperty(false);
+    private final ChangeListener<Boolean> themeListener = (obs, old, dark) -> updateLogoWarning();
     private byte[] logo;
     private boolean dirty;
 
-    public CompanySettingsController(CompanyService companyService, AccessControl accessControl) {
+    public CompanySettingsController(CompanyService companyService, AccessControl accessControl,
+            ThemeService themeService) {
         this.companyService = companyService;
         this.accessControl = accessControl;
+        this.themeService = themeService;
     }
 
     @FXML
@@ -113,6 +124,7 @@ public class CompanySettingsController implements UnsavedChangesAware {
         logoPlaceholder.visibleProperty().bind(hasLogo.not());
         setUpDropZone();
         setUpPreview();
+        themeService.darkProperty().addListener(new WeakChangeListener<>(themeListener));
         show(companyService.get());
         trackChanges();
     }
@@ -144,6 +156,14 @@ public class CompanySettingsController implements UnsavedChangesAware {
         previewLogoView.setVisible(image != null);
         previewLogoView.setManaged(image != null);
         hasLogo.set(bytes != null);
+        updateLogoWarning();
+    }
+
+    /** "Logonuz koyu temada net görünmüyor olabilir…" while the dark theme is on. */
+    private void updateLogoWarning() {
+        boolean warn = themeService.isDark() && LogoContrast.isPoorOnDark(logoView.getImage());
+        logoDarkWarning.setVisible(warn);
+        logoDarkWarning.setManaged(warn);
     }
 
     private void trackChanges() {

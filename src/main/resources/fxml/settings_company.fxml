@@ -59,6 +59,8 @@
                         StackPane.alignment="TOP_RIGHT" visible="false"/>
             </StackPane>
             <Label text="%company.logo.help" styleClass="muted-text" wrapText="true" maxWidth="260"/>
+            <Label fx:id="logoDarkWarning" text="%company.logo.darkWarning" styleClass="warning-note"
+                   wrapText="true" maxWidth="260" visible="false" managed="false"/>
             <Label text="%company.logo.previewTitle" styleClass="form-label"/>
             <HBox fx:id="pdfPreview" styleClass="pdf-preview">
                 <ImageView fx:id="previewLogoView" fitWidth="64" fitHeight="40" preserveRatio="true" smooth="true"/>

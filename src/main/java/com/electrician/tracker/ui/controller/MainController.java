@@ -4,12 +4,13 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import com.electrician.tracker.dto.SessionUser;
 import com.electrician.tracker.domain.UserRole;
+import com.electrician.tracker.dto.SessionUser;
 import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.ui.util.AppIcon;
 import com.electrician.tracker.ui.util.AppSignature;
 import com.electrician.tracker.ui.util.ContentNavigator;
+import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EnumLabels;
 import com.electrician.tracker.ui.util.IconSize;
 import com.electrician.tracker.ui.util.Icons;
@@ -17,13 +18,17 @@ import com.electrician.tracker.ui.util.ModalStageOpener;
 import com.electrician.tracker.ui.util.PendingJobsBadge;
 import com.electrician.tracker.ui.util.ScreenAccess;
 import com.electrician.tracker.ui.util.StageManager;
+import com.electrician.tracker.ui.util.ThemeService;
 import com.electrician.tracker.ui.util.ViewPaths;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.WeakChangeListener;
 import javafx.fxml.FXML;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
@@ -55,9 +60,13 @@ public class MainController {
     private final ScreenAccess screenAccess;
     private final StageManager stageManager;
     private final PendingJobsBadge pendingJobsBadge;
+    private final ThemeService themeService;
+    private final ChangeListener<Boolean> themeListener = (obs, old, dark) -> updateThemeIcon();
 
     @FXML
     private StackPane contentArea;
+    @FXML
+    private Button themeToggleButton;
     @FXML
     private Label appTitleLabel;
     @FXML
@@ -103,7 +112,7 @@ public class MainController {
 
     public MainController(ContentNavigator contentNavigator, ModalStageOpener modalStageOpener,
             AppSignature appSignature, AccessControl accessControl, ScreenAccess screenAccess,
-            StageManager stageManager, PendingJobsBadge pendingJobsBadge) {
+            StageManager stageManager, PendingJobsBadge pendingJobsBadge, ThemeService themeService) {
         this.contentNavigator = contentNavigator;
         this.modalStageOpener = modalStageOpener;
         this.appSignature = appSignature;
@@ -111,14 +120,17 @@ public class MainController {
         this.screenAccess = screenAccess;
         this.stageManager = stageManager;
         this.pendingJobsBadge = pendingJobsBadge;
+        this.themeService = themeService;
     }
 
     @FXML
     private void initialize() {
+        appTitleLabel.setText(appSignature.appName());
         appTitleLabel.setGraphic(Icons.of(AppIcon.APP, IconSize.TITLE));
         switchUserItem.setAccelerator(StageManager.SWITCH_USER_KEYS);
         accessControl.currentUser().ifPresent(this::showUser);
         setUpMenu();
+        setUpThemeToggle();
         signatureVersionLabel.setText(appSignature.versionLine());
         signatureNoticeLabel.setText(appSignature.noticeLine());
         signatureCopyrightLabel.setText(appSignature.copyrightLine());
@@ -172,6 +184,23 @@ public class MainController {
         register(usersButton, ViewPaths.USERS, AppIcon.USERS);
         register(settingsButton, ViewPaths.SETTINGS, AppIcon.SETTINGS);
         aboutButton.setGraphic(Icons.of(AppIcon.ABOUT, IconSize.MENU));
+    }
+
+    /** Sun in the dark theme (back to light), moon in the light theme. */
+    private void setUpThemeToggle() {
+        themeToggleButton.setTooltip(new Tooltip(DialogUtil.message("theme.toggle.tooltip")));
+        updateThemeIcon();
+        themeService.darkProperty().addListener(new WeakChangeListener<>(themeListener));
+    }
+
+    private void updateThemeIcon() {
+        themeToggleButton.setGraphic(Icons.of(themeService.isDark() ? AppIcon.THEME_LIGHT : AppIcon.THEME_DARK,
+                IconSize.MENU));
+    }
+
+    @FXML
+    private void onToggleTheme() {
+        themeService.toggle();
     }
 
     /** Menu icon, or a lock and faded look when the role may not open the screen (it stays clickable). */

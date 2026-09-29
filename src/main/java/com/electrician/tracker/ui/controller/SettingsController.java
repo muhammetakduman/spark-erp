@@ -3,19 +3,27 @@ package com.electrician.tracker.ui.controller;
 import java.io.File;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
+import com.electrician.tracker.domain.ThemeMode;
 import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.BackupService;
 import com.electrician.tracker.service.ReportService;
+import com.electrician.tracker.service.UserPreferenceService;
 import com.electrician.tracker.ui.util.DialogUtil;
+import com.electrician.tracker.ui.util.SparkDialog;
+import com.electrician.tracker.ui.util.ThemeService;
 import com.electrician.tracker.ui.util.UnsavedChangesAware;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.control.Alert;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
+import javafx.scene.control.ToggleButton;
+import javafx.scene.control.ToggleGroup;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
@@ -35,7 +43,19 @@ public class SettingsController implements UnsavedChangesAware {
     private final BackupService backupService;
     private final ReportService reportService;
     private final AccessControl accessControl;
+    private final ThemeService themeService;
+    private final UserPreferenceService preferences;
 
+    @FXML
+    private ToggleGroup themeGroup;
+    @FXML
+    private ToggleButton lightThemeButton;
+    @FXML
+    private ToggleButton darkThemeButton;
+    @FXML
+    private ToggleButton systemThemeButton;
+    @FXML
+    private CheckBox reminderCheckBox;
     @FXML
     private Node backupSection;
     @FXML
@@ -52,10 +72,12 @@ public class SettingsController implements UnsavedChangesAware {
     private DatePicker exportEndDatePicker;
 
     public SettingsController(BackupService backupService, ReportService reportService,
-            AccessControl accessControl) {
+            AccessControl accessControl, ThemeService themeService, UserPreferenceService preferences) {
         this.backupService = backupService;
         this.reportService = reportService;
         this.accessControl = accessControl;
+        this.themeService = themeService;
+        this.preferences = preferences;
     }
 
     @FXML
@@ -65,9 +87,29 @@ public class SettingsController implements UnsavedChangesAware {
             section.setVisible(admin);
             section.setManaged(admin);
         }
+        setUpAppearance();
         backupFolderLabel.setText(backupService.getBackupFolder().toString());
         exportStartDatePicker.setValue(LocalDate.now().withDayOfMonth(1));
         exportEndDatePicker.setValue(LocalDate.now());
+    }
+
+    /** Açık · Koyu · Sistem and the login reminder; both apply at once and are kept per user. */
+    private void setUpAppearance() {
+        Map<ThemeMode, ToggleButton> buttons = new EnumMap<>(ThemeMode.class);
+        buttons.put(ThemeMode.LIGHT, lightThemeButton);
+        buttons.put(ThemeMode.DARK, darkThemeButton);
+        buttons.put(ThemeMode.SYSTEM, systemThemeButton);
+        buttons.forEach((mode, button) -> button.setUserData(mode));
+        buttons.get(themeService.mode()).setSelected(true);
+        themeGroup.selectedToggleProperty().addListener((obs, old, selected) -> {
+            if (selected == null) {
+                old.setSelected(true);
+                return;
+            }
+            themeService.setMode((ThemeMode) selected.getUserData());
+        });
+        reminderCheckBox.setSelected(preferences.isReminderEnabled());
+        reminderCheckBox.selectedProperty().addListener((obs, old, enabled) -> preferences.setReminderEnabled(enabled));
     }
 
     @Override
@@ -89,10 +131,7 @@ public class SettingsController implements UnsavedChangesAware {
     @FXML
     private void onBackupNow() {
         Path backupFile = backupService.backupNow();
-        Alert alert = new Alert(Alert.AlertType.INFORMATION,
-                DialogUtil.message("settings.backupNow.success") + " " + backupFile);
-        alert.setHeaderText(null);
-        alert.showAndWait();
+        SparkDialog.success(DialogUtil.message("settings.backupNow.success"), backupFile.toString());
     }
 
     @FXML
@@ -109,9 +148,7 @@ public class SettingsController implements UnsavedChangesAware {
             return;
         }
         backupService.restoreFromBackup(selected.toPath());
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, DialogUtil.message("settings.restore.done"));
-        alert.setHeaderText(null);
-        alert.showAndWait();
+        SparkDialog.info(DialogUtil.message("settings.restore.done"));
         Platform.exit();
     }
 
@@ -132,9 +169,7 @@ public class SettingsController implements UnsavedChangesAware {
             return;
         }
         reportService.exportJobsByDateRange(start, end, selected.toPath());
-        Alert alert = new Alert(Alert.AlertType.INFORMATION, DialogUtil.message("settings.exportExcel.success"));
-        alert.setHeaderText(null);
-        alert.showAndWait();
+        SparkDialog.success(DialogUtil.message("settings.exportExcel.success"), selected.getAbsolutePath());
     }
 
     private Window window() {

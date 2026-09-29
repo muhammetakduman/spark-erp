@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.electrician.tracker.config.FxmlViewLoader;
 import com.electrician.tracker.service.AuthenticationService;
+import javafx.application.Platform;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -41,22 +42,31 @@ public class StageManager {
     private final ContentNavigator contentNavigator;
     private final PendingJobsBadge pendingJobsBadge;
     private final AppSignature appSignature;
+    private final ThemeService themeService;
+    private final DayWatcher dayWatcher;
+    private final PendingReminder pendingReminder;
     private Stage stage;
 
     public StageManager(FxmlViewLoader fxmlViewLoader, AuthenticationService authenticationService,
-            ContentNavigator contentNavigator, PendingJobsBadge pendingJobsBadge, AppSignature appSignature) {
+            ContentNavigator contentNavigator, PendingJobsBadge pendingJobsBadge, AppSignature appSignature,
+            ThemeService themeService, DayWatcher dayWatcher, PendingReminder pendingReminder) {
         this.fxmlViewLoader = fxmlViewLoader;
         this.authenticationService = authenticationService;
         this.contentNavigator = contentNavigator;
         this.pendingJobsBadge = pendingJobsBadge;
         this.appSignature = appSignature;
+        this.themeService = themeService;
+        this.dayWatcher = dayWatcher;
+        this.pendingReminder = pendingReminder;
     }
 
     /** First screen: the first-run setup while no user exists, the login otherwise. */
     public void start(Stage primaryStage) {
         this.stage = primaryStage;
+        themeService.applyCurrentUserTheme();
         showEntryScreen();
         stage.show();
+        dayWatcher.start();
     }
 
     /** Called by the login and setup screens once a user is logged in. */
@@ -76,6 +86,7 @@ public class StageManager {
         contentNavigator.clear();
         pendingJobsBadge.reset();
         authenticationService.logout();
+        themeService.applyCurrentUserTheme();
         showEntryScreen();
     }
 
@@ -101,12 +112,18 @@ public class StageManager {
         Stylesheets.apply(scene);
         stage.setScene(scene);
         stage.setResizable(false);
-        stage.setTitle(DialogUtil.message(setup ? "setup.title" : "login.windowTitle"));
+        stage.setTitle(setup ? DialogUtil.message("setup.title")
+                : DialogUtil.message("login.windowTitle", appSignature.appName()));
         stage.sizeToScene();
         stage.centerOnScreen();
     }
 
+    /**
+     * The user's theme first, then the main window; the pending-jobs
+     * reminder opens over it (once a day, only if something is waiting).
+     */
     private void showMain() {
+        themeService.applyCurrentUserTheme();
         Parent root = fxmlViewLoader.load(ViewPaths.MAIN);
         Rectangle2D screen = Screen.getPrimary().getVisualBounds();
         Scene scene = new Scene(root, Math.min(MAIN_WIDTH, screen.getWidth()),
@@ -121,6 +138,13 @@ public class StageManager {
         stage.sizeToScene();
         stage.centerOnScreen();
         pendingJobsBadge.refresh();
+        Platform.runLater(this::remindPendingJobs);
+    }
+
+    private void remindPendingJobs() {
+        if (pendingReminder.showIfDue()) {
+            contentNavigator.reloadCurrent();
+        }
     }
 
     /** Every dialog or alert still open (they belong to the previous user). */

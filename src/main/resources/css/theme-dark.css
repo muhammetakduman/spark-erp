@@ -1,0 +1,77 @@
+/*
+ * Dark theme: the same variables as theme-light.css with night values.
+ * Contrast of text against its background is at least 4.5:1 (muted text at
+ * least 3:1). PDFs never use these colours.
+ */
+.root {
+    /* Corporate palette */
+    -color-navy: #2F6FAF;
+    -color-secondary: #4493F8;
+    -color-accent: #F2A900;
+    -color-background: #0D1117;
+    -color-text: #E6EDF3;
+    -color-success: #56D364;
+    -color-error: #F85149;
+    -color-muted: #8B949E;
+    -color-highlight: #161B22;
+    -color-surface: #1C2128;
+    -color-border: #30363D;
+
+    /* Text on coloured surfaces and headings */
+    -color-heading: #79B8FF;
+    -color-on-primary: #FFFFFF;
+    -color-on-accent: #0D1117;
+    -color-sidebar: #161B22;
+    -color-sidebar-active: #2F6FAF;
+    -color-sidebar-text: #E6EDF3;
+
+    /* Soft tints behind rows and notes */
+    -color-success-soft: #1B3A25;
+    -color-error-soft: #3D1418;
+    -color-accent-soft: #3B2E0A;
+    -color-shadow: rgba(0, 0, 0, 0.6);
+    -color-scrim: rgba(0, 0, 0, 0.35);
+
+    /* Message windows (SparkDialog) */
+    -dialog-info: #4493F8;
+    -dialog-success: #56D364;
+    -dialog-warning: #E3B341;
+    -dialog-error: #F85149;
+
+    /* Status badges */
+    -status-planned-bg: #21262D;
+    -status-planned-fg: #8B949E;
+    -status-completed-bg: #1B3A25;
+    -status-completed-fg: #56D364;
+    -status-not-visited-bg: #3D1418;
+    -status-not-visited-fg: #F85149;
+    -status-postponed-bg: #3B2E0A;
+    -status-postponed-fg: #E3B341;
+    -status-cancelled-bg: #161B22;
+    -status-cancelled-fg: #8B949E;
+    -status-urgent: #F85149;
+
+    /* PDF previews: always paper, in both themes */
+    -color-paper: #FFFFFF;
+    -color-paper-text: #000000;
+
+    /* Tables, inputs, charts */
+    -color-row-alt: #181D24;
+    -color-selection: #1F6FEB;
+    -color-selection-text: #FFFFFF;
+    -color-chart-grid: #30363D;
+
+    /* JavaFX (Modena) base colours */
+    -fx-base: #21262D;
+    -fx-background: #0D1117;
+    -fx-control-inner-background: #1C2128;
+    -fx-control-inner-background-alt: #181D24;
+    -fx-selection-bar: #1F6FEB;
+    -fx-selection-bar-non-focused: #30363D;
+    -fx-text-base-color: #E6EDF3;
+    -fx-text-background-color: #E6EDF3;
+    -fx-text-inner-color: #E6EDF3;
+    -fx-prompt-text-fill: #6E7681;
+    -fx-mark-color: #E6EDF3;
+    -fx-focused-mark-color: #FFFFFF;
+}

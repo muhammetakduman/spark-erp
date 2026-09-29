@@ -25,7 +25,7 @@
 /* ---- Side menu --------------------------------------------------------- */
 
 .side-menu {
-    -fx-background-color: -color-navy;
+    -fx-background-color: -color-sidebar;
     -fx-padding: 20 10 16 10;
     -fx-pref-width: 190;
     -fx-min-width: 190;
@@ -33,7 +33,7 @@
 
 .menu-button {
     -fx-background-color: transparent;
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-sidebar-text;
     -fx-font-size: 14px;
     -fx-alignment: CENTER_LEFT;
     -fx-pref-width: 170;
@@ -43,7 +43,7 @@
 }
 
 .menu-button:hover {
-    -fx-background-color: -color-secondary;
+    -fx-background-color: -color-sidebar-active;
 }
 
 .signature-footer {
@@ -53,7 +53,7 @@
 }
 
 .signature-text {
-    -fx-text-fill: -color-highlight;
+    -fx-text-fill: -color-sidebar-text;
     -fx-font-size: 10px;
     -fx-max-width: 170;
     -fx-opacity: 0.8;
@@ -79,13 +79,13 @@
 }
 
 .section-title {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-size: 18px;
     -fx-font-weight: bold;
 }
 
 .subsection-title {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-weight: bold;
     -fx-padding: 4 0 0 0;
 }
@@ -121,7 +121,7 @@
 .primary-button {
     -fx-background-color: -color-accent;
     -fx-border-color: -color-accent;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-on-accent;
     -fx-font-weight: bold;
 }
 
@@ -134,7 +134,7 @@
 }
 
 .danger-button:hover {
-    -fx-background-color: derive(-color-error, 88%);
+    -fx-background-color: -color-error-soft;
     -fx-border-color: -color-error;
 }
 
@@ -156,7 +156,7 @@
 .segmented .toggle-button:selected {
     -fx-background-color: -color-navy;
     -fx-border-color: -color-navy;
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-on-primary;
 }
 
 .table-actions .button {
@@ -244,7 +244,7 @@
 }
 
 .table-view .column-header .label {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-weight: bold;
     -fx-font-size: 12px;
 }
@@ -271,7 +271,7 @@
 }
 
 .chart-title {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-size: 14px;
 }
 
@@ -292,7 +292,7 @@
 }
 
 .tab .tab-label {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
 }
 
 .accordion .titled-pane {
@@ -338,7 +338,7 @@
 }
 
 .stat-value {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-size: 18px;
     -fx-font-weight: bold;
 }
@@ -363,7 +363,7 @@
     -fx-background-radius: 8;
     -fx-padding: 14 18 14 18;
     -fx-min-width: 180;
-    -fx-effect: dropshadow(gaussian, derive(-color-navy, 60%), 6, 0.1, 0, 1);
+    -fx-effect: dropshadow(gaussian, -color-shadow, 6, 0.1, 0, 1);
 }
 
 .summary-card .stat-value {
@@ -371,7 +371,7 @@
 }
 
 .site-title {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-weight: bold;
 }
 
@@ -383,7 +383,7 @@
 
 .status-active {
     -fx-text-fill: -color-success;
-    -fx-background-color: derive(-color-success, 85%);
+    -fx-background-color: -color-success-soft;
     -fx-font-weight: bold;
 }
 
@@ -416,11 +416,11 @@
 }
 
 .payment-received-row {
-    -fx-background-color: derive(-color-success, 90%);
+    -fx-background-color: -color-success-soft;
 }
 
 .payment-pending-row {
-    -fx-background-color: derive(-color-error, 92%);
+    -fx-background-color: -color-error-soft;
 }
 
 .table-row-cell.payment-received-row:selected,
@@ -450,21 +450,21 @@
 
 .vat-summary-total {
     -fx-font-weight: bold;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
 }
 
 /* ---- Attendance ---------------------------------------------------------- */
 
 .master-tag {
     -fx-background-color: -color-accent;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-size: 10px;
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 8;
 }
 
 .attendance-preview {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-weight: bold;
 }
 
@@ -479,17 +479,17 @@
 
 .badge-site {
     -fx-background-color: -color-navy;
-    -fx-text-fill: -color-background;
+    -fx-text-fill: -color-on-primary;
 }
 
 .badge-service {
     -fx-background-color: -color-secondary;
-    -fx-text-fill: -color-background;
+    -fx-text-fill: -color-on-primary;
 }
 
 .badge-total {
     -fx-background-color: -color-accent;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-on-accent;
 }
 
 .attendance-job-row {
@@ -499,7 +499,7 @@
 
 .attendance-total {
     -fx-font-weight: bold;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
 }
 
 .matrix-cell {
@@ -513,7 +513,7 @@
 .matrix-header {
     -fx-font-weight: bold;
     -fx-alignment: CENTER;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
 }
 
 .matrix-name {
@@ -527,7 +527,7 @@
 
 .half-day-badge {
     -fx-background-color: -color-accent;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-on-accent;
     -fx-font-size: 10px;
     -fx-padding: 0 4 0 4;
     -fx-background-radius: 6;
@@ -535,7 +535,7 @@
 
 .inactive-tag {
     -fx-background-color: -color-muted;
-    -fx-text-fill: -color-background;
+    -fx-text-fill: -color-on-primary;
     -fx-font-size: 10px;
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 8;
@@ -549,7 +549,7 @@
 
 .warning-badge {
     -fx-background-color: -color-accent;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-on-accent;
     -fx-font-size: 10px;
     -fx-padding: 1 6 1 6;
     -fx-background-radius: 8;
@@ -565,7 +565,7 @@
 
 .warning-panel-title {
     -fx-font-weight: bold;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
 }
 
 .usage-summary {
@@ -603,14 +603,14 @@
 }
 
 .current-user {
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-on-primary;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-max-width: 170;
 }
 
 .category-totals {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-weight: bold;
     -fx-padding: 4 8 4 8;
     -fx-background-color: -color-highlight;
@@ -618,7 +618,7 @@
 }
 
 .table-row-cell.cheapest-row {
-    -fx-background-color: derive(-color-success, 88%);
+    -fx-background-color: -color-success-soft;
 }
 
 .table-row-cell.cheapest-row:selected {
@@ -638,7 +638,7 @@
 /* ---- Icons (sizes and colours; see AppIcon / IconSize) -------------------- */
 
 .app-icon {
-    -fx-icon-color: -color-navy;
+    -fx-icon-color: -color-heading;
 }
 
 .icon-menu {
@@ -694,7 +694,7 @@
 }
 
 .app-header-title {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-size: 17px;
     -fx-font-weight: bold;
     -fx-graphic-text-gap: 10;
@@ -725,7 +725,7 @@
     -fx-alignment: CENTER;
     -fx-background-color: -color-navy;
     -fx-background-radius: 17;
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-on-primary;
     -fx-font-weight: bold;
     -fx-font-size: 13px;
 }
@@ -746,7 +746,7 @@
 
 .role-badge-admin {
     -fx-background-color: -color-accent;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-on-accent;
 }
 
 /* ---- Side menu: icons, active item, locked items, badge ------------------- */
@@ -765,7 +765,7 @@
 
 .side-menu-items {
     -fx-spacing: 3;
-    -fx-background-color: -color-navy;
+    -fx-background-color: -color-sidebar;
 }
 
 .menu-button {
@@ -773,11 +773,11 @@
 }
 
 .menu-button .app-icon {
-    -fx-icon-color: -color-highlight;
+    -fx-icon-color: -color-sidebar-text;
 }
 
 .menu-button-active {
-    -fx-background-color: -color-secondary;
+    -fx-background-color: -color-sidebar-active;
     -fx-font-weight: bold;
 }
 
@@ -795,7 +795,7 @@
 
 .menu-badge {
     -fx-background-color: -color-error;
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-on-primary;
     -fx-font-size: 11px;
     -fx-font-weight: bold;
     -fx-padding: 1 7 1 7;
@@ -819,13 +819,13 @@
 }
 
 .login-app-name {
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-on-primary;
     -fx-font-size: 22px;
     -fx-font-weight: bold;
 }
 
 .login-version {
-    -fx-text-fill: -color-highlight;
+    -fx-text-fill: -color-on-primary;
     -fx-font-size: 12px;
 }
 
@@ -841,7 +841,7 @@
 }
 
 .login-heading {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-size: 22px;
     -fx-font-weight: bold;
 }
@@ -919,7 +919,7 @@
 .login-button {
     -fx-background-color: -color-navy;
     -fx-border-color: -color-navy;
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-on-primary;
     -fx-font-weight: bold;
     -fx-font-size: 14px;
     -fx-padding: 10 14 10 14;
@@ -936,7 +936,7 @@
 }
 
 .button-spinner {
-    -fx-progress-color: -color-surface;
+    -fx-progress-color: -color-on-primary;
 }
 
 .login-exit {
@@ -956,7 +956,7 @@
     -fx-padding: 14 20 10 20;
     -fx-font-size: 16px;
     -fx-font-weight: bold;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-border-color: -color-border;
     -fx-border-width: 0 0 1 0;
     -fx-background-color: -color-surface;
@@ -973,7 +973,7 @@
 }
 
 .info-strip {
-    -fx-background-color: derive(-color-accent, 80%);
+    -fx-background-color: -color-accent-soft;
     -fx-border-color: -color-accent;
     -fx-border-width: 0 0 0 4;
     -fx-padding: 6 10 6 10;
@@ -1024,7 +1024,7 @@
 /* ---- Currency ---------------------------------------------------------------- */
 
 .conversion-hint {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-weight: bold;
 }
 
@@ -1092,14 +1092,14 @@
 }
 
 .pdf-preview {
-    -fx-background-color: -color-surface;
+    -fx-background-color: -color-paper;
     -fx-border-color: -color-border;
     -fx-border-width: 0 0 2 0;
     -fx-padding: 8;
     -fx-spacing: 10;
     -fx-alignment: CENTER_LEFT;
     -fx-max-width: 280;
-    -fx-effect: dropshadow(gaussian, derive(-color-navy, 70%), 4, 0.1, 0, 1);
+    -fx-effect: dropshadow(gaussian, -color-shadow, 4, 0.1, 0, 1);
 }
 
 .pdf-preview-name {
@@ -1126,14 +1126,15 @@
 .job-card {
     -fx-background-color: -color-surface;
     -fx-border-color: -color-border;
-    -fx-border-width: 1 1 1 5;
+    -fx-border-width: 1 1 1 3;
     -fx-border-radius: 8;
     -fx-background-radius: 8;
     -fx-padding: 12 14 12 14;
 }
 
 .job-card-urgent {
-    -fx-border-color: -color-border -color-border -color-border -color-error;
+    -fx-border-color: -color-border -color-border -color-border -status-urgent;
+    -fx-border-width: 1 1 1 3;
 }
 
 .job-card-faded {
@@ -1141,7 +1142,7 @@
 }
 
 .job-card-time {
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-weight: bold;
 }
 
@@ -1161,7 +1162,7 @@
 
 .person-badge {
     -fx-background-color: -color-highlight;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
     -fx-font-size: 11px;
     -fx-padding: 2 8 2 8;
     -fx-background-radius: 10;
@@ -1169,50 +1170,71 @@
 
 .urgent-badge {
     -fx-background-color: -color-error;
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-on-primary;
     -fx-font-size: 10px;
     -fx-font-weight: bold;
     -fx-padding: 1 7 1 7;
     -fx-background-radius: 8;
 }
 
+/* Status badge: 11px icon, 4px gap, 11pt text, 4x8 padding, 4px corners. */
 .status-badge {
-    -fx-font-size: 11px;
+    -fx-font-size: 11pt;
     -fx-font-weight: bold;
-    -fx-padding: 2 9 2 9;
-    -fx-background-radius: 10;
+    -fx-padding: 4 8 4 8;
+    -fx-background-radius: 4;
+    -fx-graphic-text-gap: 4;
 }
 
 .status-planned {
-    -fx-background-color: -color-highlight;
-    -fx-text-fill: -color-muted;
+    -fx-background-color: -status-planned-bg;
+    -fx-text-fill: -status-planned-fg;
+}
+
+.status-planned .app-icon {
+    -fx-icon-color: -status-planned-fg;
 }
 
 .status-badge.status-completed {
-    -fx-background-color: derive(-color-success, 80%);
-    -fx-text-fill: -color-success;
+    -fx-background-color: -status-completed-bg;
+    -fx-text-fill: -status-completed-fg;
+}
+
+.status-completed .app-icon {
+    -fx-icon-color: -status-completed-fg;
 }
 
 .status-not-visited {
-    -fx-background-color: derive(-color-error, 82%);
-    -fx-text-fill: -color-error;
+    -fx-background-color: -status-not-visited-bg;
+    -fx-text-fill: -status-not-visited-fg;
+}
+
+.status-not-visited .app-icon {
+    -fx-icon-color: -status-not-visited-fg;
 }
 
 .status-postponed {
-    -fx-background-color: derive(-color-accent, 75%);
-    -fx-text-fill: derive(-color-accent, -45%);
+    -fx-background-color: -status-postponed-bg;
+    -fx-text-fill: -status-postponed-fg;
+}
+
+.status-postponed .app-icon {
+    -fx-icon-color: -status-postponed-fg;
 }
 
 .status-cancelled {
-    -fx-background-color: -color-background;
-    -fx-text-fill: -color-muted;
-    -fx-opacity: 0.8;
+    -fx-background-color: -status-cancelled-bg;
+    -fx-text-fill: -status-cancelled-fg;
+}
+
+.status-cancelled .app-icon {
+    -fx-icon-color: -status-cancelled-fg;
 }
 
 .done-button {
     -fx-background-color: -color-success;
     -fx-border-color: -color-success;
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-on-primary;
     -fx-font-weight: bold;
     -fx-font-size: 14px;
     -fx-padding: 9 16 9 16;
@@ -1223,7 +1245,7 @@
 }
 
 .done-button .app-icon {
-    -fx-icon-color: -color-surface;
+    -fx-icon-color: -color-on-primary;
 }
 
 .not-done-button {
@@ -1275,7 +1297,7 @@
 
 .week-row-title {
     -fx-font-weight: bold;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
 }
 
 .week-day-header {
@@ -1285,7 +1307,7 @@
 
 .week-day-name {
     -fx-font-weight: bold;
-    -fx-text-fill: -color-navy;
+    -fx-text-fill: -color-heading;
 }
 
 .week-day-count {
@@ -1322,12 +1344,12 @@
 }
 
 .week-job-completed {
-    -fx-background-color: derive(-color-success, 82%);
+    -fx-background-color: -color-success-soft;
 }
 
 .week-job-not-visited,
 .week-job-postponed {
-    -fx-background-color: derive(-color-error, 86%);
+    -fx-background-color: -color-error-soft;
 }
 
 .week-job-urgent {
@@ -1348,17 +1370,17 @@
 .side-menu .menu-button {
     -fx-background-color: transparent;
     -fx-border-color: transparent;
-    -fx-text-fill: -color-surface;
+    -fx-text-fill: -color-sidebar-text;
     -fx-pref-width: 200;
     -fx-max-width: Infinity;
 }
 
 .side-menu .menu-button:hover {
-    -fx-background-color: -color-secondary;
+    -fx-background-color: -color-sidebar-active;
 }
 
 .side-menu .menu-button-active {
-    -fx-background-color: -color-secondary;
+    -fx-background-color: -color-sidebar-active;
     -fx-font-weight: bold;
 }
 
@@ -1390,4 +1412,380 @@
 
 .more-button:hover {
     -fx-background-color: -color-highlight;
+}
+
+/* ==== Update tour 3 ======================================================== */
+
+/* ---- Icon sizes ------------------------------------------------------------ */
+
+.icon-dialog {
+    -fx-icon-size: 28px;
+}
+
+.icon-badge {
+    -fx-icon-size: 11px;
+}
+
+.icon-mark {
+    -fx-icon-size: 12px;
+}
+
+.app-icon.icon-danger.icon-mark {
+    -fx-icon-color: -status-urgent;
+}
+
+/* ---- Message windows (SparkDialog) ---------------------------------------- */
+
+.spark-dialog-scrim {
+    -fx-background-color: -color-scrim;
+}
+
+.spark-dialog {
+    -fx-background-color: -color-surface;
+    -fx-background-radius: 8;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 8;
+    -fx-min-width: 380;
+    -fx-pref-width: 440;
+    -fx-max-width: 480;
+    -fx-effect: dropshadow(gaussian, -color-shadow, 18, 0.2, 0, 4);
+}
+
+.spark-dialog.spark-dialog-wide {
+    -fx-min-width: 600;
+    -fx-max-width: 600;
+}
+
+.spark-dialog-info {
+    -kind-color: -dialog-info;
+}
+
+.spark-dialog-success {
+    -kind-color: -dialog-success;
+}
+
+.spark-dialog-warning {
+    -kind-color: -dialog-warning;
+}
+
+.spark-dialog-error {
+    -kind-color: -dialog-error;
+}
+
+.spark-dialog-strip {
+    -fx-background-color: -kind-color;
+    -fx-background-radius: 8 8 0 0;
+    -fx-min-height: 4;
+    -fx-pref-height: 4;
+    -fx-max-height: 4;
+}
+
+.spark-dialog-body {
+    -fx-padding: 18 20 8 20;
+    -fx-alignment: TOP_LEFT;
+}
+
+.spark-dialog-body > .app-icon {
+    -fx-icon-color: -kind-color;
+}
+
+.spark-dialog-title {
+    -fx-font-size: 15pt;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text;
+}
+
+.spark-dialog-detail {
+    -fx-font-size: 13pt;
+    -fx-text-fill: -color-muted;
+}
+
+.spark-dialog-buttons {
+    -fx-alignment: CENTER_RIGHT;
+    -fx-padding: 8 20 18 20;
+}
+
+.spark-dialog-primary {
+    -fx-background-color: -kind-color;
+    -fx-border-color: -kind-color;
+    -fx-text-fill: -color-on-primary;
+    -fx-font-weight: bold;
+}
+
+.spark-dialog-primary:hover {
+    -fx-background-color: derive(-kind-color, -12%);
+}
+
+.spark-dialog-primary:disabled {
+    -fx-opacity: 0.45;
+}
+
+.spark-dialog-secondary {
+    -fx-background-color: transparent;
+    -fx-border-color: -color-border;
+    -fx-text-fill: -color-text;
+}
+
+.spark-dialog-secondary:focused {
+    -fx-border-color: -kind-color;
+}
+
+/* ---- Status badges and urgent cards -------------------------------------- */
+
+.urgent-mark {
+    -fx-padding: 0 0 0 4;
+}
+
+/* ---- Bulk selection --------------------------------------------------------- */
+
+.selection-bar {
+    -fx-alignment: CENTER_LEFT;
+    -fx-spacing: 10;
+    -fx-padding: 6 10 6 12;
+    -fx-background-color: -color-highlight;
+    -fx-border-color: -color-secondary;
+    -fx-border-width: 0 0 0 4;
+    -fx-background-radius: 0 6 6 0;
+}
+
+.selection-count {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-heading;
+}
+
+.bulk-result-list {
+    -fx-background-color: -color-highlight;
+    -fx-background-radius: 6;
+    -fx-padding: 8 10 8 10;
+    -fx-spacing: 3;
+}
+
+.bulk-result-list .label {
+    -fx-font-size: 12px;
+}
+
+/* ---- Templates: quote diagram and editor ------------------------------------ */
+
+.quote-diagram {
+    -fx-spacing: 3;
+    -fx-padding: 10;
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+    -fx-min-width: 230;
+    -fx-pref-width: 250;
+    -fx-max-width: 260;
+}
+
+.quote-diagram-faded .diagram-part {
+    -fx-opacity: 0.35;
+}
+
+.diagram-part {
+    -fx-padding: 6 8 6 8;
+    -fx-background-color: -color-highlight;
+    -fx-background-radius: 4;
+    -fx-border-color: transparent;
+    -fx-border-radius: 4;
+}
+
+.diagram-part-name {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text;
+}
+
+.diagram-part-source {
+    -fx-font-size: 10px;
+    -fx-text-fill: -color-muted;
+}
+
+.diagram-part-table {
+    -fx-min-height: 70;
+}
+
+.diagram-part-active {
+    -fx-background-color: -color-navy;
+    -fx-border-color: -color-accent;
+    -fx-border-width: 0 0 0 4;
+}
+
+.diagram-part-active .diagram-part-name,
+.diagram-part-active .diagram-part-source {
+    -fx-text-fill: -color-on-primary;
+}
+
+.diagram-note {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 12px;
+}
+
+.template-meta,
+.template-type-caption {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 12px;
+}
+
+/* Live "how it looks in the PDF" preview: paper colours in both themes, like the PDF itself. */
+.pdf-notes-preview {
+    -fx-background-color: -color-paper;
+    -fx-border-color: -color-border;
+    -fx-padding: 8 10 8 10;
+    -fx-min-height: 80;
+}
+
+.pdf-notes-preview-text {
+    -fx-font-family: "Arial";
+    -fx-font-size: 8pt;
+    -fx-text-fill: -color-paper-text;
+}
+
+.flash-strip {
+    -fx-background-color: -color-success-soft;
+    -fx-border-color: -color-success;
+    -fx-border-width: 0 0 0 4;
+    -fx-padding: 6 10 6 10;
+    -fx-text-fill: -color-text;
+}
+
+.field-hint {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 11px;
+}
+
+/* ---- Pending jobs reminder ------------------------------------------------------ */
+
+.reminder-scroll,
+.reminder-scroll > .viewport {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.reminder-list {
+    -fx-border-color: -color-border;
+    -fx-border-width: 1 0 0 0;
+}
+
+.reminder-row {
+    -fx-padding: 8 2 8 2;
+    -fx-spacing: 3;
+    -fx-border-color: -color-border;
+    -fx-border-width: 0 0 1 0;
+}
+
+.reminder-date {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-text;
+}
+
+.reminder-title {
+    -fx-text-fill: -color-text;
+}
+
+.reminder-place,
+.reminder-postponed {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 12px;
+}
+
+.reminder-row .button {
+    -fx-font-size: 12px;
+    -fx-padding: 3 10 3 10;
+}
+
+/* ---- Theme toggle ----------------------------------------------------------------- */
+
+.theme-toggle {
+    -fx-background-color: transparent;
+    -fx-border-color: transparent;
+    -fx-padding: 6 8 6 8;
+}
+
+.theme-toggle:hover {
+    -fx-background-color: -color-highlight;
+}
+
+/* ---- Tables, inputs, charts in both themes ----------------------------------------- */
+
+.table-view .placeholder .label {
+    -fx-text-fill: -color-muted;
+}
+
+.text-field,
+.text-area,
+.date-picker > .text-field {
+    -fx-text-fill: -color-text;
+    -fx-prompt-text-fill: -color-muted;
+}
+
+.text-area .content {
+    -fx-background-color: -color-surface;
+}
+
+.text-input:disabled,
+.combo-box:disabled,
+.date-picker:disabled {
+    -fx-opacity: 0.6;
+}
+
+.check-box,
+.radio-button {
+    -fx-text-fill: -color-text;
+}
+
+.chart-plot-background {
+    -fx-background-color: transparent;
+}
+
+.chart-vertical-grid-lines,
+.chart-horizontal-grid-lines {
+    -fx-stroke: -color-chart-grid;
+}
+
+.axis {
+    -fx-tick-label-fill: -color-text;
+}
+
+.axis-label,
+.chart-legend-item {
+    -fx-text-fill: -color-text;
+}
+
+.chart-legend {
+    -fx-background-color: transparent;
+}
+
+.context-menu {
+    -fx-background-color: -color-surface;
+    -fx-border-color: -color-border;
+}
+
+.menu-item .label {
+    -fx-text-fill: -color-text;
+}
+
+.menu-item:focused {
+    -fx-background-color: -color-selection;
+}
+
+.menu-item:focused .label {
+    -fx-text-fill: -color-selection-text;
+}
+
+.tooltip {
+    -fx-background-color: -color-surface;
+    -fx-text-fill: -color-text;
+    -fx-border-color: -color-border;
+}
+
+.bulk-progress {
+    -fx-padding: 24 32 24 32;
+    -fx-alignment: CENTER;
+    -fx-min-width: 260;
+}
+
+.select-box {
+    -fx-padding: 2 0 0 0;
 }

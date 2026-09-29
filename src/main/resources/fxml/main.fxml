@@ -17,8 +17,9 @@
             styleClass="main-root">
     <top>
         <HBox styleClass="app-header">
-            <Label fx:id="appTitleLabel" text="%app.title" styleClass="app-header-title"/>
+            <Label fx:id="appTitleLabel" styleClass="app-header-title"/>
             <Region HBox.hgrow="ALWAYS"/>
+            <Button fx:id="themeToggleButton" onAction="#onToggleTheme" styleClass="theme-toggle" focusTraversable="false"/>
             <MenuButton fx:id="userMenuButton" styleClass="user-menu">
                 <items>
                     <MenuItem text="%user.menu.changePassword" onAction="#onChangePassword" styleClass="action-password"/>
