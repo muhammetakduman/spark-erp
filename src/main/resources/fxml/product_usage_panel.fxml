@@ -4,27 +4,34 @@
 <?import javafx.scene.control.DatePicker?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.Tab?>
+<?import javafx.scene.control.TabPane?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.electrician.tracker.ui.controller.ProductUsagePanelController"
       spacing="8">
-    <Label fx:id="usageTitleLabel" text="%productUsage.title" styleClass="section-title"/>
     <HBox spacing="8" styleClass="toolbar">
+        <Label fx:id="usageTitleLabel" text="%productUsage.title" styleClass="subsection-title"/>
+        <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+        <Region HBox.hgrow="ALWAYS"/>
         <Label text="%productUsage.filter.from" styleClass="form-label"/>
         <DatePicker fx:id="fromDatePicker" prefWidth="130"/>
         <Label text="%productUsage.filter.to" styleClass="form-label"/>
         <DatePicker fx:id="toDatePicker" prefWidth="130"/>
         <Button text="%productUsage.filter.clear" onAction="#onClearDates"/>
         <Button text="%productUsage.action.export" onAction="#onExport" styleClass="action-excel"/>
-        <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
     </HBox>
     <VBox fx:id="summaryBox" spacing="2" styleClass="usage-summary"/>
-    <VBox fx:id="supplierSection" spacing="4">
-        <Label text="%productUsage.suppliers.title" styleClass="subsection-title"/>
-        <TableView fx:id="supplierTable" prefHeight="130"/>
-    </VBox>
-    <TableView fx:id="usageTable" VBox.vgrow="ALWAYS"/>
+    <TabPane fx:id="detailTabs" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS">
+        <Tab text="%productUsage.tab.usage">
+            <TableView fx:id="usageTable"/>
+        </Tab>
+        <Tab fx:id="supplierTab" text="%productUsage.tab.suppliers">
+            <TableView fx:id="supplierTable"/>
+        </Tab>
+    </TabPane>
 </VBox>

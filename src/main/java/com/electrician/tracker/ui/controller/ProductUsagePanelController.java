@@ -11,7 +11,6 @@ import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.dto.ProductUsageReport;
 import com.electrician.tracker.dto.ProductUsageRow;
 import com.electrician.tracker.dto.ProductUsageSummary;
-import com.electrician.tracker.dto.SupplierPrice;
 import com.electrician.tracker.dto.SupplierPriceComparison;
 import com.electrician.tracker.service.AccessControl;
 import com.electrician.tracker.service.PriceHistoryService;
@@ -25,10 +24,11 @@ import com.electrician.tracker.ui.util.TaskRunner;
 import com.electrician.tracker.ui.util.VatLabels;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.fxml.FXML;
-import javafx.scene.Node;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.Tab;
+import javafx.scene.control.TabPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableRow;
@@ -40,10 +40,10 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
- * The product detail under the product list ("Ürün Kullanım Geçmişi"): a
- * summary line, the supplier price comparison (cheapest average first, the
- * cheapest highlighted) and every use of the product, newest first; with a
- * date range and Excel export. Purchase prices and suppliers are not built
+ * The product detail under the product list: a two-line summary, then two
+ * tabs — every use of the product (newest first) and the supplier price
+ * comparison (cheapest average first and highlighted); with a date range and
+ * Excel export. Purchase prices and suppliers are not built
  * at all for users who may not see them. Double click opens the job.
  */
 @Component
@@ -70,7 +70,9 @@ public class ProductUsagePanelController {
     @FXML
     private VBox summaryBox;
     @FXML
-    private Node supplierSection;
+    private TabPane detailTabs;
+    @FXML
+    private Tab supplierTab;
     @FXML
     private TableView<SupplierPriceComparison> supplierTable;
     @FXML
@@ -89,10 +91,10 @@ public class ProductUsagePanelController {
     @FXML
     private void initialize() {
         boolean purchaseVisible = accessControl.canViewFinancials();
-        supplierSection.setVisible(purchaseVisible);
-        supplierSection.setManaged(purchaseVisible);
         if (purchaseVisible) {
             setUpSupplierTable();
+        } else {
+            detailTabs.getTabs().remove(supplierTab);
         }
         setUpUsageTable(purchaseVisible);
         fromDatePicker.valueProperty().addListener((obs, o, n) -> reload());
@@ -115,7 +117,7 @@ public class ProductUsagePanelController {
             return;
         }
         Product shown = product;
-        usageTitleLabel.setText(DialogUtil.message("productUsage.titleFor", shown.getDisplayName()));
+        usageTitleLabel.setText(shown.getDisplayName());
         LocalDate from = fromDatePicker.getValue();
         LocalDate to = toDatePicker.getValue();
         taskRunner.run(() -> priceHistoryService.usageReport(shown.getId(), from, to),
@@ -134,28 +136,14 @@ public class ProductUsagePanelController {
             return;
         }
         List<Label> lines = new ArrayList<>();
-        lines.add(new Label(DialogUtil.message("productUsage.summary.count", String.valueOf(summary.usageCount()),
-                Bicimlendirici.quantity(summary.totalQuantity()), EnumLabels.label(shown.getUnit()))));
-        lines.add(new Label(DialogUtil.message("productUsage.summary.last", summary.lastCustomerName(),
-                Bicimlendirici.date(summary.lastDate()))));
-        lines.add(new Label(DialogUtil.message("productUsage.summary.salePrices",
-                moneyOrDash(summary.minSaleUnitPrice()), moneyOrDash(summary.maxSaleUnitPrice()),
-                moneyOrDash(summary.lastSaleUnitPrice()))));
-        if (accessControl.canViewFinancials()) {
-            lines.add(new Label(DialogUtil.message("productUsage.summary.purchase",
-                    moneyOrDash(summary.totalCost()), moneyOrDash(summary.lastPurchaseUnitPrice()))));
-            lines.add(new Label(DialogUtil.message("productUsage.summary.suppliers",
-                    supplierText(summary.cheapestSupplier()), supplierText(summary.mostExpensiveSupplier()))));
-        }
+        lines.add(new Label(DialogUtil.message("productUsage.summary.usage", String.valueOf(summary.usageCount()),
+                Bicimlendirici.quantity(summary.totalQuantity()), EnumLabels.label(shown.getUnit()),
+                summary.lastCustomerName(), Bicimlendirici.date(summary.lastDate()))));
+        lines.add(new Label(accessControl.canViewFinancials()
+                ? DialogUtil.message("productUsage.summary.prices", moneyOrDash(summary.lastSaleUnitPrice()),
+                        moneyOrDash(summary.lastPurchaseUnitPrice()), moneyOrDash(summary.totalCost()))
+                : DialogUtil.message("productUsage.summary.salePrice", moneyOrDash(summary.lastSaleUnitPrice()))));
         summaryBox.getChildren().setAll(lines);
-    }
-
-    private static String supplierText(SupplierPrice price) {
-        if (price == null) {
-            return "—";
-        }
-        return DialogUtil.message("productUsage.supplierPrice", price.supplierName(),
-                Bicimlendirici.money(price.unitPrice()));
     }
 
     private static String moneyOrDash(BigDecimal value) {
