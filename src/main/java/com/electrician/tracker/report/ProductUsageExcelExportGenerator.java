@@ -49,6 +49,7 @@ public class ProductUsageExcelExportGenerator {
             for (ProductUsageRow usage : report.rows()) {
                 writeRow(sheet.createRow(rowIndex++), product, usage, includePurchase);
             }
+            formatMoney(sheet, includePurchase);
             for (int i = 0; i < headers.size(); i++) {
                 sheet.autoSizeColumn(i);
             }
@@ -71,6 +72,17 @@ public class ProductUsageExcelExportGenerator {
         Row row = sheet.createRow(0);
         for (int i = 0; i < headers.size(); i++) {
             row.createCell(i).setCellValue(headers.get(i));
+        }
+        ExcelFormatting.header(sheet);
+    }
+
+    /** Foreign amount and lira purchase price (when shown), sale price and line total. */
+    private static void formatMoney(Sheet sheet, boolean includePurchase) {
+        int purchaseStart = BASE_HEADER_KEYS.size();
+        int saleStart = purchaseStart + (includePurchase ? PURCHASE_HEADER_KEYS.size() : 0);
+        ExcelFormatting.moneyColumns(sheet, saleStart, saleStart + SALE_HEADER_KEYS.size() - 1);
+        if (includePurchase) {
+            ExcelFormatting.moneyColumns(sheet, purchaseStart + 1, purchaseStart + 3);
         }
     }
 

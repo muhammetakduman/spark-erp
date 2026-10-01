@@ -33,6 +33,9 @@ public class MonthlyReportExcelExportGenerator {
     private static final String[] MATERIAL_HEADERS = { "Ürün", "Miktar", "Birim", "Toplam Alış", "Toplam Satış" };
     private static final String[] WAGE_HEADERS = { "Personel", "Gün", "Toplam Yevmiye" };
     private static final int FIRST_FIGURE_COLUMN = 4;
+    private static final int[] JOB_MONEY_COLUMNS = { 4, 6, 7, 8, 9, 10, 11, 12 };
+    private static final int[] MATERIAL_MONEY_COLUMNS = { 3, 4 };
+    private static final int WAGE_MONEY_COLUMN = 2;
 
     public void export(MonthlyReport report, Path outputFile) {
         try (XSSFWorkbook workbook = new XSSFWorkbook(); FileOutputStream out = new FileOutputStream(outputFile.toFile())) {
@@ -59,6 +62,7 @@ public class MonthlyReportExcelExportGenerator {
         Row totalRow = sheet.createRow(rowIndex);
         totalRow.createCell(0).setCellValue("TOPLAM");
         writeFigures(totalRow, report.totals());
+        ExcelFormatting.moneyColumns(sheet, JOB_MONEY_COLUMNS);
         autoSize(sheet, JOB_HEADERS.length);
     }
 
@@ -82,6 +86,7 @@ public class MonthlyReportExcelExportGenerator {
             setNumber(row, 3, line.purchaseTotal());
             setNumber(row, 4, line.saleTotal());
         }
+        ExcelFormatting.moneyColumns(sheet, MATERIAL_MONEY_COLUMNS);
         autoSize(sheet, MATERIAL_HEADERS.length);
     }
 
@@ -92,8 +97,9 @@ public class MonthlyReportExcelExportGenerator {
             Row row = sheet.createRow(rowIndex++);
             row.createCell(0).setCellValue(wage.employeeName());
             setNumber(row, 1, wage.dayCount());
-            setNumber(row, 2, wage.totalWage());
+            setNumber(row, WAGE_MONEY_COLUMN, wage.totalWage());
         }
+        ExcelFormatting.moneyColumns(sheet, WAGE_MONEY_COLUMN);
         autoSize(sheet, WAGE_HEADERS.length);
     }
 
@@ -102,6 +108,7 @@ public class MonthlyReportExcelExportGenerator {
         for (int i = 0; i < headers.length; i++) {
             row.createCell(i).setCellValue(headers[i]);
         }
+        ExcelFormatting.header(sheet);
     }
 
     private void setNumber(Row row, int column, BigDecimal value) {

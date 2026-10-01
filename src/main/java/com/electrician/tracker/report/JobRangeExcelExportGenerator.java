@@ -39,6 +39,10 @@ public class JobRangeExcelExportGenerator {
     private static final String[] FINANCIAL_HEADERS = {
             "Yevmiye Toplamı", "Maliyet (KDV'siz)", "Kâr", "Tahsil Edilen", "Kalan"
     };
+    /** Sale excl. VAT, VAT amount, grand total; then wages, cost, profit, collected, remaining. */
+    private static final int[] JOB_MONEY_COLUMNS = { 5, 7, 8, 10, 11, 12, 13, 14 };
+    /** Foreign amount, lira purchase price, sale price (the exchange rate keeps its own decimals). */
+    private static final int[] MATERIAL_MONEY_COLUMNS = { 7, 9, 11 };
     private static final List<String> MATERIAL_HEADER_KEYS = List.of("excel.column.date", "excel.column.customer",
             "excel.column.job", "excel.column.product", "excel.column.quantity", "excel.column.unit",
             "excel.column.currency", "excel.column.foreignAmount", "excel.column.exchangeRate",
@@ -58,6 +62,7 @@ public class JobRangeExcelExportGenerator {
                     writeFinancials(row, summary);
                 }
             }
+            ExcelFormatting.moneyColumns(sheet, JOB_MONEY_COLUMNS);
             autoSize(sheet, headers.length);
             if (includeFinancials) {
                 writeMaterialSheet(workbook, jobs, materialsByJob);
@@ -79,6 +84,7 @@ public class JobRangeExcelExportGenerator {
                 writeMaterialRow(sheet.createRow(rowIndex++), job, item);
             }
         }
+        ExcelFormatting.moneyColumns(sheet, MATERIAL_MONEY_COLUMNS);
         autoSize(sheet, headers.length);
     }
 
@@ -106,6 +112,7 @@ public class JobRangeExcelExportGenerator {
         for (int i = 0; i < headers.length; i++) {
             row.createCell(i).setCellValue(headers[i]);
         }
+        ExcelFormatting.header(sheet);
     }
 
     private static void autoSize(Sheet sheet, int columnCount) {

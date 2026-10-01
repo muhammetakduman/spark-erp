@@ -38,6 +38,7 @@ public class AttendanceMatrixExcelExportGenerator {
             for (AttendanceMatrix.Row row : matrix.rows()) {
                 writeEmployeeRow(sheet.createRow(rowIndex++), row, matrix.dates());
             }
+            ExcelFormatting.header(sheet);
             sheet.autoSizeColumn(0);
             sheet.autoSizeColumn(matrix.dates().size() + 1);
             workbook.write(out);
