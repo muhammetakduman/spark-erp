@@ -60,6 +60,17 @@ class AttendanceMathTest {
         assertThat(summaries.get(1).totalWage()).isEqualByComparingTo("5000.00");
     }
 
+    @Test
+    void sortsNamesInTurkishAlphabeticalOrder() {
+        Employee zafer = new Employee("Zafer", WAGE, false, true);
+        Employee cetin = new Employee("Çetin", WAGE, false, true);
+
+        List<EmployeeWageSummary> summaries = AttendanceMath.summarizeByEmployee(
+                List.of(row(zafer, 12, "1.0"), row(cetin, 12, "1.0"), row(ali, 12, "1.0")));
+
+        assertThat(summaries).extracting(EmployeeWageSummary::employeeName).containsExactly("Ali", "Çetin", "Zafer");
+    }
+
     private static Attendance row(Employee employee, int dayOfMonth, String factor) {
         return new Attendance(null, employee, LocalDate.of(2026, 9, dayOfMonth), WAGE, new BigDecimal(factor), null);
     }

@@ -2,9 +2,11 @@ package com.electrician.tracker.service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.Collator;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -25,6 +27,7 @@ public final class AttendanceMath {
     public static final BigDecimal FULL_DAY = BigDecimal.ONE;
     private static final Set<BigDecimal> ALLOWED_FACTORS = Set.of(HALF_DAY, FULL_DAY);
     private static final int MONEY_SCALE = 2;
+    private static final Locale TURKISH = Locale.forLanguageTag("tr-TR");
 
     private AttendanceMath() {
     }
@@ -60,14 +63,14 @@ public final class AttendanceMath {
                 .toList();
     }
 
-    /** Per-employee totals, sorted by name. */
+    /** Per-employee totals, sorted by name in Turkish alphabetical order (Ç after C, not after Z). */
     public static List<EmployeeWageSummary> summarizeByEmployee(List<Attendance> attendances) {
         // Keyed by entity reference: within one persistence context there is a
         // single instance per row, and this also works for unsaved entities.
         Map<Employee, List<Attendance>> byEmployee = groupBy(attendances, Attendance::getEmployee);
         return byEmployee.entrySet().stream()
                 .map(entry -> toSummary(entry.getKey(), entry.getValue()))
-                .sorted(Comparator.comparing(EmployeeWageSummary::employeeName))
+                .sorted(Comparator.comparing(EmployeeWageSummary::employeeName, Collator.getInstance(TURKISH)))
                 .toList();
     }
 
