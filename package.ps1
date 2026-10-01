@@ -124,6 +124,9 @@ if (Test-Path $InputDir) { Remove-Item $InputDir -Recurse -Force }
 New-Item -ItemType Directory -Force $InputDir | Out-Null
 Copy-Item (Join-Path $PSScriptRoot "target\$MainJar") $InputDir
 Copy-Item (Join-Path $PSScriptRoot 'target\lib\*') $InputDir
+# Shown by the launcher from the double click until the first window opens
+# (Spring needs several seconds); the program closes it itself.
+Copy-Item (Join-Path $PSScriptRoot 'packaging\splash.png') $InputDir
 
 # 4. Paketleme
 New-Item -ItemType Directory -Force $DistDir | Out-Null
@@ -138,6 +141,7 @@ $jpackageArgs = @(
     '--main-jar', $MainJar,
     '--main-class', $MainClass,
     '--java-options', '-Dfile.encoding=UTF-8',
+    '--java-options', '-splash:$APPDIR\splash.png',
     # Electric panel icon: desktop shortcut, Start menu, Add/Remove Programs and the exe itself.
     '--icon', (Join-Path $PSScriptRoot 'src\main\resources\ikon\ikon.ico'),
     '--dest', $DistDir
