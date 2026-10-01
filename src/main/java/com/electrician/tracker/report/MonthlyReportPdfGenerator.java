@@ -40,6 +40,8 @@ public class MonthlyReportPdfGenerator {
             "Tarih", "Müşteri", "İş", "Tip", "Malzeme", "Yevmiye*", "Ciro", "Maliyet", "Kâr", "Tahsilat"
     };
     private static final float[] JOB_WIDTHS = { 8, 16, 18, 7, 9, 9, 9, 9, 9, 10 };
+    /** Keeps a section title off the top border of the table under it. */
+    private static final float SECTION_TITLE_SPACING = 6;
 
     private final PdfFooter pdfFooter;
 
@@ -117,7 +119,7 @@ public class MonthlyReportPdfGenerator {
     }
 
     private void addMaterials(Document document, MonthlyReport report) throws DocumentException {
-        document.add(new Paragraph("Malzeme Özeti", SECTION_FONT));
+        document.add(sectionTitle("Malzeme Özeti"));
         PdfPTable table = new PdfPTable(4);
         table.setWidthPercentage(70);
         table.setHorizontalAlignment(Element.ALIGN_LEFT);
@@ -136,7 +138,7 @@ public class MonthlyReportPdfGenerator {
     }
 
     private void addWages(Document document, MonthlyReport report) throws DocumentException {
-        document.add(new Paragraph("Yevmiye Özeti", SECTION_FONT));
+        document.add(sectionTitle("Yevmiye Özeti"));
         PdfPTable table = new PdfPTable(3);
         table.setWidthPercentage(50);
         table.setHorizontalAlignment(Element.ALIGN_LEFT);
@@ -149,5 +151,11 @@ public class MonthlyReportPdfGenerator {
             addMoney(table, Bicimlendirici.money(wage.totalWage()), NORMAL_FONT);
         }
         document.add(table);
+    }
+
+    private static Paragraph sectionTitle(String text) {
+        Paragraph title = new Paragraph(text, SECTION_FONT);
+        title.setSpacingAfter(SECTION_TITLE_SPACING);
+        return title;
     }
 }
