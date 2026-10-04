@@ -34,29 +34,35 @@
         <Label text="%material.field.product" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
         <VBox fx:id="productHolder" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
 
-        <Label text="%material.field.quantity" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
-        <DecimalField fx:id="quantityField" scale="3" padDecimals="false" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+        <Label text="%material.field.group" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <VBox spacing="4" GridPane.rowIndex="1" GridPane.columnIndex="1">
+            <ComboBox fx:id="groupComboBox" editable="true" maxWidth="Infinity"/>
+            <Label text="%material.group.hint" styleClass="field-hint"/>
+        </VBox>
 
-        <Label text="%material.field.salePrice" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
-        <HBox spacing="8" alignment="CENTER_LEFT" GridPane.rowIndex="2" GridPane.columnIndex="1">
+        <Label text="%material.field.quantity" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <DecimalField fx:id="quantityField" scale="3" padDecimals="false" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+
+        <Label text="%material.field.salePrice" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
+        <HBox spacing="8" alignment="CENTER_LEFT" GridPane.rowIndex="3" GridPane.columnIndex="1">
             <DecimalField fx:id="unitPriceField" promptText="%material.field.unitPrice" HBox.hgrow="ALWAYS"/>
             <DecimalField fx:id="totalPriceField" promptText="%material.field.totalAmount" HBox.hgrow="ALWAYS"/>
         </HBox>
 
-        <Label text="%material.field.saleVat" styleClass="form-label" GridPane.rowIndex="3" GridPane.columnIndex="0"/>
-        <VatSelector fx:id="vatSelector" GridPane.rowIndex="3" GridPane.columnIndex="1"/>
+        <Label text="%material.field.saleVat" styleClass="form-label" GridPane.rowIndex="4" GridPane.columnIndex="0"/>
+        <VatSelector fx:id="vatSelector" GridPane.rowIndex="4" GridPane.columnIndex="1"/>
 
         <Label fx:id="purchaseLabel" text="%material.field.purchasePrice" styleClass="form-label"
-               GridPane.rowIndex="4" GridPane.columnIndex="0"/>
-        <HBox fx:id="purchaseRow" spacing="8" alignment="CENTER_LEFT" GridPane.rowIndex="4" GridPane.columnIndex="1">
+               GridPane.rowIndex="5" GridPane.columnIndex="0"/>
+        <HBox fx:id="purchaseRow" spacing="8" alignment="CENTER_LEFT" GridPane.rowIndex="5" GridPane.columnIndex="1">
             <DecimalField fx:id="purchasePriceField" promptText="%material.field.optional" HBox.hgrow="ALWAYS"/>
             <ComboBox fx:id="currencyComboBox" prefWidth="100"/>
             <VatSelector fx:id="purchaseVatSelector"/>
         </HBox>
 
         <Label fx:id="rateLabel" text="%material.field.exchangeRate" styleClass="form-label"
-               GridPane.rowIndex="5" GridPane.columnIndex="0" visible="false" managed="false"/>
-        <HBox fx:id="rateRow" spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="5" GridPane.columnIndex="1"
+               GridPane.rowIndex="6" GridPane.columnIndex="0" visible="false" managed="false"/>
+        <HBox fx:id="rateRow" spacing="10" alignment="CENTER_LEFT" GridPane.rowIndex="6" GridPane.columnIndex="1"
               visible="false" managed="false">
             <DecimalField fx:id="exchangeRateField" scale="4" padDecimals="false" prefColumnCount="8"
                           promptText="%material.field.exchangeRate.prompt"/>
@@ -64,12 +70,12 @@
         </HBox>
 
         <Label fx:id="supplierLabel" text="%material.field.supplier" styleClass="form-label"
-               GridPane.rowIndex="6" GridPane.columnIndex="0"/>
+               GridPane.rowIndex="7" GridPane.columnIndex="0"/>
         <ComboBox fx:id="supplierComboBox" editable="true" promptText="%material.field.optional"
-                  GridPane.rowIndex="6" GridPane.columnIndex="1" maxWidth="Infinity"/>
+                  GridPane.rowIndex="7" GridPane.columnIndex="1" maxWidth="Infinity"/>
 
-        <Label text="%material.field.note" styleClass="form-label" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
-        <TextField fx:id="noteField" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
+        <Label text="%material.field.note" styleClass="form-label" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+        <TextField fx:id="noteField" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
     </GridPane>
     <HBox spacing="10" styleClass="dialog-buttons">
         <Button fx:id="saveAndNewButton" text="%material.action.saveAndNew" onAction="#onSaveAndNew" defaultButton="true" styleClass="primary-button,action-add"/>

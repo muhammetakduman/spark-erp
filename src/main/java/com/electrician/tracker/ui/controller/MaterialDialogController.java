@@ -51,7 +51,9 @@ import org.springframework.stereotype.Component;
  * MANAGER the purchase price and supplier fields do not exist at all. A
  * purchase price can be entered in dollars or euros: the rate field (with
  * the last rate as suggestion) and the live lira value appear; the sale
- * price is always in lira.
+ * price is always in lira. The line's group is suggested from the chosen
+ * product's category and can be overwritten with any name; this job's groups
+ * are offered first.
  */
 @Component
 @Scope("prototype")
@@ -102,6 +104,8 @@ public class MaterialDialogController {
     @FXML
     private ComboBox<String> supplierComboBox;
     @FXML
+    private ComboBox<String> groupComboBox;
+    @FXML
     private VatSelector vatSelector;
     @FXML
     private VatSelector purchaseVatSelector;
@@ -121,6 +125,7 @@ public class MaterialDialogController {
     private final ObservableList<MaterialItem> addedItems = FXCollections.observableArrayList();
     private ProductSelector productSelector;
     private SuggestionPicker supplierPicker;
+    private SuggestionPicker groupPicker;
     private Job job;
     private LocalDate draftDate;
     private boolean anyAdded;
@@ -142,6 +147,7 @@ public class MaterialDialogController {
 
     public void setJob(Job job) {
         this.job = job;
+        loadGroupSuggestions();
     }
 
     /**
@@ -160,6 +166,7 @@ public class MaterialDialogController {
     public void editExisting(MaterialItem item) {
         this.job = item.getJob();
         this.editingId = item.getId();
+        loadGroupSuggestions();
         loadingExisting = true;
         try {
             fillFrom(item);
@@ -186,6 +193,7 @@ public class MaterialDialogController {
         exchangeRateField.setValue(item.isForeignCurrencyPurchase() ? item.getPurchaseExchangeRate() : null);
         purchaseVatSelector.setValue(item.getPurchaseVatRate(), item.getPurchaseVatIncluded());
         supplierPicker.select(item.getSupplierName());
+        groupPicker.select(item.getGroupName());
         vatSelector.setValue(item.getVatRate(), item.getVatIncluded());
         noteField.setText(item.getNote());
     }
@@ -205,12 +213,18 @@ public class MaterialDialogController {
         productSelector.setOnProductChanged(this::applySuggestion);
         productHolder.getChildren().setAll(productSelector.view());
         supplierPicker = new SuggestionPicker(supplierComboBox, materialService.findDistinctSupplierNames());
+        groupPicker = SuggestionPicker.ordered(groupComboBox, materialService.findGroupSuggestions(null));
         setUpCurrency();
         showPurchaseFields(accessControl.canViewFinancials());
         setUpPriceSync();
         setUpAddedTable();
         vatSelector.bindAmount(totalPriceField);
         purchaseVatSelector.bindAmount(purchasePriceField);
+    }
+
+    /** This job's groups first, then the other jobs' groups, then catalogue categories. */
+    private void loadGroupSuggestions() {
+        groupPicker.replaceNames(materialService.findGroupSuggestions(job == null ? null : job.getId()));
     }
 
     /** Purchase price and supplier only exist for users who may see them (not merely disabled). */
@@ -274,6 +288,7 @@ public class MaterialDialogController {
 
     private void setUpAddedTable() {
         addedTable.setItems(addedItems);
+        addedTable.setPlaceholder(new Label(DialogUtil.message("material.dialog.addedInSession.empty")));
         MaterialColumns.bindProduct(addedProductColumn);
         addedQuantityColumn.setCellValueFactory(d -> new SimpleStringProperty(
                 Bicimlendirici.quantity(d.getValue().getQuantity()) + " "
@@ -318,6 +333,7 @@ public class MaterialDialogController {
         if (loadingExisting) {
             return;
         }
+        groupPicker.select(product == null ? null : product.getCategory());
         PriceSuggestion previous = appliedSuggestion;
         PriceSuggestion next = product == null ? PriceSuggestion.empty() : priceHistoryService.suggestFor(product.getId());
         replaceSuggestedPrice(purchasePriceField, previous.lastPurchaseUnitPrice(), next.lastPurchaseUnitPrice());
@@ -385,6 +401,7 @@ public class MaterialDialogController {
         try {
             MaterialItem saved = persist(item);
             supplierPicker.remember(saved.getSupplierName());
+            groupPicker.remember(saved.getGroupName());
             addedItems.add(saved);
             anyAdded = true;
             return true;
@@ -417,6 +434,7 @@ public class MaterialDialogController {
                 noteField.getText());
         item.setVatIncluded(vatSelector.getIncluded());
         item.setPurchaseVat(purchaseVatSelector.getRate(), purchaseVatSelector.getIncluded());
+        item.setGroupName(groupPicker.typedText());
         CurrencyCode currency = CurrencyConverter.orLira(currencyComboBox.getValue());
         item.setPurchaseCurrency(currency, currency.isForeign() ? exchangeRateField.getValue() : null, null);
         return item;
@@ -436,6 +454,7 @@ public class MaterialDialogController {
         currencyComboBox.setValue(CurrencyCode.TRY);
         exchangeRateField.clear();
         supplierPicker.clear();
+        groupPicker.clear();
         vatSelector.clear();
         purchaseVatSelector.clear();
         noteField.clear();

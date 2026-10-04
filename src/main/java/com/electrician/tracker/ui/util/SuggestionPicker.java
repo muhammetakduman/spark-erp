@@ -16,18 +16,35 @@ import javafx.scene.control.ComboBox;
  * suggestions (supplier, brand, category): earlier values are suggested while
  * typing (matching ignores case and Turkish letters), any new value can be
  * typed freely, and a value saved in this dialog is suggested right away.
+ * An {@linkplain #ordered ordered} picker keeps the given order (most likely
+ * first) and puts a newly saved name on top.
  */
 public final class SuggestionPicker {
 
     private final ComboBox<String> comboBox;
     private final ObservableList<String> names = FXCollections.observableArrayList();
     private final FilteredList<String> filtered = new FilteredList<>(names, name -> true);
+    private final boolean keepOrder;
 
     public SuggestionPicker(ComboBox<String> comboBox, List<String> knownNames) {
+        this(comboBox, knownNames, false);
+    }
+
+    private SuggestionPicker(ComboBox<String> comboBox, List<String> knownNames, boolean keepOrder) {
         this.comboBox = comboBox;
-        names.setAll(CanonicalNames.distinct(knownNames));
+        this.keepOrder = keepOrder;
+        replaceNames(knownNames);
         comboBox.setItems(filtered);
         comboBox.getEditor().textProperty().addListener((obs, oldText, newText) -> onTyped(newText));
+    }
+
+    /** Suggestions in the given order (duplicates dropped) instead of A–Z. */
+    public static SuggestionPicker ordered(ComboBox<String> comboBox, List<String> knownNames) {
+        return new SuggestionPicker(comboBox, knownNames, true);
+    }
+
+    public void replaceNames(List<String> knownNames) {
+        names.setAll(keepOrder ? CanonicalNames.distinctInOrder(knownNames) : CanonicalNames.distinct(knownNames));
     }
 
     /** What the user typed (a new or an existing name); empty when left blank. */
@@ -52,7 +69,11 @@ public final class SuggestionPicker {
         if (savedName == null || savedName.isBlank()) {
             return;
         }
-        if (CanonicalNames.findSame(savedName, names).isEmpty()) {
+        if (keepOrder) {
+            List<String> reordered = new java.util.ArrayList<>(List.of(savedName.trim()));
+            reordered.addAll(names);
+            names.setAll(CanonicalNames.distinctInOrder(reordered));
+        } else if (CanonicalNames.findSame(savedName, names).isEmpty()) {
             names.setAll(CanonicalNames.distinct(concat(names, savedName)));
         }
     }

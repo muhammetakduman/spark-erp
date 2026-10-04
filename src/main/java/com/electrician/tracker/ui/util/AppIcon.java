@@ -84,7 +84,8 @@ public enum AppIcon {
     THEME_LIGHT(FontAwesomeSolid.SUN, null),
     THEME_DARK(FontAwesomeSolid.MOON, null),
     SELECT_CLEAR(FontAwesomeSolid.TIMES, null),
-    DEACTIVATE(FontAwesomeSolid.USER_SLASH, null);
+    DEACTIVATE(FontAwesomeSolid.USER_SLASH, null),
+    MOVE_TO_GROUP(FontAwesomeSolid.LAYER_GROUP, null);
 
     private final Ikon ikon;
     private final String tone;

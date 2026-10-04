@@ -1789,3 +1789,37 @@
 .select-box {
     -fx-padding: 2 0 0 0;
 }
+
+/* ---- Material groups (site materials tab, product screen) ------------------- */
+
+.material-group-title {
+    -fx-font-weight: bold;
+    -fx-text-fill: -color-heading;
+}
+
+.group-line-summary {
+    -fx-padding: 8 12 8 12;
+    -fx-background-color: -color-highlight;
+    -fx-background-radius: 6;
+}
+
+/* The total band also gets a separator line above it. */
+.table-row-cell.total-row {
+    -fx-border-color: -color-border transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+.table-row-cell.total-row:selected,
+.group-table .table-row-cell:filled:selected {
+    -fx-background-color: -color-selection;
+}
+
+.group-table .table-row-cell:filled:selected .text {
+    -fx-fill: -color-selection-text;
+}
+
+.table-row-cell.total-row:selected .text,
+.table-row-cell.total-row:selected .label {
+    -fx-fill: -color-selection-text;
+    -fx-text-fill: -color-selection-text;
+}
