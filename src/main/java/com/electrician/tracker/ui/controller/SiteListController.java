@@ -116,6 +116,8 @@ public class SiteListController {
     private Map<Long, QuoteLink> quoteLinks = Map.of();
     private int selectedTabIndex;
     private Long pendingFocusJobId;
+    private boolean pendingFocusOnGroup;
+    private String pendingFocusGroup;
 
     public SiteListController(JobSummaryService jobSummaryService, JobService jobService, ReportService reportService,
             QuoteService quoteService, AttendanceService attendanceService, MaterialService materialService,
@@ -153,6 +155,13 @@ public class SiteListController {
         if (board != null) {
             applyPendingFocus();
         }
+    }
+
+    /** Expands this site on its "Malzemeler" tab with one material group chosen ({@code null} = "Kategorisiz"). */
+    public void focusJobGroup(Long jobId, String groupName) {
+        this.pendingFocusOnGroup = true;
+        this.pendingFocusGroup = groupName;
+        focusJob(jobId);
     }
 
     private void refreshAll() {
@@ -193,10 +202,23 @@ public class SiteListController {
         }
         siteSearchField.clear();
         activeOnlyCheckBox.setSelected(false);
+        if (pendingFocusOnGroup) {
+            jobMaterialPane.selectGroup(jobId, pendingFocusGroup);
+            selectedTabIndex = 0;
+        }
+        boolean rebuild = pendingFocusOnGroup;
+        pendingFocusOnGroup = false;
+        pendingFocusGroup = null;
         siteAccordion.getPanes().stream()
                 .filter(pane -> jobId.equals(pane.getUserData()))
                 .findFirst()
-                .ifPresent(siteAccordion::setExpandedPane);
+                .ifPresent(pane -> {
+                    if (rebuild) {
+                        board.jobs().stream().filter(job -> jobId.equals(job.getId())).findFirst()
+                                .ifPresent(job -> fillPane(pane, job));
+                    }
+                    siteAccordion.setExpandedPane(pane);
+                });
     }
 
     private void rebuildAccordion() {

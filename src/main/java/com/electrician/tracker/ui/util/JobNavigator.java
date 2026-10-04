@@ -8,7 +8,8 @@ import org.springframework.stereotype.Component;
 /**
  * Opens a job from anywhere (usage history, monthly report, dashboard, a
  * quote): a site on the "Şantiyeler" page with its pane expanded, a service
- * on the "Servisler" page with its row selected.
+ * on the "Servisler" page with its row selected. A site can also be opened
+ * on its materials with one material group chosen.
  */
 @Component
 public class JobNavigator {
@@ -25,6 +26,11 @@ public class JobNavigator {
         } else {
             contentNavigator.<ServiceListController>show(ViewPaths.SERVICES, page -> page.focusJob(jobId));
         }
+    }
+
+    /** A site with its "Malzemeler" tab open on {@code groupName} ({@code null} = "Kategorisiz"). */
+    public void openSiteGroup(Long jobId, String groupName) {
+        contentNavigator.<SiteListController>show(ViewPaths.SITES, page -> page.focusJobGroup(jobId, groupName));
     }
 
     public void showSites() {

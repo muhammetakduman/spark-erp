@@ -1,12 +1,17 @@
 package com.electrician.tracker.service;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.electrician.tracker.domain.Job;
 import com.electrician.tracker.domain.MaterialItem;
-import com.electrician.tracker.dto.CategoryTotals;
+import com.electrician.tracker.dto.GroupJobBreakdown;
+import com.electrician.tracker.dto.GroupJobRow;
 import com.electrician.tracker.dto.ProductCatalog;
 import com.electrician.tracker.dto.ProductOverview;
 import com.electrician.tracker.repository.MaterialItemRepository;
@@ -17,8 +22,11 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * The product screen's data: every product with its purchase statistics,
  * loaded with two queries (products, material lines with their product) and
- * aggregated in memory, plus the values the filters offer. A MANAGER receives
- * no purchase prices, suppliers or expenses.
+ * aggregated in memory, plus the values the filters offer. A material
+ * group's spending per job ("bu gruba hangi şantiyelerde ne kadar") groups by
+ * the line's own group, not the product's category, so it matches the site
+ * screen. A MANAGER receives no purchase prices, suppliers, expenses or
+ * profits, and only the jobs they may open (services).
  */
 @Service
 public class ProductCatalogService {
@@ -26,12 +34,15 @@ public class ProductCatalogService {
     private final ProductRepository productRepository;
     private final MaterialItemRepository materialItemRepository;
     private final AccessControl accessControl;
+    private final FinancialDataMasker masker;
+    private final MaterialGroupCalculator groupCalculator = new MaterialGroupCalculator();
 
     public ProductCatalogService(ProductRepository productRepository, MaterialItemRepository materialItemRepository,
-            AccessControl accessControl) {
+            AccessControl accessControl, FinancialDataMasker masker) {
         this.productRepository = productRepository;
         this.materialItemRepository = materialItemRepository;
         this.accessControl = accessControl;
+        this.masker = masker;
     }
 
     @Transactional(readOnly = true)
@@ -47,19 +58,35 @@ public class ProductCatalogService {
         List<String> suppliers = withPurchaseInfo
                 ? CanonicalNames.distinct(materialItemRepository.findDistinctSupplierNames()) : List.of();
         return new ProductCatalog(products, CanonicalNames.distinct(productRepository.findDistinctCategories()),
-                CanonicalNames.distinct(productRepository.findDistinctBrands()), suppliers);
+                CanonicalNames.distinct(productRepository.findDistinctBrands()), suppliers,
+                CanonicalNames.distinct(materialItemRepository.findDistinctGroupNames()),
+                materialItemRepository.existsByGroupNameIsNull());
     }
 
-    /** Total expense and purchase count of the given (already loaded) products of one category. */
-    public CategoryTotals categoryTotals(String category, List<ProductOverview> products) {
-        List<ProductOverview> inCategory = products.stream()
-                .filter(product -> ProductFilter.sameText(category, product.product().getCategory()))
+    /**
+     * One material group's spending per job between two optional dates (by
+     * line date), most spent first; {@code groupName} blank is "Kategorisiz".
+     */
+    @Transactional(readOnly = true)
+    public GroupJobBreakdown groupDistribution(String groupName, LocalDate from, LocalDate to) {
+        String key = MetinKarsilastirici.normalize(groupName);
+        List<MaterialItem> lines = materialItemRepository.findAllWithProductAndJob().stream()
+                .filter(line -> MetinKarsilastirici.normalize(line.getGroupName()).equals(key))
+                .filter(line -> accessControl.canAccess(line.getJob().getType()))
+                .filter(line -> from == null || (line.getItemDate() != null && !line.getItemDate().isBefore(from)))
+                .filter(line -> to == null || (line.getItemDate() != null && !line.getItemDate().isAfter(to)))
                 .toList();
-        int purchaseCount = inCategory.stream().mapToInt(ProductOverview::purchaseCount).sum();
-        BigDecimal expense = accessControl.canViewFinancials()
-                ? inCategory.stream().map(ProductOverview::totalExpense).filter(java.util.Objects::nonNull)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add)
-                : null;
-        return new CategoryTotals(category, expense, purchaseCount);
+        Map<Job, List<MaterialItem>> byJob = lines.stream()
+                .collect(Collectors.groupingBy(MaterialItem::getJob, LinkedHashMap::new, Collectors.toList()));
+        List<GroupJobRow> rows = byJob.entrySet().stream()
+                .map(entry -> new GroupJobRow(entry.getKey().getId(), entry.getKey().getType(),
+                        entry.getKey().getCustomer().getName(), entry.getKey().getName(),
+                        groupCalculator.total(entry.getValue())))
+                .sorted(Comparator.comparing((GroupJobRow row) -> row.total().purchaseTotal()).reversed()
+                        .thenComparing(row -> row.total().saleTotal(), Comparator.reverseOrder()))
+                .toList();
+        Set<Long> productIds = lines.stream().map(line -> line.getProduct().getId()).collect(Collectors.toSet());
+        String name = groupName == null || groupName.isBlank() ? null : groupName.trim();
+        return masker.mask(new GroupJobBreakdown(name, rows, groupCalculator.total(lines), productIds));
     }
 }

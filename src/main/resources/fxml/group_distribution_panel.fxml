@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.DatePicker?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.electrician.tracker.ui.controller.GroupDistributionPanelController"
+      spacing="6">
+    <HBox spacing="8" alignment="CENTER_LEFT">
+        <Label text="%groupDistribution.title" styleClass="subsection-title" minWidth="-Infinity"/>
+        <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+    </HBox>
+    <FlowPane hgap="8" vgap="6" styleClass="toolbar" alignment="CENTER_LEFT">
+        <Label text="%productUsage.filter.from" styleClass="form-label" minWidth="-Infinity"/>
+        <DatePicker fx:id="fromDatePicker" prefWidth="130"/>
+        <Label text="%productUsage.filter.to" styleClass="form-label" minWidth="-Infinity"/>
+        <DatePicker fx:id="toDatePicker" prefWidth="130"/>
+        <Button text="%productUsage.filter.clear" onAction="#onClearDates" minWidth="-Infinity"/>
+    </FlowPane>
+    <FlowPane hgap="8" vgap="2">
+        <Label fx:id="headerLabel" styleClass="category-totals"/>
+        <Label text="%groupDistribution.hint" styleClass="muted-text"/>
+    </FlowPane>
+    <TableView fx:id="jobTable" VBox.vgrow="ALWAYS"/>
+</VBox>

@@ -4,10 +4,10 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
 
 import com.electrician.tracker.domain.Product;
-import com.electrician.tracker.dto.CategoryTotals;
+import com.electrician.tracker.dto.GroupJobBreakdown;
 import com.electrician.tracker.dto.ProductCatalog;
 import com.electrician.tracker.dto.ProductOverview;
 import com.electrician.tracker.dto.SupplierPrice;
@@ -38,24 +38,31 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.VBox;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 /**
  * "Ürünler": the catalog with purchase statistics. One search box (name and
  * brand, filtered while typing) plus category, brand and supplier filters
- * that work together; a category list on the left; below, the selected
- * product's detail. Inside a category the cheapest product comes first and
- * the category's total expense is shown. Purchase columns and the supplier
- * filter exist only for users who may see purchase prices.
+ * that work together; the material groups used on job lines on the left;
+ * below, the selected product's detail. Choosing a group lists only the
+ * products used in it and opens "Şantiye bazında dağılım" (the group's
+ * spending per job) between the products and the product detail. Inside a
+ * category the cheapest product comes first. Purchase columns and the
+ * supplier filter exist only for users who may see purchase prices.
  */
 @Component
 @Scope("prototype")
 public class ProductListController {
+
+    private static final int DISTRIBUTION_INDEX = 1;
+    private static final double[] DIVIDERS_WITH_DISTRIBUTION = { 0.26, 0.68 };
 
     private final ProductService productService;
     private final ProductCatalogService productCatalogService;
@@ -76,17 +83,22 @@ public class ProductListController {
     @FXML
     private Label resultLabel;
     @FXML
-    private ListView<String> categoryList;
+    private ListView<String> groupList;
     @FXML
-    private Label categoryTotalsLabel;
+    private SplitPane detailSplit;
     @FXML
     private TableView<ProductOverview> productTable;
     @FXML
     private ProductUsagePanelController usagePanelController;
+    @FXML
+    private VBox distributionPanel;
+    @FXML
+    private GroupDistributionPanelController distributionPanelController;
 
     private final ObservableList<ProductOverview> products = FXCollections.observableArrayList();
     private FilteredList<ProductOverview> filteredProducts;
-    private boolean syncingCategory;
+    /** Products used in the chosen group; {@code null} while no group is chosen. */
+    private Set<Long> groupProductIds;
 
     public ProductListController(ProductService productService, ProductCatalogService productCatalogService,
             AccessControl accessControl, ModalStageOpener modalStageOpener, TaskRunner taskRunner) {
@@ -114,10 +126,11 @@ public class ProductListController {
 
         Debouncer searchDebouncer = new Debouncer(Debouncer.TYPING_PAUSE, this::applyFilters);
         searchField.textProperty().addListener((obs, o, n) -> searchDebouncer.trigger());
-        categoryFilter.valueProperty().addListener((obs, o, n) -> onCategoryChanged());
+        categoryFilter.valueProperty().addListener((obs, o, n) -> applyFilters());
         brandFilter.valueProperty().addListener((obs, o, n) -> applyFilters());
         supplierFilter.valueProperty().addListener((obs, o, n) -> applyFilters());
-        categoryList.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> onCategoryListClicked(n));
+        groupList.getSelectionModel().selectedItemProperty().addListener((obs, o, n) -> onGroupChosen(n));
+        distributionPanelController.setOnLoaded(this::onDistributionLoaded);
         productTable.getSelectionModel().selectedItemProperty().addListener((obs, o, selected) ->
                 usagePanelController.showProduct(selected == null ? null : selected.product()));
         refresh();
@@ -174,28 +187,58 @@ public class ProductListController {
         FilterChoices.setUp(categoryFilter, catalog.categories());
         FilterChoices.setUp(brandFilter, catalog.brands());
         FilterChoices.setUp(supplierFilter, catalog.suppliers());
-        List<String> categories = new ArrayList<>(categoryFilter.getItems());
-        syncingCategory = true;
-        categoryList.getItems().setAll(categories);
-        categoryList.getSelectionModel().select(categoryFilter.getValue());
-        syncingCategory = false;
         products.setAll(catalog.products());
+        showGroups(catalog);
         applyFilters();
     }
 
-    /** The category list and the category drop-down always show the same choice. */
-    private void onCategoryListClicked(String category) {
-        if (syncingCategory || category == null || Objects.equals(category, categoryFilter.getValue())) {
+    /** "Tüm gruplar", the groups A–Z, "Kategorisiz" last when some lines have no group; the choice is kept. */
+    private void showGroups(ProductCatalog catalog) {
+        String chosen = groupList.getSelectionModel().getSelectedItem();
+        List<String> items = new ArrayList<>();
+        items.add(allGroupsLabel());
+        items.addAll(catalog.groups());
+        if (catalog.hasUngroupedLines()) {
+            items.add(uncategorizedLabel());
+        }
+        groupList.getItems().setAll(items);
+        groupList.getSelectionModel().select(chosen != null && items.contains(chosen) ? chosen : allGroupsLabel());
+    }
+
+    private void onGroupChosen(String label) {
+        boolean chosen = label != null && !label.equals(allGroupsLabel());
+        showDistribution(chosen);
+        if (!chosen) {
+            groupProductIds = null;
+            applyFilters();
             return;
         }
-        categoryFilter.setValue(category);
+        distributionPanelController.showGroup(label.equals(uncategorizedLabel()) ? null : label);
     }
 
-    private void onCategoryChanged() {
-        syncingCategory = true;
-        categoryList.getSelectionModel().select(categoryFilter.getValue());
-        syncingCategory = false;
+    /** The product list keeps only the products used in the chosen group (in the chosen dates). */
+    private void onDistributionLoaded(GroupJobBreakdown breakdown) {
+        groupProductIds = breakdown.productIds();
         applyFilters();
+    }
+
+    /** The distribution sits between the product list and the product detail while a group is chosen. */
+    private void showDistribution(boolean shown) {
+        boolean present = detailSplit.getItems().contains(distributionPanel);
+        if (shown && !present) {
+            detailSplit.getItems().add(DISTRIBUTION_INDEX, distributionPanel);
+            detailSplit.setDividerPositions(DIVIDERS_WITH_DISTRIBUTION);
+        } else if (!shown && present) {
+            detailSplit.getItems().remove(distributionPanel);
+        }
+    }
+
+    private static String allGroupsLabel() {
+        return DialogUtil.message("product.groups.all");
+    }
+
+    private static String uncategorizedLabel() {
+        return DialogUtil.message("material.group.uncategorized");
     }
 
     private void applyFilters() {
@@ -207,9 +250,10 @@ public class ProductListController {
         FXCollections.sort(products, category == null ? TableSorting.productOverviews() : TableSorting.cheapestFirst());
         ProductFilter filter = new ProductFilter(searchField.getText(), category, FilterChoices.selected(brandFilter),
                 FilterChoices.selected(supplierFilter));
-        filteredProducts.setPredicate(filter::matches);
+        Set<Long> inGroup = groupProductIds;
+        filteredProducts.setPredicate(overview -> filter.matches(overview)
+                && (inGroup == null || inGroup.contains(overview.product().getId())));
         showResultLine(filter);
-        showCategoryTotals(category);
     }
 
     /** "24 ürün · Kategori: Kablo · Tedarikçi: Elektrik Market". */
@@ -220,6 +264,10 @@ public class ProductListController {
         addPart(parts, "product.result.category", filter.category());
         addPart(parts, "product.result.brand", filter.brand());
         addPart(parts, "product.result.supplier", filter.supplier());
+        String group = groupList.getSelectionModel().getSelectedItem();
+        if (groupProductIds != null && group != null) {
+            addPart(parts, "product.result.group", group);
+        }
         resultLabel.setText(String.join(" · ", parts));
     }
 
@@ -229,27 +277,13 @@ public class ProductListController {
         }
     }
 
-    /** "Pano kategorisi — toplam gider: 48.350,00 ₺ (12 alış)". */
-    private void showCategoryTotals(String category) {
-        boolean shown = category != null;
-        categoryTotalsLabel.setVisible(shown);
-        categoryTotalsLabel.setManaged(shown);
-        if (!shown) {
-            return;
-        }
-        CategoryTotals totals = productCatalogService.categoryTotals(category, products);
-        categoryTotalsLabel.setText(totals.totalExpense() == null
-                ? DialogUtil.message("product.category.countOnly", category, String.valueOf(totals.purchaseCount()))
-                : DialogUtil.message("product.category.totals", category, Bicimlendirici.money(totals.totalExpense()),
-                        String.valueOf(totals.purchaseCount())));
-    }
-
     @FXML
     private void onClearFilters() {
         searchField.clear();
         FilterChoices.reset(categoryFilter);
         FilterChoices.reset(brandFilter);
         FilterChoices.reset(supplierFilter);
+        groupList.getSelectionModel().select(allGroupsLabel());
         applyFilters();
     }
 
