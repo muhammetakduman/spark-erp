@@ -16,6 +16,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.util.StringConverter;
 
@@ -131,6 +132,10 @@ public final class ProductSelector {
         });
         HBox form = new HBox(SPACING, newNameField, newBrandComboBox, newCategoryComboBox, newUnitComboBox, save,
                 cancel);
+        // Only the name field gives way on a narrow dialog; the rest keep their labels readable.
+        for (Region fixed : new Region[] {newBrandComboBox, newCategoryComboBox, newUnitComboBox, save, cancel}) {
+            fixed.setMinWidth(Region.USE_PREF_SIZE);
+        }
         form.setAlignment(Pos.CENTER_LEFT);
         form.getStyleClass().add("inline-form");
         return form;
@@ -147,6 +152,10 @@ public final class ProductSelector {
 
     private void showNewProductForm() {
         newNameField.setText(productPicker.typedText());
+        // Start from a blank form: what the previous new product got must not carry over.
+        brandPicker.clear();
+        categoryPicker.clear();
+        newUnitComboBox.setValue(ProductUnit.PIECE);
         String category = FilterChoices.selected(categoryFilter);
         if (category != null) {
             categoryPicker.select(category);
