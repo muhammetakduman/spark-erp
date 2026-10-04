@@ -24,15 +24,20 @@ public final class CanonicalNames {
 
     /** One entry per name (first spelling wins), sorted alphabetically in Turkish. */
     public static List<String> distinct(List<String> names) {
+        List<String> result = distinctInOrder(names);
+        result.sort(Collator.getInstance(TURKISH));
+        return result;
+    }
+
+    /** One entry per name (first spelling wins), in the order given; blanks are dropped. */
+    public static List<String> distinctInOrder(List<String> names) {
         Map<String, String> byKey = new LinkedHashMap<>();
         for (String name : names) {
             if (name != null && !name.isBlank()) {
                 byKey.putIfAbsent(MetinKarsilastirici.normalize(name), name.trim());
             }
         }
-        List<String> result = new ArrayList<>(byKey.values());
-        result.sort(Collator.getInstance(TURKISH));
-        return result;
+        return new ArrayList<>(byKey.values());
     }
 
     /** The existing spelling of {@code typed}, if any. */

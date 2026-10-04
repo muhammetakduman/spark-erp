@@ -22,6 +22,7 @@ import com.electrician.tracker.domain.PriceEntryType;
 import com.electrician.tracker.domain.Product;
 import com.electrician.tracker.domain.ProductUnit;
 import com.electrician.tracker.repository.MaterialItemRepository;
+import com.electrician.tracker.repository.ProductRepository;
 import com.electrician.tracker.service.exception.AccessDeniedException;
 import com.electrician.tracker.service.exception.ValidationException;
 import org.junit.jupiter.api.BeforeEach;
@@ -43,7 +44,7 @@ class MaterialServiceTest {
         when(repository.save(any(MaterialItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
         exchangeRates = mock(ExchangeRateService.class);
         service = new MaterialService(repository, TestAccess.admin(), TestAccess.masker(TestAccess.admin()),
-                exchangeRates);
+                exchangeRates, mock(ProductRepository.class));
     }
 
     @Test
@@ -239,7 +240,7 @@ class MaterialServiceTest {
     @Test
     void managerCannotAddMaterialToASite() {
         MaterialService managerService = new MaterialService(repository, TestAccess.manager(),
-                TestAccess.masker(TestAccess.manager()), exchangeRates);
+                TestAccess.masker(TestAccess.manager()), exchangeRates, mock(ProductRepository.class));
 
         assertThatThrownBy(() -> managerService.addItem(unitLine(product, "1", "10")))
                 .isInstanceOf(AccessDeniedException.class);

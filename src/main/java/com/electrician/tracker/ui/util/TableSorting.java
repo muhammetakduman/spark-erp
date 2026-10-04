@@ -75,12 +75,10 @@ public final class TableSorting {
                 .thenComparing(Job::getId, Comparator.nullsLast(Comparator.reverseOrder()));
     }
 
-    /** A job's material lines: category, then product name (A–Z). */
+    /** A job's material lines: group (uncategorized last), then product name (A–Z). */
     public static Comparator<MaterialItem> materialLines() {
-        Comparator<Product> categoryThenName = byText(Product::getCategory)
-                .thenComparing(byText(Product::getName))
-                .thenComparing(byText(Product::getBrand));
-        return Comparator.comparing(MaterialItem::getProduct, categoryThenName);
+        Comparator<Product> byName = byText(Product::getName).thenComparing(byText(Product::getBrand));
+        return byText(MaterialItem::getGroupName).thenComparing(MaterialItem::getProduct, byName);
     }
 
     /** Raw attendance: oldest date first, then employee name. */

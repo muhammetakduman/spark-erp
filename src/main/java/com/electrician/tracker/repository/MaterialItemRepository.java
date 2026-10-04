@@ -30,6 +30,25 @@ public interface MaterialItemRepository extends JpaRepository<MaterialItem, Long
             + "where m.supplierName is not null order by m.supplierName")
     List<String> findDistinctSupplierNames();
 
+    /** Group names used on one job's lines, earliest line first. */
+    @Query("select m.groupName from MaterialItem m "
+            + "where m.job.id = :jobId and m.groupName is not null order by m.id")
+    List<String> findGroupNamesByJobId(@Param("jobId") Long jobId);
+
+    @Query("select distinct m.groupName from MaterialItem m "
+            + "where m.groupName is not null order by m.groupName")
+    List<String> findDistinctGroupNames();
+
+    boolean existsByGroupNameIsNull();
+
+    /** Every line with its product, job and customer, for the per-group spending of the product screen. */
+    @Query("select m from MaterialItem m join fetch m.product join fetch m.job j join fetch j.customer")
+    List<MaterialItem> findAllWithProductAndJob();
+
+    /** The given lines with their product and job, in one query. */
+    @Query("select m from MaterialItem m join fetch m.product join fetch m.job where m.id in :ids")
+    List<MaterialItem> findWithProductAndJobByIdIn(@Param("ids") Collection<Long> ids);
+
     long countByProductId(Long productId);
 
     long countByJobId(Long jobId);

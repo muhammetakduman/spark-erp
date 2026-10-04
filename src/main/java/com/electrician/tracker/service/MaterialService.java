@@ -1,6 +1,7 @@
 package com.electrician.tracker.service;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -9,7 +10,9 @@ import com.electrician.tracker.domain.CurrencyCode;
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.PriceEntryType;
 import com.electrician.tracker.dto.BulkDeletionResult;
+import com.electrician.tracker.dto.MaterialGroupBreakdown;
 import com.electrician.tracker.repository.MaterialItemRepository;
+import com.electrician.tracker.repository.ProductRepository;
 import com.electrician.tracker.service.exception.NotFoundException;
 import com.electrician.tracker.service.exception.ValidationException;
 import org.springframework.stereotype.Service;
@@ -24,6 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
  * A purchase price may be entered in dollars or euros with the day's rate;
  * its lira value is calculated once here and stored with the line, and the
  * rate becomes the suggestion for the next purchase in that currency.
+ * <p>
+ * Each line has a group on its job ("Diafon"): left blank it takes the
+ * product's category when saved, and it never follows later catalogue
+ * changes. A typed variant of a group already in use keeps that spelling.
  */
 @Service
 public class MaterialService {
@@ -32,13 +39,17 @@ public class MaterialService {
     private final AccessControl accessControl;
     private final FinancialDataMasker masker;
     private final ExchangeRateService exchangeRateService;
+    private final ProductRepository productRepository;
+    private final MaterialGroupCalculator groupCalculator = new MaterialGroupCalculator();
 
     public MaterialService(MaterialItemRepository materialItemRepository, AccessControl accessControl,
-            FinancialDataMasker masker, ExchangeRateService exchangeRateService) {
+            FinancialDataMasker masker, ExchangeRateService exchangeRateService,
+            ProductRepository productRepository) {
         this.materialItemRepository = materialItemRepository;
         this.accessControl = accessControl;
         this.masker = masker;
         this.exchangeRateService = exchangeRateService;
+        this.productRepository = productRepository;
     }
 
     @Transactional(readOnly = true)
@@ -61,6 +72,45 @@ public class MaterialService {
             return List.of();
         }
         return CanonicalNames.distinct(materialItemRepository.findDistinctSupplierNames());
+    }
+
+    /**
+     * Group suggestions for a line of {@code jobId} ({@code null} for a job not
+     * saved yet): groups of this job first, then groups of other jobs, then
+     * catalogue categories; each name once, with the spelling seen first.
+     */
+    @Transactional(readOnly = true)
+    public List<String> findGroupSuggestions(Long jobId) {
+        List<String> names = new ArrayList<>();
+        if (jobId != null) {
+            names.addAll(CanonicalNames.distinctInOrder(materialItemRepository.findGroupNamesByJobId(jobId)));
+        }
+        names.addAll(CanonicalNames.distinct(materialItemRepository.findDistinctGroupNames()));
+        names.addAll(CanonicalNames.distinct(productRepository.findDistinctCategories()));
+        return CanonicalNames.distinctInOrder(names);
+    }
+
+    /**
+     * Already-loaded lines of one job by group, with cost and profit only for
+     * users who may see them (no database access).
+     */
+    public MaterialGroupBreakdown groupBreakdown(List<MaterialItem> items) {
+        return masker.mask(new MaterialGroupBreakdown(groupCalculator.group(items),
+                MaterialGroupCalculator.bySpending(groupCalculator.totals(items)), groupCalculator.total(items)));
+    }
+
+    /**
+     * "Gruba Taşı": puts every given line into one group in a single
+     * transaction; a blank name gives each line its product's category back.
+     */
+    @Transactional
+    public void moveToGroup(Collection<Long> ids, String groupName) {
+        List<MaterialItem> lines = materialItemRepository.findWithProductAndJobByIdIn(ids.stream().distinct().toList());
+        lines.forEach(line -> accessControl.requireAccess(line.getJob().getType()));
+        List<String> knownGroups = materialItemRepository.findDistinctGroupNames();
+        String typed = CanonicalNames.canonical(groupName, knownGroups);
+        lines.forEach(line -> line.setGroupName(typed != null ? typed
+                : CanonicalNames.canonical(line.getProduct().getCategory(), knownGroups)));
     }
 
     @Transactional
@@ -116,6 +166,7 @@ public class MaterialService {
         existing.setVatIncluded(changes.getVatIncluded());
         existing.setPurchaseVat(changes.getPurchaseVatRate(), changes.getPurchaseVatIncluded());
         existing.setNote(changes.getNote());
+        existing.setGroupName(changes.getGroupName());
         rememberExchangeRate(existing);
         return existing;
     }
@@ -146,6 +197,7 @@ public class MaterialService {
         applyPriceEntry(item);
         applyPurchaseCurrency(item);
         item.setSupplierName(canonicalSupplierName(item.getSupplierName()));
+        item.setGroupName(groupOrCategory(item));
         item.setVatIncluded(VatRules.includedOrNull(item.getVatRate(), item.getVatIncluded()));
         // Purchase VAT means nothing without a purchase price.
         Integer purchaseRate = item.getPurchaseUnitPrice() == null ? null : item.getPurchaseVatRate();
@@ -232,6 +284,16 @@ public class MaterialService {
         return value != null && value.signum() < 0;
     }
 
+    /** The typed group in its known spelling, or the product's category when left blank. */
+    private String groupOrCategory(MaterialItem item) {
+        String typed = item.getGroupName();
+        String name = typed == null || typed.isBlank() ? item.getProduct().getCategory() : typed;
+        if (name == null || name.isBlank()) {
+            return null;
+        }
+        return CanonicalNames.canonical(name, materialItemRepository.findDistinctGroupNames());
+    }
+
     /** A new supplier is accepted as typed; a known one keeps the spelling already in use. */
     private String canonicalSupplierName(String typed) {
         if (typed == null || typed.isBlank()) {
@@ -239,6 +301,7 @@ public class MaterialService {
         }
         return CanonicalNames.canonical(typed, materialItemRepository.findDistinctSupplierNames());
     }
+
     /** Deletes the selected material lines of a site in one statement; ADMIN only. */
     @Transactional
     public BulkDeletionResult deleteAll(Collection<Long> ids) {

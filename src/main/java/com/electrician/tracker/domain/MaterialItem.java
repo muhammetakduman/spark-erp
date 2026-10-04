@@ -81,6 +81,13 @@ public class MaterialItem {
 
     private String note;
 
+    /**
+     * The line's group on its job ("Diafon"); starts as the product's category
+     * and is kept when the catalogue changes ({@code null} = uncategorized).
+     */
+    @Column(name = "group_name")
+    private String groupName;
+
     protected MaterialItem() {
     }
 
@@ -254,5 +261,13 @@ public class MaterialItem {
 
     public void setNote(String note) {
         this.note = note;
+    }
+
+    public String getGroupName() {
+        return groupName;
+    }
+
+    public void setGroupName(String groupName) {
+        this.groupName = groupName;
     }
 }

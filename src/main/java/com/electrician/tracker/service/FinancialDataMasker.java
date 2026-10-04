@@ -8,9 +8,14 @@ import com.electrician.tracker.domain.Attendance;
 import com.electrician.tracker.domain.Employee;
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.dto.DashboardFigures;
+import com.electrician.tracker.dto.GroupJobBreakdown;
+import com.electrician.tracker.dto.GroupJobRow;
 import com.electrician.tracker.dto.JobBoard;
 import com.electrician.tracker.dto.JobDetail;
 import com.electrician.tracker.dto.JobSummary;
+import com.electrician.tracker.dto.MaterialGroup;
+import com.electrician.tracker.dto.MaterialGroupBreakdown;
+import com.electrician.tracker.dto.MaterialGroupTotal;
 import jakarta.persistence.EntityManager;
 import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
@@ -63,6 +68,33 @@ public class FinancialDataMasker {
 
     public DashboardFigures mask(DashboardFigures figures) {
         return isMasking() ? figures.withoutFinancials() : figures;
+    }
+
+    /** Material groups without cost, profit or missing purchase prices; the summary is then ordered by sale. */
+    public MaterialGroupBreakdown mask(MaterialGroupBreakdown breakdown) {
+        if (!isMasking()) {
+            return breakdown;
+        }
+        return new MaterialGroupBreakdown(
+                breakdown.groups().stream()
+                        .map(group -> new MaterialGroup(group.total().withoutFinancials(), group.lines()))
+                        .toList(),
+                MaterialGroupCalculator.bySale(breakdown.summary().stream()
+                        .map(MaterialGroupTotal::withoutFinancials).toList()),
+                breakdown.total().withoutFinancials());
+    }
+
+    /** One group's spending per job without cost or profit; the rows are then ordered by sale. */
+    public GroupJobBreakdown mask(GroupJobBreakdown breakdown) {
+        if (!isMasking()) {
+            return breakdown;
+        }
+        List<GroupJobRow> rows = breakdown.rows().stream()
+                .map(GroupJobRow::withoutFinancials)
+                .sorted(java.util.Comparator.comparing((GroupJobRow row) -> row.total().saleTotal()).reversed())
+                .toList();
+        return new GroupJobBreakdown(breakdown.groupName(), rows, breakdown.total().withoutFinancials(),
+                breakdown.productIds());
     }
 
     public List<MaterialItem> maskMaterials(List<MaterialItem> materials) {
