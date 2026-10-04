@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -12,7 +13,10 @@ import java.util.stream.Collectors;
 import com.electrician.tracker.domain.Job;
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.dto.JobSummary;
+import com.electrician.tracker.dto.MaterialGroup;
+import com.electrician.tracker.dto.MaterialGroupTotal;
 import com.electrician.tracker.dto.VatBreakdown;
+import com.electrician.tracker.service.MaterialGroupCalculator;
 import com.electrician.tracker.ui.util.Bicimlendirici;
 import com.electrician.tracker.ui.util.DialogUtil;
 import com.electrician.tracker.ui.util.EnumLabels;
@@ -27,8 +31,9 @@ import org.springframework.stereotype.Component;
  * "tarih aralığına göre Excel dışa aktarım" requirement. With
  * {@code includeFinancials} the wage, cost, profit, collected and remaining
  * columns are added, and a "Malzemeler" sheet lists every material line with
- * its purchase currency, foreign amount, rate and lira value; without it
- * none of them is created.
+ * its group, purchase currency, foreign amount, rate and lira value, sorted
+ * by job and group with a subtotal row after each group; without it none of
+ * them is created.
  */
 @Component
 public class JobRangeExcelExportGenerator {
@@ -41,14 +46,23 @@ public class JobRangeExcelExportGenerator {
     };
     /** Sale excl. VAT, VAT amount, grand total; then wages, cost, profit, collected, remaining. */
     private static final int[] JOB_MONEY_COLUMNS = { 5, 7, 8, 10, 11, 12, 13, 14 };
-    /** Foreign amount, lira purchase price, sale price (the exchange rate keeps its own decimals). */
-    private static final int[] MATERIAL_MONEY_COLUMNS = { 7, 9, 11 };
+    /**
+     * Foreign amount, lira purchase price, sale price, then the VAT-excl. purchase
+     * and sale amounts (the exchange rate keeps its own decimals).
+     */
+    private static final int[] MATERIAL_MONEY_COLUMNS = { 8, 10, 12, 13, 14 };
+    private static final int GROUP_COLUMN = 3;
+    private static final int PURCHASE_AMOUNT_COLUMN = 13;
     private static final List<String> MATERIAL_HEADER_KEYS = List.of("excel.column.date", "excel.column.customer",
-            "excel.column.job", "excel.column.product", "excel.column.quantity", "excel.column.unit",
-            "excel.column.currency", "excel.column.foreignAmount", "excel.column.exchangeRate",
-            "excel.column.purchaseTl", "excel.column.supplier", "excel.column.salePrice");
+            "excel.column.job", "excel.column.group", "excel.column.product", "excel.column.quantity",
+            "excel.column.unit", "excel.column.currency", "excel.column.foreignAmount", "excel.column.exchangeRate",
+            "excel.column.purchaseTl", "excel.column.supplier", "excel.column.salePrice",
+            "excel.column.purchaseAmount", "excel.column.saleAmount");
 
-    public void export(List<Job> jobs, Map<Long, JobSummary> summaries, Map<Long, List<MaterialItem>> materialsByJob,
+    private final MaterialGroupCalculator groupCalculator = new MaterialGroupCalculator();
+
+    /** {@code groupsByJob}: each job's material lines by group, in print order. */
+    public void export(List<Job> jobs, Map<Long, JobSummary> summaries, Map<Long, List<MaterialGroup>> groupsByJob,
             Path outputFile, boolean includeFinancials) {
         try (XSSFWorkbook workbook = new XSSFWorkbook(); FileOutputStream out = new FileOutputStream(outputFile.toFile())) {
             Sheet sheet = workbook.createSheet("İşler");
@@ -65,7 +79,7 @@ public class JobRangeExcelExportGenerator {
             ExcelFormatting.moneyColumns(sheet, JOB_MONEY_COLUMNS);
             autoSize(sheet, headers.length);
             if (includeFinancials) {
-                writeMaterialSheet(workbook, jobs, materialsByJob);
+                writeMaterialSheet(workbook, jobs, groupsByJob);
             }
             workbook.write(out);
         } catch (IOException e) {
@@ -73,28 +87,47 @@ public class JobRangeExcelExportGenerator {
         }
     }
 
-    private void writeMaterialSheet(XSSFWorkbook workbook, List<Job> jobs,
-            Map<Long, List<MaterialItem>> materialsByJob) {
+    private void writeMaterialSheet(XSSFWorkbook workbook, List<Job> jobs, Map<Long, List<MaterialGroup>> groupsByJob) {
         Sheet sheet = workbook.createSheet(DialogUtil.message("excel.sheet.materials"));
         String[] headers = MATERIAL_HEADER_KEYS.stream().map(DialogUtil::message).toArray(String[]::new);
         writeHeaderRow(sheet, headers);
+        List<Integer> subtotalRows = new ArrayList<>();
         int rowIndex = 1;
         for (Job job : jobs) {
-            for (MaterialItem item : materialsByJob.getOrDefault(job.getId(), List.of())) {
-                writeMaterialRow(sheet.createRow(rowIndex++), job, item);
+            for (MaterialGroup group : groupsByJob.getOrDefault(job.getId(), List.of())) {
+                String groupName = groupLabel(group.total());
+                for (MaterialItem item : group.lines()) {
+                    writeMaterialRow(sheet.createRow(rowIndex++), job, groupName, item);
+                }
+                subtotalRows.add(rowIndex);
+                writeSubtotalRow(sheet.createRow(rowIndex++), groupName, group.total());
             }
         }
         ExcelFormatting.moneyColumns(sheet, MATERIAL_MONEY_COLUMNS);
+        ExcelFormatting.boldRows(sheet, subtotalRows, MATERIAL_MONEY_COLUMNS);
         autoSize(sheet, headers.length);
     }
 
-    /** … | Para birimi | Döviz tutarı | Kur | TL karşılığı | … */
-    private void writeMaterialRow(Row row, Job job, MaterialItem item) {
+    private static String groupLabel(MaterialGroupTotal total) {
+        return total.isUncategorized() ? DialogUtil.message("material.group.uncategorized") : total.groupName();
+    }
+
+    /** "Ara toplam – Diafon" under the group column, its purchase and sale totals (VAT excl.) at the end. */
+    private void writeSubtotalRow(Row row, String groupName, MaterialGroupTotal total) {
+        setCell(row, GROUP_COLUMN, DialogUtil.message("excel.groupSubtotal", groupName));
+        setCell(row, PURCHASE_AMOUNT_COLUMN, total.purchaseTotal());
+        setCell(row, PURCHASE_AMOUNT_COLUMN + 1, total.saleTotal());
+    }
+
+    /** … | Grup | Ürün | … | Para birimi | Döviz tutarı | Kur | TL karşılığı | … | Alış / Satış tutarı (KDV'siz) */
+    private void writeMaterialRow(Row row, Job job, String groupName, MaterialItem item) {
         boolean foreign = item.isForeignCurrencyPurchase();
+        MaterialGroupTotal line = groupCalculator.total(List.of(item));
         int column = 0;
         setCell(row, column++, item.getItemDate() == null ? "" : Bicimlendirici.date(item.getItemDate()));
         setCell(row, column++, job.getCustomer().getName());
         setCell(row, column++, job.getName() == null ? "" : job.getName());
+        setCell(row, column++, groupName);
         setCell(row, column++, item.getProduct().getDisplayName());
         setCell(row, column++, item.getQuantity());
         setCell(row, column++, EnumLabels.label(item.getProduct().getUnit()));
@@ -104,7 +137,9 @@ public class JobRangeExcelExportGenerator {
         setCell(row, column++, foreign ? item.getPurchaseExchangeRate() : null);
         setCell(row, column++, item.getPurchaseUnitPriceTl());
         setCell(row, column++, item.getSupplierName() == null ? "" : item.getSupplierName());
-        setCell(row, column, item.getSaleUnitPrice());
+        setCell(row, column++, item.getSaleUnitPrice());
+        setCell(row, column++, item.getPurchaseUnitPriceTl() == null ? null : line.purchaseTotal());
+        setCell(row, column, line.saleTotal());
     }
 
     private void writeHeaderRow(Sheet sheet, String[] headers) {

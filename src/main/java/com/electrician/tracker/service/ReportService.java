@@ -4,12 +4,16 @@ import java.nio.file.Path;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.electrician.tracker.domain.Job;
+import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.Payment;
 import com.electrician.tracker.dto.JobBoard;
 import com.electrician.tracker.dto.JobSummary;
+import com.electrician.tracker.dto.MaterialGroup;
 import com.electrician.tracker.report.AttendanceMatrixExcelExportGenerator;
 import com.electrician.tracker.report.JobPdfReportGenerator;
 import com.electrician.tracker.report.JobRangeExcelExportGenerator;
@@ -57,10 +61,13 @@ public class ReportService {
         Job job = jobService.findById(jobId);
         JobSummary summary = jobSummaryService.summarize(jobId);
         List<MaterialItem> materials = materialService.findByJob(jobId);
+        // A site's materials are printed by group; a service keeps its short flat list.
+        List<MaterialGroup> groups = job.getType() == JobType.SITE
+                ? materialService.groupBreakdown(materials).groups() : List.of();
         boolean includePayments = accessControl.canViewFinancials();
         List<Payment> payments = includePayments ? paymentService.findByJob(jobId) : List.of();
-        jobPdfReportGenerator.generate(job, summary, materials, payments, companyService.get(), includePayments,
-                outputFile);
+        jobPdfReportGenerator.generate(job, summary, materials, groups, payments, companyService.get(),
+                includePayments, outputFile);
     }
 
     @Transactional(readOnly = true)
@@ -77,7 +84,9 @@ public class ReportService {
                         && !job.getStartDate().isAfter(end))
                 .sorted(Comparator.comparing(Job::getStartDate))
                 .toList();
-        jobRangeExcelExportGenerator.export(jobsInRange, board.summaries(), board.materialsByJob(), outputFile,
+        Map<Long, List<MaterialGroup>> groupsByJob = jobsInRange.stream().collect(Collectors.toMap(Job::getId,
+                job -> materialService.groupBreakdown(board.materialsFor(job.getId())).groups()));
+        jobRangeExcelExportGenerator.export(jobsInRange, board.summaries(), groupsByJob, outputFile,
                 accessControl.canViewFinancials());
     }
 }

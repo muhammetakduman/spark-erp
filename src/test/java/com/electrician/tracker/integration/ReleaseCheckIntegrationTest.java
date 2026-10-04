@@ -321,7 +321,8 @@ class ReleaseCheckIntegrationTest {
             assertThat(siteRow.getCell(8).getNumericCellValue()).isEqualTo(18670.0);
             assertThat(siteRow.getCell(14).getNumericCellValue()).isEqualTo(4170.0);
             Sheet materials = workbook.getSheet("Malzemeler");
-            assertThat(materials.getLastRowNum()).isEqualTo(5);
+            // 5 lines and a subtotal after each of the 5 groups (site: 4, service: 1)
+            assertThat(materials.getLastRowNum()).isEqualTo(10);
         }
 
         Path attendanceExcel = outputFolder.resolve("6-puantaj.xlsx");

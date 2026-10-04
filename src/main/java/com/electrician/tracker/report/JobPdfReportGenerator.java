@@ -14,6 +14,7 @@ import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.domain.MaterialItem;
 import com.electrician.tracker.domain.Payment;
 import com.electrician.tracker.dto.JobSummary;
+import com.electrician.tracker.dto.MaterialGroup;
 import com.electrician.tracker.dto.VatBreakdown;
 import com.electrician.tracker.service.MaterialPriceCalculator;
 import com.electrician.tracker.ui.util.Bicimlendirici;
@@ -36,7 +37,8 @@ import org.springframework.stereotype.Component;
  * same print style as the quote ({@link PdfStyle}): customer details,
  * material list, labor/service fees, VAT-excl./incl. totals and payments (a
  * site's payment list and remaining balance, a service's paid flag), under
- * the company letterhead. Purchase prices, suppliers and profit are internal
+ * the company letterhead. A site's materials are printed by group (group
+ * name in the brand colour, a sale subtotal under each group). Purchase prices, suppliers and profit are internal
  * figures and are deliberately left out of this document; the payment
  * section is left out too when {@code includePayments} is false (a MANAGER
  * does not see receivables).
@@ -63,8 +65,9 @@ public class JobPdfReportGenerator {
         this.pdfFooter = pdfFooter;
     }
 
-    public void generate(Job job, JobSummary summary, List<MaterialItem> materials, List<Payment> payments,
-            Company company, boolean includePayments, Path outputFile) {
+    /** {@code groups} empty prints {@code materials} as one flat list. */
+    public void generate(Job job, JobSummary summary, List<MaterialItem> materials, List<MaterialGroup> groups,
+            List<Payment> payments, Company company, boolean includePayments, Path outputFile) {
         PdfStyle style = new PdfStyle(company);
         Document document = new Document(PageSize.A4, MARGIN, MARGIN, MARGIN, MARGIN);
         try (FileOutputStream out = new FileOutputStream(outputFile.toFile())) {
@@ -74,7 +77,7 @@ public class JobPdfReportGenerator {
             document.open();
             PdfCompanyHeader.add(document, company, style);
             addHeader(document, job, style);
-            addMaterialsTable(document, materials, style);
+            addMaterialsTable(document, materials, groups, style);
             addFees(document, job, summary);
             addTotals(document, summary);
             if (includePayments && (job.getType() == JobType.SITE || !payments.isEmpty())) {
@@ -129,9 +132,9 @@ public class JobPdfReportGenerator {
         table.addCell(PdfStyle.plainCell(value, PdfStyle.regular(TEXT_SIZE), Element.ALIGN_LEFT, PADDING));
     }
 
-    /** Product bold; quantity and prices right-aligned; line totals bold; zebra rows. */
-    private void addMaterialsTable(Document document, List<MaterialItem> materials, PdfStyle style)
-            throws DocumentException {
+    /** Product bold; quantity and prices right-aligned; line totals bold; zebra rows; groups when given. */
+    private void addMaterialsTable(Document document, List<MaterialItem> materials, List<MaterialGroup> groups,
+            PdfStyle style) throws DocumentException {
         document.add(style.headingParagraph(DialogUtil.message("jobPdf.materials"), SECTION_SIZE));
         PdfPTable table = new PdfPTable(MATERIAL_WIDTHS);
         table.setWidthPercentage(100);
@@ -148,6 +151,34 @@ public class JobPdfReportGenerator {
                 PADDING));
         table.addCell(style.headerCell(DialogUtil.message("jobPdf.column.total"), TEXT_SIZE, Element.ALIGN_RIGHT,
                 PADDING));
+        if (groups.isEmpty()) {
+            addMaterialRows(table, materials);
+        } else {
+            for (MaterialGroup group : groups) {
+                addGroupRows(table, group, style);
+            }
+        }
+        document.add(table);
+    }
+
+    /** Group name across the table, its lines, then "Ara toplam – Diafon (KDV'siz)". */
+    private static void addGroupRows(PdfPTable table, MaterialGroup group, PdfStyle style) {
+        String name = group.total().isUncategorized() ? DialogUtil.message("material.group.uncategorized")
+                : group.groupName();
+        PdfPCell title = PdfStyle.plainCell(name, style.heading(TEXT_SIZE), Element.ALIGN_LEFT, PADDING);
+        title.setColspan(MATERIAL_WIDTHS.length);
+        title.setPaddingTop(PADDING * 2);
+        table.addCell(title);
+        addMaterialRows(table, group.lines());
+        PdfPCell caption = PdfStyle.plainCell(DialogUtil.message("jobPdf.groupSubtotal", name),
+                PdfStyle.bold(TEXT_SIZE), Element.ALIGN_RIGHT, PADDING);
+        caption.setColspan(MATERIAL_WIDTHS.length - 1);
+        table.addCell(caption);
+        table.addCell(PdfStyle.plainCell(Bicimlendirici.money(group.total().saleTotal()), PdfStyle.bold(TEXT_SIZE),
+                Element.ALIGN_RIGHT, PADDING));
+    }
+
+    private static void addMaterialRows(PdfPTable table, List<MaterialItem> materials) {
         Font bold = PdfStyle.bold(TEXT_SIZE);
         Font regular = PdfStyle.regular(TEXT_SIZE);
         int rowIndex = 0;
@@ -164,7 +195,6 @@ public class JobPdfReportGenerator {
                     Element.ALIGN_RIGHT, rowIndex, PADDING));
             rowIndex++;
         }
-        document.add(table);
     }
 
     private void addFees(Document document, Job job, JobSummary summary) throws DocumentException {

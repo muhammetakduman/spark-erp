@@ -36,11 +36,36 @@ final class ExcelFormatting {
         sheet.createFreezePane(0, HEADER_ROW + 1);
     }
 
+    /** Subtotal rows in bold; their numeric cells in the given columns keep the money format. */
+    static void boldRows(Sheet sheet, java.util.Collection<Integer> rowNumbers, int... moneyColumns) {
+        Workbook workbook = sheet.getWorkbook();
+        Font bold = workbook.createFont();
+        bold.setBold(true);
+        CellStyle text = workbook.createCellStyle();
+        text.setFont(bold);
+        CellStyle money = moneyStyle(workbook);
+        money.setFont(bold);
+        java.util.Set<Integer> moneySet = java.util.Arrays.stream(moneyColumns).boxed()
+                .collect(java.util.stream.Collectors.toSet());
+        for (int rowNumber : rowNumbers) {
+            Row row = sheet.getRow(rowNumber);
+            if (row != null) {
+                row.forEach(cell -> cell.setCellStyle(moneySet.contains(cell.getColumnIndex())
+                        && cell.getCellType() == CellType.NUMERIC ? money : text));
+            }
+        }
+    }
+
+    private static CellStyle moneyStyle(Workbook workbook) {
+        CellStyle money = workbook.createCellStyle();
+        money.setDataFormat(workbook.createDataFormat().getFormat(MONEY_FORMAT));
+        return money;
+    }
+
     /** Numeric cells of the given columns, below the header; empty and text cells are left alone. */
     static void moneyColumns(Sheet sheet, int... columns) {
         Workbook workbook = sheet.getWorkbook();
-        CellStyle money = workbook.createCellStyle();
-        money.setDataFormat(workbook.createDataFormat().getFormat(MONEY_FORMAT));
+        CellStyle money = moneyStyle(workbook);
         for (Row row : sheet) {
             if (row.getRowNum() == HEADER_ROW) {
                 continue;
