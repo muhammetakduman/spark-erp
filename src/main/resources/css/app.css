@@ -208,6 +208,12 @@
     -fx-font-weight: bold;
 }
 
+/* Explains an optional field beside it without competing with the label. */
+.form-hint {
+    -fx-text-fill: -color-muted;
+    -fx-font-size: 11px;
+}
+
 .dialog-buttons {
     -fx-alignment: CENTER_RIGHT;
     -fx-padding: 8 0 0 0;

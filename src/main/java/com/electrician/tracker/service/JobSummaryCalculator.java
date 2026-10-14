@@ -45,6 +45,13 @@ public class JobSummaryCalculator {
         BigDecimal remaining = settled ? BigDecimal.ZERO : sale.includingVat().subtract(collectedTotal);
         Boolean paymentReceived = isSite ? null : job.isPaymentReceived();
 
+        // What a site was taken on for, less everything charged to the customer
+        // so far: how much of the agreed figure is still untouched. Only sites
+        // carry it, and only when a figure was actually agreed.
+        BigDecimal initialBalance = isSite ? job.getInitialBalance() : null;
+        BigDecimal initialBalanceRemaining = initialBalance == null ? null
+                : scale(initialBalance.subtract(sale.includingVat()));
+
         return new JobSummary(
                 job.getId(),
                 job.getType(),
@@ -63,6 +70,8 @@ public class JobSummaryCalculator {
                 scale(profit),
                 scale(collectedTotal),
                 scale(remaining),
+                scale(initialBalance),
+                initialBalanceRemaining,
                 paymentReceived,
                 countForeignCurrencyLines(materialItems));
     }

@@ -215,4 +215,90 @@ class JobSummaryCalculatorTest {
         assertThat(summary.costExcludingVat()).isEqualByComparingTo("100.00");
         assertThat(summary.profit()).isEqualByComparingTo("50.00");
     }
+
+    @Test
+    void whatIsLeftOfTheAgreedFigureIsWhateverTheCustomerHasNotBeenChargedYet() {
+        Job job = new Job(customer, JobType.SITE, "Çekmeköy Villa", null, LocalDate.of(2026, 9, 1), null,
+                JobStatus.ACTIVE, null, null, false, null);
+        job.setInitialBalance(new BigDecimal("1000000"));
+        // 1.000 m x 150 TL, no VAT: the customer is charged 150.000 TL.
+        List<MaterialItem> materials = List.of(
+                new MaterialItem(job, cable, LocalDate.of(2026, 9, 2), BigDecimal.valueOf(1000),
+                        BigDecimal.valueOf(100), null, BigDecimal.valueOf(150), PriceEntryType.UNIT, null, null, null));
+
+        JobSummary summary = calculator.calculate(job, materials, List.of(), List.of());
+
+        assertThat(summary.hasInitialBalance()).isTrue();
+        assertThat(summary.initialBalance()).isEqualByComparingTo("1000000");
+        assertThat(summary.initialBalanceRemaining()).isEqualByComparingTo("850000");
+        assertThat(summary.isInitialBalanceOverrun()).isFalse();
+    }
+
+    @Test
+    void vatIsPartOfWhatTheCustomerIsChargedSoItEatsIntoTheAgreedFigureToo() {
+        Job job = new Job(customer, JobType.SITE, "Maltepe Blok", null, LocalDate.of(2026, 9, 1), null,
+                JobStatus.ACTIVE, null, null, false, null);
+        job.setInitialBalance(new BigDecimal("100000"));
+        // 100 x 100 TL plus 20 % VAT: 12.000 TL leaves the agreed figure.
+        List<MaterialItem> materials = List.of(
+                new MaterialItem(job, cable, LocalDate.of(2026, 9, 2), BigDecimal.valueOf(100),
+                        null, null, BigDecimal.valueOf(100), PriceEntryType.UNIT, null, 20, null));
+
+        JobSummary summary = calculator.calculate(job, materials, List.of(), List.of());
+
+        assertThat(summary.saleIncludingVat()).isEqualByComparingTo("12000.00");
+        assertThat(summary.initialBalanceRemaining()).isEqualByComparingTo("88000.00");
+    }
+
+    @Test
+    void chargingPastTheAgreedFigureShowsAsAnOverrun() {
+        Job job = new Job(customer, JobType.SITE, "Küçük İş", null, LocalDate.of(2026, 9, 1), null,
+                JobStatus.ACTIVE, null, null, false, null);
+        job.setInitialBalance(new BigDecimal("1000"));
+        List<MaterialItem> materials = List.of(
+                new MaterialItem(job, breaker, LocalDate.of(2026, 9, 2), BigDecimal.valueOf(10),
+                        null, null, BigDecimal.valueOf(150), PriceEntryType.UNIT, null, null, null));
+
+        JobSummary summary = calculator.calculate(job, materials, List.of(), List.of());
+
+        assertThat(summary.initialBalanceRemaining()).isEqualByComparingTo("-500");
+        assertThat(summary.isInitialBalanceOverrun()).isTrue();
+    }
+
+    @Test
+    void aSiteWithNoAgreedFigureShowsNoBalanceAtAll() {
+        Job job = new Job(customer, JobType.SITE, "Bakiyesiz", null, LocalDate.of(2026, 9, 1), null,
+                JobStatus.ACTIVE, null, null, false, null);
+
+        JobSummary summary = calculator.calculate(job, List.of(), List.of(), List.of());
+
+        assertThat(summary.hasInitialBalance()).isFalse();
+        assertThat(summary.initialBalanceRemaining()).isNull();
+        assertThat(summary.isInitialBalanceOverrun()).isFalse();
+    }
+
+    @Test
+    void servicesNeverCarryAnAgreedFigure() {
+        Job job = new Job(customer, JobType.SERVICE, "Priz arızası", null, LocalDate.of(2026, 9, 1),
+                LocalDate.of(2026, 9, 1), JobStatus.COMPLETED, BigDecimal.valueOf(500), null, false, null);
+        job.setInitialBalance(new BigDecimal("5000"));
+
+        JobSummary summary = calculator.calculate(job, List.of(), List.of(), List.of());
+
+        assertThat(summary.initialBalance()).isNull();
+        assertThat(summary.initialBalanceRemaining()).isNull();
+    }
+
+    @Test
+    void aManagerSeesNeitherTheAgreedFigureNorWhatIsLeftOfIt() {
+        Job job = new Job(customer, JobType.SITE, "Çekmeköy Villa", null, LocalDate.of(2026, 9, 1), null,
+                JobStatus.ACTIVE, null, null, false, null);
+        job.setInitialBalance(new BigDecimal("1000000"));
+
+        JobSummary masked = calculator.calculate(job, List.of(), List.of(), List.of()).withoutFinancials();
+
+        assertThat(masked.initialBalance()).isNull();
+        assertThat(masked.initialBalanceRemaining()).isNull();
+        assertThat(masked.hasInitialBalance()).isFalse();
+    }
 }

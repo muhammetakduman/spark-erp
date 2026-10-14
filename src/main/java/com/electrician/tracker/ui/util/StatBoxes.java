@@ -15,6 +15,9 @@ import javafx.scene.layout.VBox;
  * 12.000,00 ₺          5.000,00 ₺      7.000,00 ₺   3.000,00 ₺
  * KDV'siz 10.000 + KDV 2.000
  * </pre>
+ * A site taken on for an agreed figure gains one more box between the grand
+ * total and what has been collected: how much of that figure the charges so
+ * far leave untouched.
  */
 public final class StatBoxes {
 
@@ -54,13 +57,29 @@ public final class StatBoxes {
         }
         VBox remaining = box(DialogUtil.message("home.stat.remaining"), Bicimlendirici.money(summary.remaining()), null);
         remaining.getStyleClass().add(summary.isFullyPaid() ? "stat-box-ok" : "stat-box-due");
-        HBox row = new HBox(ROW_SPACING,
-                total,
+        HBox row = new HBox(ROW_SPACING, total);
+        if (summary.hasInitialBalance()) {
+            row.getChildren().add(initialBalanceBox(summary));
+        }
+        row.getChildren().addAll(
                 box(DialogUtil.message("home.stat.collected"), Bicimlendirici.money(summary.collectedTotal()), null),
                 remaining,
                 profitBox(summary));
         row.getStyleClass().add("stat-row");
         return row;
+    }
+
+    /** What is left of the agreed figure, with that figure itself underneath. */
+    private static VBox initialBalanceBox(JobSummary summary) {
+        VBox box = box(DialogUtil.message("home.stat.initialBalance"),
+                Bicimlendirici.money(summary.initialBalanceRemaining()),
+                DialogUtil.message("home.stat.initialBalanceStart",
+                        Bicimlendirici.money(summary.initialBalance())));
+        // Only an overrun is marked; a healthy balance needs no colour of its own.
+        if (summary.isInitialBalanceOverrun()) {
+            box.getStyleClass().add("stat-box-due");
+        }
+        return box;
     }
 
     private static String vatCaption(JobSummary summary) {

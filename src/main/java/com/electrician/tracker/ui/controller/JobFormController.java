@@ -60,6 +60,8 @@ public class JobFormController {
     private VatSelector serviceFeeVatSelector;
     @FXML
     private VatSelector laborFeeVatSelector;
+    @FXML
+    private DecimalField initialBalanceField;
 
     private Long editingId;
     private JobStatus editingStatus;
@@ -121,6 +123,7 @@ public class JobFormController {
         laborFeeField.setValue(job.getLaborFee());
         serviceFeeVatSelector.setValue(job.getServiceFeeVatRate(), job.getServiceFeeVatIncluded());
         laborFeeVatSelector.setValue(job.getLaborFeeVatRate(), job.getLaborFeeVatIncluded());
+        initialBalanceField.setValue(job.getInitialBalance());
     }
 
     public boolean isSaved() {
@@ -146,6 +149,7 @@ public class JobFormController {
                     false, null);
             job.setServiceFeeVat(serviceFeeVatSelector.getRate(), serviceFeeVatSelector.getIncluded());
             job.setLaborFeeVat(laborFeeVatSelector.getRate(), laborFeeVatSelector.getIncluded());
+            job.setInitialBalance(initialBalanceField.getValue());
             if (!confirmCompletion(job.getStatus())) {
                 return;
             }

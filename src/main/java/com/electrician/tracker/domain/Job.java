@@ -63,6 +63,10 @@ public class Job {
     @Column(name = "labor_fee_vat_included")
     private Boolean laborFeeVatIncluded;
 
+    /** What the site was taken on for; NULL when no figure was agreed. Sites only. */
+    @Column(name = "initial_balance")
+    private BigDecimal initialBalance;
+
     @Column(name = "payment_received", nullable = false)
     private boolean paymentReceived;
 
@@ -203,5 +207,13 @@ public class Job {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public BigDecimal getInitialBalance() {
+        return initialBalance;
+    }
+
+    public void setInitialBalance(BigDecimal initialBalance) {
+        this.initialBalance = initialBalance;
     }
 }

@@ -52,6 +52,10 @@
         <Label text="%job.field.laborFee" styleClass="form-label" GridPane.rowIndex="7" GridPane.columnIndex="0"/>
         <DecimalField fx:id="laborFeeField" GridPane.rowIndex="7" GridPane.columnIndex="1"/>
         <VatSelector fx:id="laborFeeVatSelector" GridPane.rowIndex="7" GridPane.columnIndex="2"/>
+
+        <Label text="%job.field.initialBalance" styleClass="form-label" GridPane.rowIndex="8" GridPane.columnIndex="0"/>
+        <DecimalField fx:id="initialBalanceField" GridPane.rowIndex="8" GridPane.columnIndex="1"/>
+        <Label text="%job.field.initialBalance.hint" styleClass="form-hint" wrapText="true" GridPane.rowIndex="8" GridPane.columnIndex="2"/>
     </GridPane>
     <HBox spacing="10" styleClass="dialog-buttons">
         <Button text="%action.save" onAction="#onSave" defaultButton="true" styleClass="primary-button,action-save"/>

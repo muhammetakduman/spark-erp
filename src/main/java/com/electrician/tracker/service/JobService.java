@@ -83,6 +83,7 @@ public class JobService {
         existing.setLaborFeeVat(changes.getLaborFeeVatRate(), changes.getLaborFeeVatIncluded());
         existing.setPaymentReceived(changes.isPaymentReceived());
         existing.setDescription(changes.getDescription());
+        existing.setInitialBalance(changes.getInitialBalance());
         return existing;
     }
 
