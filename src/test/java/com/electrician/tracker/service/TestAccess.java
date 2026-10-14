@@ -2,8 +2,11 @@ package com.electrician.tracker.service;
 
 import static org.mockito.Mockito.mock;
 
-import com.electrician.tracker.domain.UserRole;
-import com.electrician.tracker.dto.SessionUser;
+import com.electrician.tracker.domain.user.UserRole;
+import com.electrician.tracker.dto.user.SessionUser;
+import com.electrician.tracker.service.user.AccessControl;
+import com.electrician.tracker.service.user.FinancialDataMasker;
+import com.electrician.tracker.service.user.SessionService;
 import jakarta.persistence.EntityManager;
 
 /** Logged-in sessions and a masker for unit tests that build services by hand. */

@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.GroupDistributionPanelController"
+      fx:controller="com.electrician.tracker.ui.controller.product.GroupDistributionPanelController"
       spacing="6">
     <HBox spacing="8" alignment="CENTER_LEFT">
         <Label text="%groupDistribution.title" styleClass="subsection-title" minWidth="-Infinity"/>

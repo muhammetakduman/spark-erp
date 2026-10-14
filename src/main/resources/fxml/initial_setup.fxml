@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <HBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.InitialSetupController"
+      fx:controller="com.electrician.tracker.ui.controller.user.InitialSetupController"
       styleClass="login-root">
     <VBox styleClass="login-brand">
         <Region VBox.vgrow="ALWAYS"/>

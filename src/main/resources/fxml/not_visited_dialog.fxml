@@ -9,7 +9,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.NotVisitedDialogController"
+      fx:controller="com.electrician.tracker.ui.controller.dailyjob.NotVisitedDialogController"
       styleClass="form-root" spacing="12" prefWidth="460">
     <padding>
         <Insets top="16" right="20" bottom="20" left="20"/>

@@ -12,7 +12,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.CustomerFormController"
+      fx:controller="com.electrician.tracker.ui.controller.customer.CustomerFormController"
       styleClass="form-root" spacing="16">
     <padding>
         <Insets top="20" right="20" bottom="20" left="20"/>

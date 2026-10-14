@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ResourceBundle;
 
-import com.electrician.tracker.ui.util.ButtonIcons;
+import com.electrician.tracker.ui.util.theme.ButtonIcons;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import org.springframework.context.ApplicationContext;

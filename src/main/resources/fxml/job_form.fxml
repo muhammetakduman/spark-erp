@@ -10,11 +10,11 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import com.electrician.tracker.ui.util.VatSelector?>
-<?import com.electrician.tracker.ui.util.DecimalField?>
+<?import com.electrician.tracker.ui.util.control.VatSelector?>
+<?import com.electrician.tracker.ui.util.control.DecimalField?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.JobFormController"
+      fx:controller="com.electrician.tracker.ui.controller.job.JobFormController"
       styleClass="form-root" spacing="16">
     <padding>
         <Insets top="20" right="20" bottom="20" left="20"/>

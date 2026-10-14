@@ -15,7 +15,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.electrician.tracker.ui.controller.EmployeeAttendanceController"
+            fx:controller="com.electrician.tracker.ui.controller.employee.EmployeeAttendanceController"
             styleClass="screen-root">
     <padding>
         <Insets top="16" right="16" bottom="16" left="16"/>

@@ -21,7 +21,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.MonthlyReportController"
+      fx:controller="com.electrician.tracker.ui.controller.report.MonthlyReportController"
       styleClass="screen-root" spacing="12">
     <padding>
         <Insets top="20" right="20" bottom="20" left="20"/>

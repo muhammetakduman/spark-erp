@@ -4,9 +4,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 
-import com.electrician.tracker.dto.BulkMessageResult;
-import com.electrician.tracker.dto.MessageTarget;
-import com.electrician.tracker.service.PhoneNumbers;
+import com.electrician.tracker.dto.messaging.BulkMessageResult;
+import com.electrician.tracker.dto.messaging.MessageTarget;
 import org.springframework.stereotype.Service;
 
 /**

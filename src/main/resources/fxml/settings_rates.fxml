@@ -6,10 +6,10 @@
 <?import javafx.scene.layout.GridPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
-<?import com.electrician.tracker.ui.util.DecimalField?>
+<?import com.electrician.tracker.ui.util.control.DecimalField?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.ExchangeRateSettingsController"
+      fx:controller="com.electrician.tracker.ui.controller.settings.ExchangeRateSettingsController"
       fx:id="ratesSection" spacing="10" styleClass="settings-section">
     <Label text="%settings.section.rates" styleClass="section-title"/>
     <Label text="%settings.rates.hint" styleClass="muted-text" wrapText="true"/>

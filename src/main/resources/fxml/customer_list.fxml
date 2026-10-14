@@ -10,7 +10,7 @@
 <?import javafx.scene.layout.HBox?>
 
 <BorderPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.electrician.tracker.ui.controller.CustomerListController"
+            fx:controller="com.electrician.tracker.ui.controller.customer.CustomerListController"
             styleClass="screen-root">
     <padding>
         <Insets top="16" right="16" bottom="16" left="16"/>

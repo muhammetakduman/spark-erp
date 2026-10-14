@@ -21,10 +21,10 @@
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.Region?>
 <?import javafx.scene.layout.VBox?>
-<?import com.electrician.tracker.ui.util.DecimalField?>
+<?import com.electrician.tracker.ui.util.control.DecimalField?>
 
 <ScrollPane xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-            fx:controller="com.electrician.tracker.ui.controller.QuoteFormController"
+            fx:controller="com.electrician.tracker.ui.controller.quote.QuoteFormController"
             fitToWidth="true" prefWidth="1040" prefHeight="780" styleClass="screen-root">
     <VBox fx:id="rootContent" styleClass="form-root" spacing="12">
         <padding>

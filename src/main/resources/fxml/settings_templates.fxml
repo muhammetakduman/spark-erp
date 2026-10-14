@@ -13,7 +13,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.TemplateSettingsController"
+      fx:controller="com.electrician.tracker.ui.controller.settings.TemplateSettingsController"
       spacing="10" styleClass="settings-section">
     <HBox spacing="10" styleClass="toolbar">
         <Label text="%settings.section.templates" styleClass="section-title"/>

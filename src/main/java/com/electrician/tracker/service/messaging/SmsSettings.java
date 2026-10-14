@@ -2,7 +2,7 @@ package com.electrician.tracker.service.messaging;
 
 import java.util.Optional;
 
-import com.electrician.tracker.service.SettingService;
+import com.electrician.tracker.service.settings.SettingService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

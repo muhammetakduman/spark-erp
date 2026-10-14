@@ -11,7 +11,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.MessagingSettingsController"
+      fx:controller="com.electrician.tracker.ui.controller.settings.MessagingSettingsController"
       fx:id="messagingSection" spacing="10" styleClass="settings-section">
     <Label text="%settings.section.messaging" styleClass="section-title"/>
     <Label text="%settings.messaging.whatsApp.hint" styleClass="muted-text" wrapText="true"/>

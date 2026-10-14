@@ -1,0 +1,20 @@
+package com.electrician.tracker.dto.employee;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import com.electrician.tracker.domain.job.JobType;
+
+/** One job's share of an employee's attendance within a date range. */
+public record EmployeeJobAttendance(
+        Long jobId,
+        JobType jobType,
+        String jobLabel,
+        BigDecimal dayCount,
+        BigDecimal totalWage,
+        List<WorkedDay> days) {
+
+    public EmployeeJobAttendance withoutWages() {
+        return new EmployeeJobAttendance(jobId, jobType, jobLabel, dayCount, null, days);
+    }
+}

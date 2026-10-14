@@ -12,7 +12,7 @@
 <?import javafx.scene.layout.VBox?>
 
 <VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
-      fx:controller="com.electrician.tracker.ui.controller.ProductUsagePanelController"
+      fx:controller="com.electrician.tracker.ui.controller.product.ProductUsagePanelController"
       spacing="8">
     <HBox spacing="8" styleClass="toolbar">
         <Label fx:id="usageTitleLabel" text="%productUsage.title" styleClass="subsection-title"/>

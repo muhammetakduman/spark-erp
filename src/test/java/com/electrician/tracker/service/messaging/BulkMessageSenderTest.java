@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import com.electrician.tracker.dto.BulkMessageResult;
-import com.electrician.tracker.dto.MessageTarget;
-import com.electrician.tracker.ui.util.SmsLength;
+import com.electrician.tracker.dto.messaging.BulkMessageResult;
+import com.electrician.tracker.dto.messaging.MessageTarget;
+import com.electrician.tracker.ui.util.messaging.SmsLength;
 import org.junit.jupiter.api.Test;
 
 class BulkMessageSenderTest {
