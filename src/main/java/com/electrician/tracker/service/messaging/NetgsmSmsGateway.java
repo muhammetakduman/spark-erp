@@ -10,6 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 /**
@@ -48,6 +49,7 @@ public class NetgsmSmsGateway implements SmsGateway {
     private final SmsSettings settings;
     private final HttpClient httpClient;
 
+    @Autowired
     public NetgsmSmsGateway(SmsSettings settings) {
         this(settings, HttpClient.newBuilder().connectTimeout(TIMEOUT).build());
     }
