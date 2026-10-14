@@ -8,6 +8,7 @@
 <?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.ColumnConstraints?>
 <?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
 <?import javafx.scene.layout.VBox?>
 
@@ -31,6 +32,10 @@
         <Label text="%template.column.content" styleClass="form-label"/>
         <TextArea fx:id="contentArea" prefRowCount="8" wrapText="true" VBox.vgrow="ALWAYS"/>
         <Label fx:id="contentCounter"/>
+        <VBox fx:id="placeholderBox" spacing="4" visible="false" managed="false">
+            <Label text="%template.placeholders.hint" styleClass="form-hint" wrapText="true"/>
+            <FlowPane fx:id="placeholderPane" hgap="6" vgap="6"/>
+        </VBox>
     </VBox>
     <HBox spacing="10" styleClass="dialog-buttons">
         <Button fx:id="saveButton" text="%action.save" onAction="#onSave" defaultButton="true"

@@ -41,6 +41,7 @@
                 <Button fx:id="paymentButton" text="%jobDetail.action.addPayment" onAction="#onPayment" styleClass="action-payment"/>
                 <Button text="%jobDetail.action.addAttendance" onAction="#onAttendance" styleClass="action-attendance"/>
                 <Button text="%home.action.exportPdf" onAction="#onPdf" styleClass="action-pdf"/>
+                <Button text="%message.action.open" onAction="#onMessage"/>
                 <Button fx:id="deleteButton" text="%action.delete" onAction="#onDelete" styleClass="danger-button,action-delete"/>
             </HBox>
         </VBox>

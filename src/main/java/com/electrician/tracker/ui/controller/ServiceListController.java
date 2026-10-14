@@ -10,7 +10,10 @@ import com.electrician.tracker.domain.Job;
 import com.electrician.tracker.domain.JobType;
 import com.electrician.tracker.dto.JobBoard;
 import com.electrician.tracker.dto.JobSummary;
+import com.electrician.tracker.dto.MessageTarget;
 import com.electrician.tracker.service.AccessControl;
+import com.electrician.tracker.service.CompanyService;
+import com.electrician.tracker.service.messaging.MessagePlaceholders;
 import com.electrician.tracker.service.JobLabels;
 import com.electrician.tracker.service.JobService;
 import com.electrician.tracker.service.JobSummaryService;
@@ -66,6 +69,7 @@ public class ServiceListController {
     private final ReportService reportService;
     private final AccessControl accessControl;
     private final ModalStageOpener modalStageOpener;
+    private final CompanyService companyService;
     private final TaskRunner taskRunner;
 
     @FXML
@@ -97,13 +101,14 @@ public class ServiceListController {
 
     public ServiceListController(JobSummaryService jobSummaryService, JobService jobService,
             ReportService reportService, AccessControl accessControl, ModalStageOpener modalStageOpener,
-            TaskRunner taskRunner) {
+            TaskRunner taskRunner, CompanyService companyService) {
         this.jobSummaryService = jobSummaryService;
         this.jobService = jobService;
         this.reportService = reportService;
         this.accessControl = accessControl;
         this.modalStageOpener = modalStageOpener;
         this.taskRunner = taskRunner;
+        this.companyService = companyService;
     }
 
     @FXML
@@ -253,6 +258,33 @@ public class ServiceListController {
     @FXML
     private void onEdit() {
         selected().ifPresent(this::openEditForm);
+    }
+
+    /**
+     * "Mesaj Gönder" for the selected service: the customer, their number and
+     * this service's amount and date go into the message window ready to use.
+     */
+    @FXML
+    private void onMessage() {
+        selected().ifPresent(service -> modalStageOpener.<MessageDialogController>openAndWait(
+                ViewPaths.MESSAGE_DIALOG, "message.dialog.title", window(),
+                dialog -> dialog.startFor(targetFor(service))));
+    }
+
+    private MessageTarget targetFor(Job service) {
+        java.util.Map<String, String> values = new java.util.HashMap<>();
+        values.put(MessagePlaceholders.CUSTOMER, service.getCustomer().getName());
+        values.put(MessagePlaceholders.COMPANY, companyService.get().getName());
+        values.put(MessagePlaceholders.JOB, service.getName());
+        values.put(MessagePlaceholders.AMOUNT, Bicimlendirici.money(summaryFor(service).saleIncludingVat()));
+        values.put(MessagePlaceholders.DATE, service.getStartDate() == null ? ""
+                : Bicimlendirici.date(service.getStartDate()));
+        // "Ödendi" / "Bekliyor": what the reminder is actually about.
+        values.put(MessagePlaceholders.STATUS, DialogUtil.message(
+                service.isPaymentReceived() ? "message.status.paid" : "message.status.pending"));
+        values.put(MessagePlaceholders.BALANCE,
+                Bicimlendirici.money(summaryFor(service).remaining()));
+        return MessageTarget.of(service.getCustomer().getName(), service.getCustomer().getPhone(), values);
     }
 
     private void openEditForm(Job service) {

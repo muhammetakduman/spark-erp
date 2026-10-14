@@ -37,6 +37,7 @@ public final class ViewPaths {
     public static final String DAILY_JOB_FORM = "/fxml/daily_job_form.fxml";
     public static final String NOT_VISITED_DIALOG = "/fxml/not_visited_dialog.fxml";
     public static final String TEMPLATE_FORM = "/fxml/template_form.fxml";
+    public static final String MESSAGE_DIALOG = "/fxml/message_dialog.fxml";
 
     /** The icon next to each dialog's title. */
     private static final Map<String, AppIcon> DIALOG_ICONS = Map.ofEntries(

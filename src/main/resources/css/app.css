@@ -1829,3 +1829,18 @@
     -fx-fill: -color-selection-text;
     -fx-text-fill: -color-selection-text;
 }
+
+/* "{musteri}" gibi, tıklanınca şablona eklenen küçük düğmeler. */
+.placeholder-chip {
+    -fx-background-color: -color-row-alt;
+    -fx-text-fill: -color-text;
+    -fx-border-color: -color-border;
+    -fx-border-radius: 10;
+    -fx-background-radius: 10;
+    -fx-padding: 2 8 2 8;
+    -fx-font-size: 11px;
+}
+
+.placeholder-chip:hover {
+    -fx-background-color: -color-highlight;
+}

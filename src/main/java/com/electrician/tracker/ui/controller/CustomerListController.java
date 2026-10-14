@@ -1,12 +1,21 @@
 package com.electrician.tracker.ui.controller;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.electrician.tracker.domain.Customer;
+import com.electrician.tracker.dto.MessageTarget;
 import com.electrician.tracker.service.AccessControl;
+import com.electrician.tracker.service.CompanyService;
 import com.electrician.tracker.service.CustomerService;
+import com.electrician.tracker.service.JobSummaryService;
+import com.electrician.tracker.service.messaging.MessagePlaceholders;
 import com.electrician.tracker.service.exception.ReferencedEntityException;
 import com.electrician.tracker.ui.util.AppIcon;
+import com.electrician.tracker.ui.util.Bicimlendirici;
 import com.electrician.tracker.ui.util.BulkDeleteFlow;
 import com.electrician.tracker.ui.util.BulkSelection;
 import com.electrician.tracker.ui.util.DialogUtil;
@@ -15,6 +24,8 @@ import com.electrician.tracker.ui.util.ModalStageOpener;
 import com.electrician.tracker.ui.util.TableSorting;
 import com.electrician.tracker.ui.util.TaskRunner;
 import javafx.fxml.FXML;
+import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -26,8 +37,11 @@ import org.springframework.stereotype.Component;
 public class CustomerListController {
 
     private static final String FORM_FXML = "/fxml/customer_form.fxml";
+    private static final String MESSAGE_FXML = "/fxml/message_dialog.fxml";
 
     private final CustomerService customerService;
+    private final JobSummaryService jobSummaryService;
+    private final CompanyService companyService;
     private final ModalStageOpener modalStageOpener;
     private final TaskRunner taskRunner;
     private final AccessControl accessControl;
@@ -45,11 +59,26 @@ public class CustomerListController {
     @FXML
     private TableColumn<Customer, String> taxNoColumn;
     @FXML
+    private TableColumn<Customer, BigDecimal> outstandingColumn;
+    @FXML
+    private Button messageButton;
+    @FXML
+    private CheckBox debtorsOnlyCheckBox;
+    @FXML
     private ProgressIndicator loadingIndicator;
 
-    public CustomerListController(CustomerService customerService, ModalStageOpener modalStageOpener,
-            TaskRunner taskRunner, AccessControl accessControl) {
+    /** Filled with the customer list; empty for a user who may not see receivables. */
+    private Map<Long, BigDecimal> outstandingByCustomer = new HashMap<>();
+    /** Everyone loaded, so the debtors filter can be turned off again without reloading. */
+    private List<Customer> allCustomers = List.of();
+    private BulkSelection<Customer> selection;
+
+    public CustomerListController(CustomerService customerService, JobSummaryService jobSummaryService,
+            CompanyService companyService, ModalStageOpener modalStageOpener, TaskRunner taskRunner,
+            AccessControl accessControl) {
         this.customerService = customerService;
+        this.jobSummaryService = jobSummaryService;
+        this.companyService = companyService;
         this.modalStageOpener = modalStageOpener;
         this.taskRunner = taskRunner;
         this.accessControl = accessControl;
@@ -64,14 +93,40 @@ public class CustomerListController {
         TableSorting.text(addressColumn, Customer::getAddress);
         TableSorting.text(emailColumn, Customer::getEmail);
         TableSorting.text(taxNoColumn, Customer::getTaxNo);
-        if (accessControl.isAdmin()) {
-            BulkSelection.forTable(table, Customer::getId, this::deleteSelected);
-        }
+        TableSorting.money(outstandingColumn, this::outstandingOf);
+        // Receivables are the owner's business; a manager gets the list without them.
+        boolean showsMoney = accessControl.canViewFinancials();
+        outstandingColumn.setVisible(showsMoney);
+        // Without balances the filter would have nothing to go on.
+        debtorsOnlyCheckBox.setVisible(showsMoney);
+        debtorsOnlyCheckBox.setManaged(showsMoney);
+        debtorsOnlyCheckBox.selectedProperty().addListener((observable, previous, on) -> showCustomers(allCustomers));
+        selection = BulkSelection.forTable(table, Customer::getId,
+                accessControl.isAdmin() ? this::deleteSelected : null);
         refresh();
     }
 
     private void refresh() {
-        taskRunner.run(customerService::findAll, this::showCustomers, loadingIndicator, table);
+        taskRunner.run(this::loadPage, this::showPage, loadingIndicator, table);
+    }
+
+    /** Customers and their balances together, so the screen costs one load. */
+    private CustomerPage loadPage() {
+        return new CustomerPage(customerService.findAll(), jobSummaryService.outstandingByCustomer());
+    }
+
+    private void showPage(CustomerPage page) {
+        outstandingByCustomer = page.outstanding();
+        allCustomers = page.customers();
+        showCustomers(allCustomers);
+    }
+
+    private BigDecimal outstandingOf(Customer customer) {
+        return outstandingByCustomer.get(customer.getId());
+    }
+
+    /** What one load of this screen brings back. */
+    private record CustomerPage(List<Customer> customers, Map<Long, BigDecimal> outstanding) {
     }
 
     /** "Ahmet Yılmaz (pasif)" for a customer no longer offered in pickers. */
@@ -91,7 +146,15 @@ public class CustomerListController {
     }
 
     private void showCustomers(List<Customer> customers) {
-        table.setItems(TableSorting.sorted(customers, TableSorting.customers()));
+        List<Customer> shown = debtorsOnlyCheckBox.isSelected()
+                ? customers.stream().filter(this::owesMoney).toList()
+                : customers;
+        table.setItems(TableSorting.sorted(shown, TableSorting.customers()));
+    }
+
+    private boolean owesMoney(Customer customer) {
+        BigDecimal outstanding = outstandingOf(customer);
+        return outstanding != null && outstanding.signum() > 0;
     }
 
     @FXML
@@ -116,6 +179,50 @@ public class CustomerListController {
         if (controller.isSaved()) {
             refresh();
         }
+    }
+
+    /**
+     * "Mesaj Gönder": opens the message window with this customer's name,
+     * number and balance already in it, so nothing has to be typed again.
+     */
+    @FXML
+    private void onMessage() {
+        List<Customer> ticked = selection.selected();
+        if (ticked.size() > 1) {
+            messageEveryone(ticked);
+            return;
+        }
+        Customer selected = ticked.isEmpty() ? table.getSelectionModel().getSelectedItem() : ticked.get(0);
+        if (selected == null) {
+            DialogUtil.showErrorMessage("error.selection.required");
+            return;
+        }
+        modalStageOpener.<MessageDialogController>openAndWait(MESSAGE_FXML, "message.dialog.title",
+                table.getScene().getWindow(), dialog -> dialog.startFor(targetFor(selected)));
+    }
+
+    /**
+     * Several customers ticked: the same message goes to all of them over SMS,
+     * each filled with its own name and balance. This is the point of the
+     * debtors filter — tick everyone who owes, send one reminder.
+     */
+    private void messageEveryone(List<Customer> customers) {
+        List<MessageTarget> targets = new ArrayList<>();
+        for (Customer customer : customers) {
+            targets.add(targetFor(customer));
+        }
+        modalStageOpener.<MessageDialogController>openAndWait(MESSAGE_FXML, "message.dialog.titleMany",
+                table.getScene().getWindow(), dialog -> dialog.startForMany(targets));
+    }
+
+    private MessageTarget targetFor(Customer customer) {
+        Map<String, String> values = new HashMap<>();
+        values.put(MessagePlaceholders.CUSTOMER, customer.getName());
+        values.put(MessagePlaceholders.COMPANY, companyService.get().getName());
+        values.put(MessagePlaceholders.BALANCE, Bicimlendirici.money(outstandingOf(customer)));
+        values.put(MessagePlaceholders.STATUS, DialogUtil.message(
+                owesMoney(customer) ? "message.status.owing" : "message.status.settled"));
+        return MessageTarget.of(customer.getName(), customer.getPhone(), values);
     }
 
     @FXML

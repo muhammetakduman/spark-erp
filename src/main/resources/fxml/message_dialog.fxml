@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.ProgressIndicator?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+
+<VBox xmlns="http://javafx.com/javafx" xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.electrician.tracker.ui.controller.MessageDialogController"
+      styleClass="form-root" spacing="14" prefWidth="560">
+    <padding>
+        <Insets top="20" right="20" bottom="20" left="20"/>
+    </padding>
+
+    <GridPane hgap="12" vgap="10" styleClass="form-grid">
+        <columnConstraints>
+            <ColumnConstraints minWidth="110"/>
+            <ColumnConstraints minWidth="240" hgrow="ALWAYS"/>
+        </columnConstraints>
+
+        <Label text="%message.field.recipient" styleClass="form-label" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+        <TextField fx:id="recipientField" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+
+        <Label text="%message.field.phone" styleClass="form-label" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+        <TextField fx:id="phoneField" promptText="%message.field.phone.prompt" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+
+        <Label text="%message.field.template" styleClass="form-label" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+        <ComboBox fx:id="templateComboBox" promptText="%message.field.template.prompt" maxWidth="Infinity"
+                  GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+    </GridPane>
+
+    <VBox spacing="4">
+        <Label text="%message.field.text" styleClass="form-label"/>
+        <TextArea fx:id="messageArea" wrapText="true" prefRowCount="7"/>
+        <Label fx:id="lengthLabel" styleClass="form-hint"/>
+        <Label fx:id="previewLabel" styleClass="form-hint" wrapText="true" maxWidth="Infinity" visible="false"
+               managed="false"/>
+    </VBox>
+
+    <Label fx:id="phoneWarningLabel" styleClass="info-strip" wrapText="true" maxWidth="Infinity" visible="false"
+           managed="false"/>
+
+    <HBox spacing="10" alignment="CENTER_LEFT" styleClass="dialog-buttons">
+        <Button fx:id="whatsAppButton" text="%message.action.whatsApp" onAction="#onWhatsApp"
+                styleClass="primary-button"/>
+        <Button fx:id="smsButton" text="%message.action.sms" onAction="#onSms"/>
+        <Button text="%message.action.copy" onAction="#onCopy" styleClass="action-copy"/>
+        <ProgressIndicator fx:id="loadingIndicator" visible="false" maxHeight="20" maxWidth="20"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button text="%action.close" onAction="#onClose" cancelButton="true"/>
+    </HBox>
+</VBox>

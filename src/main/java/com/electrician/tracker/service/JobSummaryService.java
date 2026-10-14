@@ -3,6 +3,7 @@ package com.electrician.tracker.service;
 import java.math.BigDecimal;
 import java.time.YearMonth;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -86,6 +87,33 @@ public class JobSummaryService {
             return Optional.empty();
         }
         return Optional.of(remaining.signum() < 0 ? BigDecimal.ZERO : remaining);
+    }
+
+    /**
+     * What each customer still owes across every job of theirs, keyed by
+     * customer id; empty for a user who may not see receivables.
+     *
+     * <p>Built from the same aggregated board the main screen uses, so the
+     * customer list costs a fixed handful of queries however many customers
+     * exist. A job that was overpaid is left out rather than offsetting
+     * another job: money paid twice on one job is not credit against a
+     * different debt.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, BigDecimal> outstandingByCustomer() {
+        if (masker.isMasking()) {
+            return Map.of();
+        }
+        JobBoard board = loadFullBoard(job -> true);
+        Map<Long, BigDecimal> byCustomer = new HashMap<>();
+        for (Job job : board.jobs()) {
+            JobSummary summary = board.summaries().get(job.getId());
+            BigDecimal remaining = summary == null ? null : summary.remaining();
+            if (remaining != null && remaining.signum() > 0) {
+                byCustomer.merge(job.getCustomer().getId(), remaining, BigDecimal::add);
+            }
+        }
+        return byCustomer;
     }
 
     /** Reloads a single job (4 queries) so only its panel needs refreshing. */

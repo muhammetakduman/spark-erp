@@ -60,7 +60,8 @@ public final class BulkSelection<T> {
 
     /**
      * @param visibleItems the rows as shown now (after filters), in display order
-     * @param onDelete     receives the ticked visible rows for "Seçilenleri Sil"
+     * @param onDelete     receives the ticked visible rows for "Seçilenleri Sil";
+     *                     {@code null} leaves that button off
      */
     public BulkSelection(Supplier<List<T>> visibleItems, Function<T, Long> idOf, Consumer<List<T>> onDelete) {
         this.visibleItems = visibleItems;
@@ -240,9 +241,15 @@ public final class BulkSelection<T> {
         countLabel.getStyleClass().add("selection-count");
         countLabel.textProperty().bind(count.asString(DialogUtil.message("bulk.selectedCount")));
         Button clearButton = Icons.button(AppIcon.SELECT_CLEAR, "bulk.clearSelection", this::clear);
-        Button deleteButton = Icons.button(AppIcon.DELETE, "bulk.deleteSelected", () -> onDelete.accept(selected()));
-        deleteButton.getStyleClass().add("danger-button");
-        HBox strip = new HBox(countLabel, clearButton, deleteButton);
+        HBox strip = new HBox(countLabel, clearButton);
+        // A screen may tick rows for something other than deleting (sending a
+        // message to the lot); without a delete the button has no business here.
+        if (onDelete != null) {
+            Button deleteButton = Icons.button(AppIcon.DELETE, "bulk.deleteSelected",
+                    () -> onDelete.accept(selected()));
+            deleteButton.getStyleClass().add("danger-button");
+            strip.getChildren().add(deleteButton);
+        }
         strip.getStyleClass().add("selection-bar");
         strip.setAlignment(Pos.CENTER_LEFT);
         strip.visibleProperty().bind(count.greaterThan(0));

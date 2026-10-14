@@ -40,6 +40,8 @@
 
         <fx:include fx:id="rates" source="settings_rates.fxml"/>
 
+        <fx:include fx:id="messaging" source="settings_messaging.fxml"/>
+
         <fx:include fx:id="templates" source="settings_templates.fxml"/>
 
         <VBox fx:id="backupSection" spacing="10" styleClass="settings-section">

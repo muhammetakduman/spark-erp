@@ -65,6 +65,8 @@ public class SettingsController implements UnsavedChangesAware {
     @FXML
     private ExchangeRateSettingsController ratesController;
     @FXML
+    private MessagingSettingsController messagingController;
+    @FXML
     private Label backupFolderLabel;
     @FXML
     private DatePicker exportStartDatePicker;
@@ -114,7 +116,8 @@ public class SettingsController implements UnsavedChangesAware {
 
     @Override
     public boolean hasUnsavedChanges() {
-        return companyController.hasUnsavedChanges() || ratesController.hasUnsavedChanges();
+        return companyController.hasUnsavedChanges() || ratesController.hasUnsavedChanges()
+                || messagingController.hasUnsavedChanges();
     }
 
     @FXML
